@@ -53,29 +53,29 @@ node -e "const fs=require('node:fs');const counts={};for(const line of fs.readFi
 
 | Estado | Tareas |
 | --- | --- |
-| `completada` | 16 |
-| `en_curso` | 1 |
+| `completada` | 20 |
+| `en_curso` | 21 |
 | `bloqueada` | 0 |
-| `pendiente` | 56 |
+| `pendiente` | 32 |
 | **Total** | **73** |
 
-Avance: 16/73 (21,9 %), con F0=6/7, F1=4/5, F2=5/7 y F11=1/8 integradas en la base del equipo. Actualizar esta tabla en la misma edición que cambie un estado.
+Avance: 20/73 (27,4 %). Recuento consolidado el 2026-10-16 desde las filas tras integrar las entregas de acceso y preparación jurídica. Los checkpoints parciales no se cuentan como tareas completadas. Actualizar esta tabla en la misma edición que cambie un estado.
 
 | Fase | Completadas / total |
 | --- | --- |
-| F0 Integración y proceso | 6/7 |
+| F0 Integración y proceso | 7/7 |
 | F1 Decisiones abiertas | 4/5 |
 | F2 Contratos y datos | 5/7 |
 | F3 Autenticación | 0/2 |
 | F4 Documentos, chat y evidencias | 0/5 |
-| F5 Agentes de IA | 0/5 |
-| F6 Reglas y advertencias | 0/3 |
+| F5 Agentes de IA | 1/5 |
+| F6 Reglas y advertencias | 1/3 |
 | F7 Revisión y confirmaciones | 0/9 |
 | F8 Finalización y versiones | 0/5 |
 | F9 Hedera HCS | 0/4 |
 | F10 Verificador público | 0/2 |
 | F11 Producto y UI | 1/8 |
-| F12 Pruebas y evaluación | 0/4 |
+| F12 Pruebas y evaluación | 1/4 |
 | F13 Seguridad, despliegue y validación | 0/7 |
 
 ## 4. Tablero por fases
@@ -92,7 +92,7 @@ Aceptación abreviada: el detalle de cada requisito está en el PRD. Toda tarea 
 | MVP-004 | Preview local y componente de referencia | completada | MVP-002, MVP-003 | Líder | `preview:ui` en loopback sin entorno, selector de escenarios, smoke de render. Alcance: P4; no prueba integración Next | [P4](../completed/team-workspace-readiness.md) · 2026-10-16 histórico |
 | MVP-005 | CI configurado, plantillas Issue/PR y CODEOWNERS | completada | MVP-004 | Líder | Workflow, plantillas y CODEOWNERS en el árbol. Alcance: solo configuración; **ningún run remoto ni protección de ramas** | [P5](../completed/team-workspace-readiness.md) · 2026-10-16 histórico |
 | MVP-006 | Integrar la base en la rama del equipo y obtener el primer run remoto de CI | completada | MVP-005 | Líder | Base técnica y documental integrada en `develop` vía PR #1 (`d6013fe`); run de GitHub Actions en Linux verde verificado en PR (#38883794710) y push develop (#38883996495); ramas `main` y `facu` preservadas; sin cambios en branch protection (MVP-131) | [f00-integracion-base-ci](../completed/f00-integracion-base-ci.md) · 2026-10-16 · PR #1 mergeado (`d6013fe`, commits `3b107db`, `f1aec99`) · CI PR #38883794710 verde · CI push develop #38883996495 verde · clon limpio verificado |
-| MVP-007 | Acceso de colaboradores al repositorio | en_curso | — | Nahuel (@nanonoir) / gestión externa | Permisos por persona: Facu puede ejecutar sus entregas con acceso confirmado sin esperar a Gastón; cada ejecutor necesita su propio permiso. No bloquea preparación de contratos ni Issues | [f00-acceso-colaborador](mvp/f00-acceso-colaborador.md) · 2026-10-16 · GitHub API confirma `jfacundoayala: write`; invitación `grancobud: write` pendiente de aceptación. Checkpoint de Facu cumplido; cierre del equipo pendiente de Gastón · Issue [#3](https://github.com/nanonoir/galcoa/issues/3) (publicación no acredita implementación) |
+| MVP-007 | Acceso de colaboradores al repositorio | completada | — | Nahuel (@nanonoir) / gestión externa | Permisos por persona: Facu puede ejecutar sus entregas con acceso confirmado sin esperar a Gastón; cada ejecutor necesita su propio permiso. No bloquea preparación de contratos ni Issues | [f00-acceso-colaborador](../completed/f00-acceso-colaborador.md) · 2026-10-16 · confirmación de solo lectura por GitHub API: `jfacundoayala`, `grancobud` y `thomasskarp` con permiso `write` sin administración; 0 invitaciones pendientes; modalidad: colaborador directo; PRs mergeados de Facu (#52, #58) y Gastón (p. ej. #39 Gemini, #49 clientes Supabase, #57 verificador) · Issue [#3](https://github.com/nanonoir/galcoa/issues/3) (publicación no acredita implementación) |
 
 ### F1 — Decisiones abiertas del PRD §16
 
@@ -104,7 +104,7 @@ Cada decisión se resuelve y documenta (en el ExecPlan consumidor o en un diseñ
 | MVP-011 | Decidir vigencia de tokens, límite de abuso y reemisión segura | completada | — | Líder | Vigencia, rate limit y política de reemisión/revocación documentados; consumidos por `MVP-072/075` | [f01-decisiones-confirmacion-y-sello](../completed/f01-decisiones-confirmacion-y-sello.md) · 2026-10-16 · Decisión documental completada; tokens base64url 32 bytes con hash, 72 h, rate limit Postgres (60 lecturas/10 escrituras por min, ventana fija 60 s, IP hash) y nombre autodeclarado máximo 200 codepoints (incorporado en esquema y tests) registrados en [public-capabilities §8](../../specs/public-capabilities.md); resoluciones técnicas aceptadas por el orquestador; pruebas diferidas a consumidores (MVP-072/075) |
 | MVP-012 | Decidir canonicalización del manifiesto y reconciliación HCS | completada | — | Líder | Forma canónica versionada, identificador opaco y criterios de reconciliación vía Mirror Node (mismo PDF/hash); consumidos por `MVP-082/090/092` | [f01-decisiones-confirmacion-y-sello](../completed/f01-decisiones-confirmacion-y-sello.md) · 2026-10-16 · Decisión documental completada; perfil JCS (RFC 8785) + SHA-256, nonce privado 32 bytes, reference opaca 16 bytes, validez de transacción 120 s persistida, plazos 5/20/10/30 s, ausencia concluyente estricta (expiración + recibo fallido) y vectores reproducibles V0–V8 documentados en [manifest-hcs §8](../../design/manifest-hcs.md); resoluciones técnicas aceptadas por el orquestador; tests de SDK/Mirror diferidos a consumidores (MVP-082/090/092) |
 | MVP-013 | Decidir parámetros de modelos, coste, tiempos máximos y calidad mínima | completada | — | Líder | Configuración, timeouts y umbral de calidad mínima antes de habilitar documentos reales, sin valores de rendimiento inventados | [f01-decisiones-ingesta-y-modelos](../completed/f01-decisiones-ingesta-y-modelos.md) · 2026-10-16 · Decisión documental completada; selección técnica configurable (Gemini 3.5 Flash-Lite y Groq GPT-OSS 120B), 30 s por etapa, razonamiento bajo / defaults del proveedor, y criterio de calidad demo (0 material inventado, 100 % contradicciones conocidas sobre subconjunto de 12 casos con veredicto del líder) registrados en [sources-and-ai §7](../../specs/sources-and-ai.md); dataset de 30 casos preservado para evaluación final; etiquetado concreto diferido a MVP-122 |
-| MVP-014 | Revisión jurídica del lenguaje de confirmación y la política de privacidad | pendiente | — | Nahuel (@nanonoir) / gestión externa | Dictamen externo recibido. **No bloquea** la demo con datos ficticios; bloquea el uso con documentos reales/comerciales | [f01-revision-juridica](mvp/f01-revision-juridica.md) · — · Issue [#4](https://github.com/nanonoir/galcoa/issues/4) (publicación no acredita implementación) |
+| MVP-014 | Revisión jurídica del lenguaje de confirmación y la política de privacidad | en_curso | — | Nahuel (@nanonoir) / gestión externa | Dictamen externo recibido. **No bloquea** la demo con datos ficticios; bloquea el uso con documentos reales/comerciales | [f01-revision-juridica](mvp/f01-revision-juridica.md) · 2026-10-16 · Checkpoint A (material de revisión) preparado en rama `flow/4-legal`, pendiente de integrar; revisión documental sin tests ni llamadas reales · Checkpoint B **no cumplido**: espera que el usuario encargue la revisión y aporte el dictamen (acción externa); no hay dictamen ni conformidad legal · Issue [#4](https://github.com/nanonoir/galcoa/issues/4) (publicación no acredita implementación) |
 
 ### F2 — Contratos de dominio y datos (REQ-17, REQ-15)
 
@@ -154,6 +154,8 @@ Cada decisión se resuelve y documenta (en el ExecPlan consumidor o en un diseñ
 | MVP-062 | Consolidación de advertencias materiales | en_curso | MVP-053, MVP-061 | Gastón (@grancobud), delegado por Nahuel | Advertencias de Agente 1, Agente 2 y reglas unificadas con fuentes; cantidades contradictorias y unidad ausente se muestran sin elegir ni inventar y sin bloquear (PRD §12.4, 12.15) | [f06-rules-and-warnings](mvp/f06-rules-and-warnings.md) · 2026-10-16 · `src/lib/rules/consolidate.ts`: unión de Agente 1, Agente 2 y reglas con origen, revisión y fuentes; agrupación determinista; contradicción con ambas cifras; unidad/fecha no informada; advertencias de otra revisión como desactualizadas; proyección compartible con alias validada por `SharedWarningSchema` y tabla privada aparte · Pendiente: servicio `src/lib/documents/warnings/` que arme la entrada desde persistencia · `tests/server/rules/rules.test.ts` 35/35; lint, typecheck, `npm test` 502, boundaries 67, build exit 0 · Issue [#17](https://github.com/nanonoir/galcoa/issues/17) |
 
 ### F7 — Revisión y confirmaciones (REQ-08, 12, 13, 14, 16, 17)
+
+**Delegación explícita del usuario (2026-10-16):** Gastón (`@grancobud`) ejecuta las Issues #18, #19 y #20, que cubren `MVP-070…076`, en ese orden. GitHub ya refleja la asignación. Las filas que aún indican Nahuel conservan la responsabilidad de coordinación del líder; la implementación de esos IDs pertenece a Gastón. La sesión del líder no modifica sus migraciones, RPC ni pantallas en paralelo. `MVP-077/078` (#21) siguen en la cola del líder.
 
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |

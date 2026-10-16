@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { authFormScenarios } from "@/mocks/auth";
-import { versionHistoryScenarios } from "@/mocks/documents";
+import { snapshotScenarios, versionHistoryScenarios } from "@/mocks/documents";
 
 import { PreviewApp } from "./preview-app";
 import { previewEntries, type LocalHandlers } from "./registry";
@@ -57,6 +57,29 @@ describe("entrada dashboard (MVP-111)", () => {
     expect(screen.getByRole("heading", { name: "Documentos" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Abrir Entrega de maíz/ })).toBeInTheDocument();
     unmount();
+  });
+});
+
+describe("entrada snapshot (MVP-112)", () => {
+  it("monta la presentación real con los siete escenarios, no el placeholder", () => {
+    const entry = previewEntries.find((e) => e.id === "snapshot");
+    expect(entry?.scenarios.map((s) => s.id)).toEqual(snapshotScenarios.map((s) => s.id));
+    expect(entry?.scenarios).toHaveLength(7);
+    for (const scenario of snapshotScenarios) {
+      const { unmount } = render(<div>{entry?.render(scenario.id, handlers)}</div>);
+      expect(screen.queryByTestId("scenario-json")).not.toBeInTheDocument();
+      expect(screen.getByRole("region", { name: "Snapshot congelado" })).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("«Reintentar» invoca solo el callback local onRetry", async () => {
+    const user = userEvent.setup();
+    const onRetry = vi.fn();
+    const entry = previewEntries.find((e) => e.id === "snapshot");
+    render(<div>{entry?.render("error", { ...handlers, onRetry })}</div>);
+    await user.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });
 

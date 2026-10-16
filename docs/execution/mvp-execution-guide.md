@@ -19,7 +19,7 @@ Estas son tandas orientativas, **no una agenda obligatoria**. El maestro y los c
 
 | Momento | Carril principal | Segundo carril posible |
 | --- | --- | --- |
-| Base | [Integración/CI](../exec-plans/completed/f00-integracion-base-ci.md) (completado) | [Acceso del colaborador](../exec-plans/active/mvp/f00-acceso-colaborador.md), gestión humana sin escribir código |
+| Base | [Integración/CI](../exec-plans/completed/f00-integracion-base-ci.md) (completado) | [Acceso del colaborador](../exec-plans/completed/f00-acceso-colaborador.md), gestión humana sin escribir código |
 | Decisiones | [Ingesta y modelos](../exec-plans/completed/f01-decisiones-ingesta-y-modelos.md) (completado) | [Confirmaciones y sello](../exec-plans/completed/f01-decisiones-confirmacion-y-sello.md) (completado) |
 | Contratos | [Contratos de dominio](../exec-plans/completed/f02-contratos-dominio.md) (completado) | Checkpoint MVP-122 del [dataset](../exec-plans/active/mvp/f12-ai-evaluation-dataset-and-runner.md), una vez decidido MVP-013; sin tocar contratos globales |
 | Servicios base | [SQL, migraciones y RLS](../exec-plans/completed/f02-esquema-migraciones-rls.md) | [Proveedor Gemini](../exec-plans/active/mvp/f05-gemini-provider.md), si manifiestos/configuración se reservaron antes al líder |

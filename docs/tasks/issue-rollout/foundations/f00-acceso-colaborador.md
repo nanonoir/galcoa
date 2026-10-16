@@ -4,7 +4,7 @@
 Gestión **externa humana**, coordinada por Nahuel (`nanonoir`), para `MVP-007`. No implementar producto ni automatizar permisos. Facu (`jfacundoayala`) **ya es colaborador**; Gastón (`grancobud`) tiene invitación pendiente. Verificar aceptación y permisos, no reenviar ni atribuir aceptación sin evidencia.
 
 ## Antes de comenzar y lecturas
-Sin dependencias. Leer [AGENTS: colaboración](https://github.com/nanonoir/galcoa/blob/develop/AGENTS.md), [plan completo](https://github.com/nanonoir/galcoa/blob/develop/docs/exec-plans/active/mvp/f00-acceso-colaborador.md), [maestro F0 y §8–9](https://github.com/nanonoir/galcoa/blob/develop/docs/exec-plans/active/mvp-master-plan.md), [desarrollo: inicio y entorno](https://github.com/nanonoir/galcoa/blob/develop/docs/development.md). Las instrucciones actuales de autonomía prevalecen sobre las frases históricas del plan que reservaban todos los merges al líder.
+Sin dependencias. Leer [AGENTS: colaboración](https://github.com/nanonoir/galcoa/blob/develop/AGENTS.md), [plan completo](https://github.com/nanonoir/galcoa/blob/develop/docs/exec-plans/completed/f00-acceso-colaborador.md), [maestro F0 y §8–9](https://github.com/nanonoir/galcoa/blob/develop/docs/exec-plans/active/mvp-master-plan.md), [desarrollo: inicio y entorno](https://github.com/nanonoir/galcoa/blob/develop/docs/development.md). Las instrucciones actuales de autonomía prevalecen sobre las frases históricas del plan que reservaban todos los merges al líder.
 
 ## Alcance y pasos
 1. El administrador verifica manualmente en GitHub que Facu puede leer/clonar y abrir rama/PR con el permiso mínimo acordado, sin administración. No abrir PR de prueba.
