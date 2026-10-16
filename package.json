@@ -24,6 +24,7 @@
     "test:server:local": "vitest run --config vitest.server-local.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:auth": "node tests/server/auth-flow/run-local-auth.mjs",
+    "test:e2e:confirm": "node tests/e2e/confirm/run.mjs",
     "preview:ui": "vite --config preview/vite.config.ts"
   },
   "dependencies": {
