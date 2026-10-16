@@ -270,7 +270,7 @@ describe("Aislamiento del módulo (MVP-042)", () => {
     const dir = path.resolve(import.meta.dirname, "../../../src/lib/documents/evidence");
     for (const file of readdirSync(dir)) {
       const imports = readFileSync(path.join(dir, file), "utf8")
-        .split("\n")
+        .split(/\r?\n/)
         .filter((l) => l.startsWith("import "));
       expect(imports[0], file).toBe('import "server-only";');
       for (const line of imports) expect(line, file).not.toMatch(/supabase|@ai-sdk|groq-sdk|lib\/ai|tests\//);
