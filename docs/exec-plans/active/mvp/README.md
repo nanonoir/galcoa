@@ -8,7 +8,7 @@ Grupos: A = F0–F3 (7 activos + 4 archivados), B = F4–F6 (8 activos), C = F7�
 
 | Plan | Grupo | IDs del maestro | Título |
 | --- | --- | --- | --- |
-| [f00-acceso-colaborador](f00-acceso-colaborador.md) | A | MVP-007 | Acceso del colaborador al repositorio (acción externa) |
+| [f00-acceso-colaborador](../../completed/f00-acceso-colaborador.md) | A | MVP-007 | Acceso del colaborador al repositorio (acción externa; completado y archivado) |
 | [f00-integracion-base-ci](../../completed/f00-integracion-base-ci.md) | A | MVP-006 | Integrar la base y obtener el primer run remoto de CI (completado y archivado) |
 | [f01-decisiones-confirmacion-y-sello](../../completed/f01-decisiones-confirmacion-y-sello.md) | A | MVP-011…012 | Decisiones de capacidades públicas (tokens) y de manifiesto/reconciliación HCS (completado y archivado) |
 | [f01-decisiones-ingesta-y-modelos](../../completed/f01-decisiones-ingesta-y-modelos.md) | A | MVP-010, MVP-013 | Decisiones de adjuntos/extracción y de modelos, coste y calidad (completado y archivado) |
