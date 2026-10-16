@@ -1,25 +1,31 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const doubles = vi.hoisted(() => ({ query: vi.fn(), on: vi.fn(), configs: [] as unknown[] }));
+const doubles = vi.hoisted(() => ({ query: vi.fn(), on: vi.fn(), end: vi.fn(), configs: [] as unknown[] }));
 vi.mock("pg", () => ({ Pool: class {
   constructor(config: unknown) { doubles.configs.push(config); }
   query = doubles.query;
   on = doubles.on;
+  end = doubles.end;
 } }));
 
-import { createExecutorRpc } from "@/lib/documents/persistence/executor-rpc";
+import { createExecutorRpcFactory } from "@/lib/documents/persistence/executor-rpc";
+
+let owner: ReturnType<typeof createExecutorRpcFactory>;
+const createExecutorRpc = (user: string) => owner.forUser(user);
 
 const args = () => ({ p_actor_id: "verified", p_document_id: "doc", p_content: "'); drop table messages; --",
   p_declared_event_date: { kind: "unknown" }, p_key: "key", p_correlation_id: "correlation" });
 
 beforeEach(() => {
+  owner = createExecutorRpcFactory();
   vi.stubEnv("GALCOA_EXECUTOR_DATABASE_URL", "postgresql://galcoa_exec_login:unit-only@localhost/db");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
   vi.stubEnv("GALCOA_EXECUTOR_DATABASE_CA", "");
   doubles.configs.length = 0;
   doubles.query.mockReset().mockResolvedValue({ rows: [{ result: { status: "created" } }] });
+  doubles.end.mockReset().mockResolvedValue(undefined);
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(async () => { await owner.close(); vi.unstubAllEnvs(); });
 
 describe("executor RPC, sin conexiones reales", () => {
   it("es opcional y perezoso", () => {
@@ -76,5 +82,55 @@ describe("executor RPC, sin conexiones reales", () => {
   it("conserva solo SQLSTATE enumerado sin mensaje ni detalle", async () => {
     doubles.query.mockRejectedValue({ code: "42501", message: "private", detail: "private", stack: "private" });
     expect(await createExecutorRpc("verified")!.rpc("append_agent_message", args())).toEqual({ data: null, error: { code: "42501" } });
+  });
+  it("ocho contextos concurrentes A/B comparten un pool sin cruzar actores", async () => {
+    const actors = ["A", "B", "A", "B", "A", "B", "A", "B"];
+    const results = await Promise.all(actors.map((actor) => createExecutorRpc(actor)!.rpc("append_agent_message", { ...args(), p_actor_id: actor })));
+    expect(results.every((result) => result.error === null)).toBe(true);
+    expect(doubles.configs).toHaveLength(1);
+    expect(doubles.configs[0]).toMatchObject({ max: 2 });
+    expect(doubles.query.mock.calls.map((call) => call[1][0])).toEqual(actors);
+    const wrapperA = createExecutorRpc("A")!;
+    expect("close" in wrapperA).toBe(false);
+    expect((await wrapperA.rpc("append_agent_message", { ...args(), p_actor_id: "B" })).error).toBeTruthy();
+    expect((await wrapperA.rpc("select 1", args())).error).toBeTruthy();
+    expect(doubles.query).toHaveBeenCalledTimes(8);
+    expect(doubles.end).not.toHaveBeenCalled();
+  });
+  it("composición productiva comparte el owner privado entre peticiones", async () => {
+    vi.resetModules();
+    try {
+      const product = await import("@/lib/documents/persistence/executor-rpc");
+      expect(doubles.configs).toHaveLength(0);
+      await Promise.all(["A", "B", "A", "B"].map((actor) =>
+        product.createExecutorRpc(actor)!.rpc("append_agent_message", { ...args(), p_actor_id: actor })));
+      expect(doubles.configs).toHaveLength(1);
+      expect(doubles.query.mock.calls.map((call) => call[1][0])).toEqual(["A", "B", "A", "B"]);
+      expect("close" in product.createExecutorRpc("A")!).toBe(false);
+    } finally {
+      // Pool is mocked: clearing the module isolates the private owner without hooks.
+      vi.resetModules();
+    }
+  });
+  it("cambio de configuración falla cerrado sin acumular pools; exige reinicio", async () => {
+    await createExecutorRpc("verified")!.rpc("append_agent_message", args());
+    vi.stubEnv("GALCOA_EXECUTOR_DATABASE_URL", "postgres://galcoa_exec_login:rotated@localhost/db");
+    expect((await createExecutorRpc("verified")!.rpc("append_agent_message", args())).error).toBeTruthy();
+    expect(doubles.configs).toHaveLength(1);
+    expect(doubles.query).toHaveBeenCalledTimes(1);
+    expect(doubles.end).not.toHaveBeenCalled();
+  });
+  it("close es idempotente y solo dispone el pool del owner que lo creó", async () => {
+    const other = createExecutorRpcFactory();
+    await createExecutorRpc("verified")!.rpc("append_agent_message", args());
+    await other.forUser("verified")!.rpc("append_agent_message", args());
+    await other.close();
+    await other.close();
+    expect(doubles.end).toHaveBeenCalledTimes(1);
+    expect((await other.forUser("verified")!.rpc("append_agent_message", args())).error).toBeTruthy();
+    expect((await createExecutorRpc("verified")!.rpc("append_agent_message", args())).error).toBeNull();
+    expect(doubles.configs).toHaveLength(2);
+    await owner.close();
+    expect(doubles.end).toHaveBeenCalledTimes(2);
   });
 });

@@ -153,6 +153,26 @@ catálogo/RLS **119/119**; detalle en el checkpoint #10 de F4. Contraseña efím
 retirada y pila propia detenida. No acredita conexión remota/Supavisor; revisión
 independiente y provisión por operador siguen pendientes.
 
+**Corrección de recursos tras revisión de PR #80:** composición productiva usa
+un owner privado a nivel de módulo, con un único pool perezoso `max:2` por
+proceso, no por request/actor. Cada wrapper conserva su actor en su closure;
+no comparte identidad mutable ni expone SQL/cliente/cierre del pool. Una factory
+de owners permite aislar recursos en pruebas: su `close()` solo drena el pool
+propio, nunca el singleton productivo. La configuración validada queda fijada
+en la primera RPC; un cambio de URL/CA exige reiniciar el owner/proceso y falla
+cerrado sin crear pools adicionales. No hay mapa creciente de credenciales.
+La cota por proceso no reemplaza el límite global de cinco conexiones ni
+acredita capacidad de múltiples instancias de despliegue.
+
+Precondición de provisión: `galcoa_exec_login` debe ser nuevo o estar auditado
+con exactamente los atributos/membresías mínimos del catálogo probado. El
+guard `if not exists` de la migración publicada no sanea un rol preexistente
+alterado. No se reescribe esa migración ni se asume hardening remoto realizado.
+Los privilegios heredados de PUBLIC a nivel de base (por ejemplo TEMP) no se
+revocan globalmente aquí; el catálogo probado acredita tablas/esquemas/RPC, no
+ausencia de todo privilegio de base. Revisar el catálogo del entorno objetivo
+antes de provisionar credenciales, bajo autorización específica.
+
 ### Base real y dobles separados
 
 `MVP-024` posee `tests/server/rls/`: arranque/reset local, usuarios A/B, cliente `anon`, assertions de tablas/Storage/grants y helpers de conexiones independientes. `MVP-120` **reutiliza** esos helpers y añade builders y dobles, no crea otra pila RLS. `src/mocks/` conserva solo escenarios/fixtures de contratos; dobles que importan interfaces de servicios viven en `tests/server/`. Esta precisión evita relajar la barrera actual pese al inventario amplio de SH-07/arquitectura.

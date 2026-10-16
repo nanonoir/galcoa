@@ -9,10 +9,6 @@ const commands = {
   append_document_audit: ["p_actor_id", "p_document_id", "p_type", "p_resource_id", "p_outcome", "p_correlation_id", "p_key"],
 } as const;
 
-interface ExecutorRpc extends DocumentRpc {
-  close(): Promise<void>;
-}
-
 function configuration(raw: string): PoolConfig {
   const url = new URL(raw);
   const user = decodeURIComponent(url.username);
@@ -36,34 +32,60 @@ function configuration(raw: string): PoolConfig {
   };
 }
 
-/** Solo composición de servidor después de Auth; sin conexión al importar. */
-export function createExecutorRpc(verifiedUserId: string): ExecutorRpc | undefined {
-  const raw = process.env.GALCOA_EXECUTOR_DATABASE_URL;
-  if (!raw) return undefined;
+/** Owner aislado de recursos; close solo dispone SU pool, nunca el de otro owner. */
+export function createExecutorRpcFactory() {
   let pool: Pool | undefined;
-  return {
-    async close() { await pool?.end(); },
-    async rpc(name, args) {
-      try {
-        if (!verifiedUserId || !Object.hasOwn(commands, name)) throw new Error();
-        const command = (Object.keys(commands) as (keyof typeof commands)[]).find((key) => key === name)!;
-        const keys = commands[command];
-        if (!args || Object.keys(args).length !== keys.length ||
-            keys.some((key) => !Object.hasOwn(args, key) || args[key] === undefined) ||
-            args.p_actor_id !== verifiedUserId) throw new Error();
-        if (!pool) {
-          pool = new Pool(configuration(raw));
-          pool.on("error", () => { /* No raw provider errors or credentials in logs. */ });
+  let poolConfiguration: string | undefined;
+  let closed = false;
+  function getPool(raw: string) {
+    if (closed) throw new Error();
+    const config = configuration(raw);
+    const key = JSON.stringify(config);
+    // Rotación requiere reiniciar el owner/proceso; nunca acumular pools/configs.
+    if (poolConfiguration && poolConfiguration !== key) throw new Error();
+    if (!pool) {
+      pool = new Pool(config);
+      poolConfiguration = key;
+      pool.on("error", () => { /* No raw provider errors or credentials in logs. */ });
+    }
+    return pool;
+  }
+  /** Cada wrapper retiene solo su actor; ningún consumidor recibe el pool. */
+  function forUser(verifiedUserId: string): DocumentRpc | undefined {
+    const raw = process.env.GALCOA_EXECUTOR_DATABASE_URL;
+    if (!raw) return undefined;
+    return {
+      async rpc(name, args) {
+        try {
+          if (!verifiedUserId || !Object.hasOwn(commands, name)) throw new Error();
+          const command = (Object.keys(commands) as (keyof typeof commands)[]).find((key) => key === name)!;
+          const keys = commands[command];
+          if (!args || Object.keys(args).length !== keys.length ||
+              keys.some((key) => !Object.hasOwn(args, key) || args[key] === undefined) ||
+              args.p_actor_id !== verifiedUserId) throw new Error();
+          const pool = getPool(raw);
+          const text = `select public.${command}(${keys.map((key, i) => `${key} => $${i + 1}`).join(", ")}) as result`;
+          const result = await pool.query(text, keys.map((key) => args[key]));
+          return { data: result.rows[0]?.result, error: null };
+        } catch (error: unknown) {
+          const code = typeof error === "object" && error !== null && "code" in error &&
+            typeof error.code === "string" && ["42501", "22023", "23505", "57014"].includes(error.code)
+            ? error.code : "EXECUTOR_UNAVAILABLE";
+          return { data: null, error: { code } };
         }
-        const text = `select public.${command}(${keys.map((key, i) => `${key} => $${i + 1}`).join(", ")}) as result`;
-        const result = await pool.query(text, keys.map((key) => args[key]));
-        return { data: result.rows[0]?.result, error: null };
-      } catch (error: unknown) {
-        const code = typeof error === "object" && error !== null && "code" in error &&
-          typeof error.code === "string" && ["42501", "22023", "23505", "57014"].includes(error.code)
-          ? error.code : "EXECUTOR_UNAVAILABLE";
-        return { data: null, error: { code } };
-      }
+      },
+    };
+  }
+  return {
+    forUser,
+    async close() {
+      if (closed) return;
+      closed = true;
+      await pool?.end();
     },
   };
 }
+
+// Un owner privado por proceso; importar/build no lee entorno ni conecta.
+const processExecutor = createExecutorRpcFactory();
+export const createExecutorRpc = processExecutor.forUser;

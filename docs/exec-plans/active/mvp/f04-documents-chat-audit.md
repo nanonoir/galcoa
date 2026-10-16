@@ -293,6 +293,25 @@ contenedores entrenar ajenos, intactos. Reserva liberada.
 No acredita Supavisor/TLS remotos ni provisión cloud. Revisión independiente
 pendiente antes de merge; no se cierran MVP-040/041/044 ni el pendiente global.
 
+**Delta de revisión PR #80 (2026-10-16):** revisión independiente inicial
+PASS WITH FINDINGS; se corrige el warning de un pool por request. Ahora hay
+un owner privado por proceso con pool único perezoso `max:2`; wrappers ligados
+a cada actor sin cierre compartido. Tests tienen owners propios y teardown
+propio. Rotación de configuración requiere reinicio, falla cerrada sin acumular
+pools. API `createExecutorRpc(userId)` compatible; el wrapper ya no tiene
+`close()`: los consumidores de tests deben cerrar su factory/owner propio.
+Solo se conservan las dos RPC F4 de esta rama.
+Tras merge de `origin/develop` (`c865be2`, PR #78/#79): focal servidor
+persistencia/HTTP **57/57** (suite executor **21**, incluye ocho contextos A/B
+concurrentes con un solo pool y negativos de actor/RPC, rotación y ownership
+de close); barreras **69/69**, typecheck, ESLint focalizado y build: exit 0.
+`npm audit --omit=dev`: **0 vulnerabilidades**. Sin actualización de paquetes.
+No se inició ni modificó Docker/DB ni se repitieron pruebas reales durante
+este delta: la evidencia LOGIN/RLS anterior corresponde al commit anterior,
+no se presenta como reejecutada con pool compartido. Ver §7 del diseño para
+precondición de rol preexistente y límite de privilegios PUBLIC de base.
+Pendiente revisión independiente del delta antes de merge; sin acceso cloud.
+
 **Referencias** (documentos objetivo ya disponibles; los parámetros operativos siguen pendientes de F1):
 
 - `RQ-B1` — [sources-and-ai](../../../specs/sources-and-ai.md): fuentes admitidas y límite de longitud de mensaje; el valor aprobado es de `MVP-013` (§7 de la spec, propuesto, no aprobado).

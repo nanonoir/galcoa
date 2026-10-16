@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 
-import { createExecutorRpc } from "@/lib/documents/persistence/executor-rpc";
+import { createExecutorRpcFactory } from "@/lib/documents/persistence/executor-rpc";
 import { createDocumentStore } from "@/lib/documents/persistence/store";
 
 import { createTestUser, psqlOk, readLocalStack, supabaseCli, type TestUser } from "../../rls/harness";
@@ -11,7 +11,8 @@ import { createTestUser, psqlOk, readLocalStack, supabaseCli, type TestUser } fr
 let login: Client;
 let admin: Client;
 let user: TestUser;
-let executor: ReturnType<typeof createExecutorRpc>;
+const executorOwner = createExecutorRpcFactory();
+let executor: ReturnType<typeof executorOwner.forUser>;
 let privateUrl: string;
 
 beforeAll(async () => {
@@ -34,11 +35,11 @@ beforeAll(async () => {
   } catch { throw new Error("No se pudo preparar LOGIN local (detalle privado omitido)"); }
   user = await createTestUser(readLocalStack(), "executor-login");
   vi.stubEnv("GALCOA_EXECUTOR_DATABASE_URL", privateUrl);
-  executor = createExecutorRpc(user.id);
+  executor = executorOwner.forUser(user.id);
 });
 
 afterAll(async () => {
-  await executor?.close();
+  await executorOwner.close();
   await login?.end();
   if (admin) {
     try { await admin.query("alter role galcoa_exec_login password null"); } finally { await admin.end(); }
