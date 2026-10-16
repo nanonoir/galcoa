@@ -2,7 +2,7 @@ import { Check, Copy, Mail, MessageCircle } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type { ThirdPartyRole } from "@/lib/contracts/review";
 
 /**
@@ -65,14 +65,14 @@ function ShareLinkCard({ item, onCopy, onReissue, renderQr }: { item: ShareLinkI
               {copied ? <Check aria-hidden="true" data-icon="inline-start" /> : <Copy aria-hidden="true" data-icon="inline-start" />}
               {copied ? "Copiado" : "Copiar enlace"}
             </Button>
-            <Button variant="outline" nativeButton={false} render={<a href={item.whatsappUrl ?? undefined} target="_blank" rel="noopener noreferrer" aria-label={`Abrir WhatsApp para ${label.toLowerCase()}`} />}>
+            <a href={item.whatsappUrl ?? undefined} target="_blank" rel="noopener noreferrer" aria-label={`Abrir WhatsApp para ${label.toLowerCase()}`} className={buttonVariants({ variant: "outline" })}>
               <MessageCircle aria-hidden="true" data-icon="inline-start" />
               WhatsApp
-            </Button>
-            <Button variant="outline" nativeButton={false} render={<a href={item.mailtoUrl ?? undefined} aria-label={`Abrir correo para ${label.toLowerCase()}`} />}>
+            </a>
+            <a href={item.mailtoUrl ?? undefined} aria-label={`Abrir correo para ${label.toLowerCase()}`} className={buttonVariants({ variant: "outline" })}>
               <Mail aria-hidden="true" data-icon="inline-start" />
               Correo
-            </Button>
+            </a>
           </div>
           {copyFailed && (
             <p role="alert" className="text-sm text-destructive">
