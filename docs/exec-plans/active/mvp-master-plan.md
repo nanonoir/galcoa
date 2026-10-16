@@ -10,7 +10,7 @@ Este plan **no repite** requisitos, invariantes ni decisiones: los referencia po
 
 **Hecho (base heredada, cerrada en [`team-workspace-readiness`](../completed/team-workspace-readiness.md)).** Contratos Zod y escenarios de dashboard, presentación de referencia, preview Vite aislado, Vitest, barreras de arquitectura, Playwright, workflow de CI definido y plantillas de Issue/PR. Los resultados numéricos de ese cierre (91 tests Vitest, 51 de barreras, 15 Playwright: 13 preview y 2 smoke Next, build, lint, tipos, 2026-10-16) son **evidencia histórica**: no se reutilizan como verificación actual. Cada tarea nueva ejecuta y registra sus propios checks.
 
-**Existe** (F2, integrado en `develop` vía PR #38): esquema SQL con migraciones y RLS en `supabase/`, probado en base local real (`npm run test:rls`). **No existe todavía** (verificado en el repositorio): Auth en runtime, clientes Supabase, Storage en runtime, IA (los paquetes `ai`, `@ai-sdk/react` y `groq-sdk` aún no están instalados), PDF, Hedera, rutas funcionales. La base técnica y documental fue integrada en `develop` vía PR #1 y su CI base verificado en Linux (ver `MVP-006`). Las pruebas ampliadas de servidor/RLS corresponden a `MVP-131`; la protección de ramas es opcional posthackathon.
+**Existe:** esquema SQL con migraciones y RLS (F2, PR #38), clientes Supabase y guardas integrados (PR #49/#50, sin cerrar aquí sus IDs), y Auth funcional local (PR #70, `MVP-031`); evidencia y límites en las filas correspondientes. Los paquetes de IA están instalados: eso no acredita integración real. Las páginas privadas de producto, Storage conectado, IA real, PDF y Hedera no quedan acreditados por este cierre. La base técnica y documental fue integrada en `develop` vía PR #1 y su CI base verificado en Linux (ver `MVP-006`). Las pruebas ampliadas de servidor/RLS corresponden a `MVP-131`; la protección de ramas es opcional posthackathon.
 
 **Equipo.** Un líder (backend, contratos, integración, rutas, configuración) y un colaborador frontend para tareas de presentación simples y delegables. No se inventan personas ni handles. Una herramienta de agente concreta no es requisito.
 
@@ -53,20 +53,20 @@ node -e "const fs=require('node:fs');const counts={};for(const line of fs.readFi
 
 | Estado | Tareas |
 | --- | --- |
-| `completada` | 20 |
-| `en_curso` | 21 |
+| `completada` | 21 |
+| `en_curso` | 28 |
 | `bloqueada` | 0 |
-| `pendiente` | 32 |
+| `pendiente` | 24 |
 | **Total** | **73** |
 
-Avance: 20/73 (27,4 %). Recuento consolidado el 2026-10-16 desde las filas tras integrar las entregas de acceso y preparación jurídica. Los checkpoints parciales no se cuentan como tareas completadas. Actualizar esta tabla en la misma edición que cambie un estado.
+Avance: 21/73 (28,8 %). Recuento consolidado el 2026-10-16 desde las filas tras integrar Auth por PR #70; incluye los estados parciales actuales sin completar otros IDs. Los checkpoints parciales no se cuentan como tareas completadas. Actualizar esta tabla en la misma edición que cambie un estado.
 
 | Fase | Completadas / total |
 | --- | --- |
 | F0 Integración y proceso | 7/7 |
 | F1 Decisiones abiertas | 4/5 |
 | F2 Contratos y datos | 5/7 |
-| F3 Autenticación | 0/2 |
+| F3 Autenticación | 1/2 |
 | F4 Documentos, chat y evidencias | 0/5 |
 | F5 Agentes de IA | 1/5 |
 | F6 Reglas y advertencias | 1/3 |
@@ -123,7 +123,7 @@ Cada decisión se resuelve y documenta (en el ExecPlan consumidor o en un diseñ
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
 | MVP-030 | Sesiones por cookies y guardas de acceso | en_curso | MVP-025 | Gastón (@grancobud), delegado por Nahuel | `@supabase/ssr` según la guía de Next 16 de `node_modules/next/dist/docs/`; rutas privadas rechazan sin sesión; helper de usuario autenticado reutilizable | [f03-sesiones-y-guardas](mvp/f03-sesiones-y-guardas.md) · 2026-10-16 · `src/lib/supabase/auth.ts` (`verifySession` con `auth.getUser()`: autenticado / sin sesión / `AUTH_UNAVAILABLE`; `createSessionPort`; `requirePageUser` redirige a `/acceso`; `withApiUser` 401/503 con envelope y `Cache-Control: private, no-store`), `refresh.ts` + `src/proxy.ts` (refresco de cookies con `getClaims`; sin configuración deja pasar), `src/app/(app)/layout.tsx` (guarda dinámica) · `tests/server/auth/session.test.ts` 20/20 con dobles; lint, typecheck, `npm test` 467, boundaries 67, build con Proxy · Prueba local real y E2E de ruta privada no ejecutados (sin Docker; sin ruta privada aún) · Issue [#8](https://github.com/nanonoir/galcoa/issues/8) |
-| MVP-031 | Registro, login, logout y recuperación | en_curso | MVP-030, MVP-115 | Nahuel (@nanonoir) | Flujos reales con confirmación de email activa por defecto; mensajes de error sin filtrar existencia de cuentas; límites del emisor integrado de Supabase documentados. **Avance (rama `flow/9-auth`, sin cerrar):** adaptadores, container y páginas implementados y verificados con dobles; E2E local real (`npm run test:e2e:auth`, Supabase local + Mailpit) 3/3 verde; falta ruta privada (MVP-116), correo real y remoto; en revisión, sin mergear | [f03-auth-flujos-reales](mvp/f03-auth-flujos-reales.md) · — · Issue [#9](https://github.com/nanonoir/galcoa/issues/9) (publicación no acredita implementación) |
+| MVP-031 | Registro, login, logout y recuperación | completada | MVP-030, MVP-115 | Nahuel (@nanonoir) | Flujos reales con confirmación de email activa, errores neutrales, origen canónico y destinos internos cerrados; límites de correo documentados. E2E local real Supabase + Mailpit 3/3 (incluye guarda de nueva contraseña). Ruta privada de producto y montaje de logout: MVP-116; remoto/demo: MVP-026/132/133, no bloquean aceptación local | [f03-auth-flujos-reales](../completed/f03-auth-flujos-reales.md) · 2026-10-16 · [PR #70](https://github.com/nanonoir/galcoa/pull/70), merge `a0c6d0f` · 846 Vitest, 119 RLS, 3 servidor local, 68 E2E generales y 67 barreras previos al último fix; después: 90 focalizados, 8 logging, harness logger, lint/tipos/build correctos; revisión independiente corregida (`6221659`). Sin nueva suite completa post-fix · Issue [#9](https://github.com/nanonoir/galcoa/issues/9), cierre operativo tras merge documental |
 
 ### F4 — Documentos, chat y evidencias (REQ-02, 03, 04, 15)
 

@@ -2,9 +2,9 @@
 
 Índice por plan de los ExecPlans preparados por adelantado, derivados del [plan maestro](../mvp-master-plan.md). **No es un ExecPlan** ni cuenta como tal. No guarda estados: el estado, las dependencias y la evidencia de cada tarea viven solo en el maestro. Que un plan exista no autoriza ejecutarlo; antes deben cumplirse sus dependencias y autorizaciones.
 
-Cobertura: **36 planes** preparados (29 activos bajo este directorio + 7 completados y archivados en [`completed/`](../../completed/)). Algunos planes activos contienen checkpoints ya completados y otros pendientes: el estado por ID vive únicamente en el maestro. Los índices y este catálogo no son ExecPlans. Cada plan declara sus IDs en la línea `Tareas del maestro:`.
+Cobertura: **36 planes** preparados (28 activos bajo este directorio + 8 completados y archivados en [`completed/`](../../completed/)). Algunos planes activos contienen checkpoints ya completados y otros pendientes: el estado por ID vive únicamente en el maestro. Los índices y este catálogo no son ExecPlans. Cada plan declara sus IDs en la línea `Tareas del maestro:`.
 
-Grupos: A = F0–F3 (5 activos + 6 archivados), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (8 activos + 1 archivado).
+Grupos: A = F0–F3 (4 activos + 7 archivados), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (8 activos + 1 archivado).
 
 | Plan | Grupo | IDs del maestro | Título |
 | --- | --- | --- | --- |
@@ -17,7 +17,7 @@ Grupos: A = F0–F3 (5 activos + 6 archivados), B = F4–F6 (8 activos), C = F7�
 | [f02-contratos-dominio](../../completed/f02-contratos-dominio.md) | A | MVP-020…021 | Contratos de dominio: núcleo documental, revisión, confirmación, versión y DTO públicos (completado y archivado) |
 | [f02-entorno-supabase-remoto](f02-entorno-supabase-remoto.md) | A | MVP-026 | Entorno Supabase de desarrollo/demo con migraciones aplicadas (remoto) |
 | [f02-esquema-migraciones-rls](../../completed/f02-esquema-migraciones-rls.md) | A | MVP-022…024 | Esquema SQL, migraciones y RLS/Storage con prueba de dos usuarios (completado y archivado) |
-| [f03-auth-flujos-reales](f03-auth-flujos-reales.md) | A | MVP-031 | Registro, login, logout y recuperación reales |
+| [f03-auth-flujos-reales](../../completed/f03-auth-flujos-reales.md) | A | MVP-031 | Registro, login, logout y recuperación reales (completado y archivado) |
 | [f03-sesiones-y-guardas](f03-sesiones-y-guardas.md) | A | MVP-030 | Sesiones por cookies y guardas de acceso |
 | [f04-connected-chat](f04-connected-chat.md) | B | MVP-054 | Chat conectado: container, rutas y adjuntos |
 | [f04-documents-chat-audit](f04-documents-chat-audit.md) | B | MVP-040…041, MVP-044 | Documentos, mensajes persistentes y auditoría solo-agregar |

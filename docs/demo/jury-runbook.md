@@ -115,7 +115,7 @@ Hoy **no** existen: Auth, base de datos, IA, PDF ni Hedera (AGENTS.md, «Estado 
 
 | Tramo | Requiere (maestro) | Estado hoy |
 | --- | --- | --- |
-| Login, cuentas de demo | `MVP-031`, `MVP-133` | pendientes |
+| Login, cuentas de demo | `MVP-031`, `MVP-133` | Auth local integrada (PR #70); cuentas de demo y comprobación remota pendientes (MVP-133) |
 | Chat, evidencias, redacción, contraste | `MVP-054`, `MVP-053` y dependencias | pendientes |
 | Congelar, selección, enlaces | `MVP-070`…`077` | pendientes |
 | PDF, versión | `MVP-080`…`084` | pendientes |
