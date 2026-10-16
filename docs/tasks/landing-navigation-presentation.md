@@ -1,6 +1,6 @@
 # Ficha de delegación: landing y navegación responsive (MVP-114)
 
-**Estado: contrato y escenarios disponibles (probados con Vitest); borrador local sin Issue ni asignación.** Pendientes: referencia visual/copy aprobado y publicación del Issue. Reglas comunes: [dashboard-presentation](dashboard-presentation.md), [frontend-delivery](../specs/frontend-delivery.md) (§2–§5, F-04, F-06) y [plan de tickets](../exec-plans/active/mvp/f11-frontend-presentation-tickets.md).
+**Estado: presentación completada por Facu e integrada por PR [#61](https://github.com/nanonoir/galcoa/pull/61), Issue #29 cerrada.** Aceptación verificada; evidencia y límites en el [plan cerrado](../exec-plans/completed/f11-frontend-presentation-tickets.md#resultado-de-implementación). La lista conserva criterios del ticket, no trabajo pendiente. Reglas: [dashboard-presentation](dashboard-presentation.md), [frontend-delivery](../specs/frontend-delivery.md) (§2–§5, F-04, F-06).
 
 ## Objetivo
 
@@ -11,7 +11,7 @@ Referencias: PRD REQ-02 (navegación), §5, §10 (pantallas), §11 (lenguaje).
 ## Contrato y alcance
 
 - Props (existen): `LandingViewProps { content: LandingContent }` en `src/features/marketing/contracts/landing-view.ts`; esquema `LandingContentSchema` en `src/lib/contracts/landing.ts` (`brand`, `navigation[]`, `primaryAction`, `heading`, `summary`, `features[]`, `limits[]`). Enlaces como **datos** (`NavLink {label, href}`, solo rutas internas o anclas); la presentación no importa `next/link` (barrera) y usa `<a href>`. El menú móvil es estado visual local.
-- Escenarios (existen): `landingScenarios` en `src/mocks/marketing.ts` — `public` y `signed-in`. Menú abierto/cerrado y ancho móvil/escritorio los cubre tu test y las capturas. Preview: «Landing (placeholder, MVP-114)».
+- Escenarios: `landingScenarios` en `src/mocks/marketing.ts` — `public` y `signed-in`. Menú abierto/cerrado y ancho móvil/escritorio cubiertos por tests y capturas. Preview real: «Landing (MVP-114)».
 
 **Allowlist propuesta (a confirmar en el Issue):**
 
@@ -20,7 +20,7 @@ Referencias: PRD REQ-02 (navegación), §5, §10 (pantallas), §11 (lenguaje).
 3. `src/features/marketing/components/site-navigation.tsx`
 4. `src/features/marketing/components/site-navigation.test.tsx`
 
-La carpeta `marketing` es nombre propuesto; no existe hoy. **Prohibido:** igual que [snapshot-presentation](snapshot-presentation.md) (incluye rutas `src/app/(marketing)/`, que monta el líder).
+La carpeta `marketing` existe con la presentación integrada. **Prohibido:** igual que [snapshot-presentation](snapshot-presentation.md) (incluye rutas `src/app/(marketing)/`, fuera de esta presentación).
 
 ## Aceptación
 
@@ -32,12 +32,9 @@ La carpeta `marketing` es nombre propuesto; no existe hoy. **Prohibido:** igual 
 - [ ] Texto como contenido; sin imágenes ni dependencias nuevas (`package.json` es del líder).
 - [ ] Capturas a 360 y 1280 px: menú cerrado y abierto.
 
-## Huecos
+## Resolución de preparación
 
-1. Contrato y escenarios ya existen (ver arriba).
-2. El líder conectará la entrada del preview a tu componente al integrarlo.
-3. Referencia visual y copy aprobado: no fijados; Tomás puede revisar textos.
-4. Asignación: ver [índice](README.md).
+Wireframe técnico y copy de fixtures aceptados, Issue asignada a Facu y preview real conectado. Excepción autorizada: solo import/entrada propia del registro, su prueba y casos E2E, con un único escritor. Navegación de producto sigue en MVP-116; cuota de despliegues Vercel agotada y advertida en #61, sin bloquear presentación local.
 
 ## Validación y entrega
 
