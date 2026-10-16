@@ -10,6 +10,7 @@ El usuario autorizó ejecutar las tandas desde esta sesión, con worktrees separ
 - [ ] Tanda 1 (parcial integrada): #9 Auth entregada por PR #70 (MVP-031 completada; cierre operativo de #9 tras merge documental). #16 chat y #32 harness con checkpoints parciales integrados por PR #69 y #68 respectivamente; no se declaran completos.
 - [ ] Confirmaciones: #18 → #19 → #20 delegadas expresamente a Gastón por el usuario; esta sesión no las implementa. Consumir sus entregas integradas para #21 y avances disjuntos de #31/#32.
 - [ ] Verificador #25 y composición #31, si no están ya tomados por otro ejecutor.
+- **Reparto actualizado:** el usuario confirmó #31 y #21 para Facu; asignaciones y comentarios de coordinación publicados en GitHub. Esta sesión no implementa sus páginas/containers. Las dependencias globales, Auth, persistencia, chat y seguridad siguen en el carril del líder.
 - [ ] Validación #33 y seguridad/CI #35 sobre una referencia estable.
 - [ ] Despliegue/demo #36 y validación final #37, respetando permisos externos específicos.
 
