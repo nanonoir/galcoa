@@ -4,6 +4,41 @@ import { createChatTurnHandler } from "@/lib/documents/turns/http";
 import { createTurnService } from "@/lib/documents/turns/service";
 import { createVerificationService } from "@/lib/documents/verification/service";
 import { createMirrorReader } from "@/lib/hedera/mirror";
+import { createSessionPort } from "@/lib/supabase/auth";
+import { createSessionClient, type CookieToSet, type RequestCookieStore } from "@/lib/supabase/session";
+
+export interface LocalAuthContextInput {
+  url: string;
+  publishableKey: string;
+  cookies: ReturnType<RequestCookieStore["getAll"]>;
+}
+
+/** Configuración efímera del CLI local; nunca lee archivos de entorno ni acepta identidad. */
+export function createLocalAuthContext(input: LocalAuthContextInput) {
+  const url = new URL(input.url);
+  if (url.protocol !== "http:" || url.hostname !== "127.0.0.1" || url.port !== "54321" ||
+      url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+    throw new Error("Auth del puente requiere http://127.0.0.1:54321");
+  }
+  // El pipeline de servicios nunca recibe la clave privilegiada del seed.
+  let publicKey = input.publishableKey.startsWith("sb_publishable_");
+  try {
+    const claims: unknown = JSON.parse(Buffer.from(input.publishableKey.split(".")[1], "base64url").toString());
+    publicKey ||= typeof claims === "object" && claims !== null && "role" in claims && claims.role === "anon";
+  } catch { /* No es una clave pública JWT local. */ }
+  if (!publicKey) throw new Error("Auth del puente requiere una clave pública");
+  const cookieChanges: CookieToSet[] = [];
+  const cookieHeaders: Record<string, string> = {};
+  const client = createSessionClient({
+    getAll: () => input.cookies.map(({ name, value }) => ({ name, value })),
+    setAll: (changes, headers) => {
+      cookieChanges.push(...changes);
+      Object.assign(cookieHeaders, headers);
+    },
+  }, { readEnv: (name) => name === "NEXT_PUBLIC_SUPABASE_URL" ? url.origin :
+    name === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ? input.publishableKey : undefined });
+  return { session: createSessionPort(client), cookieChanges, cookieHeaders };
+}
 
 /**
  * Entrada del bundle de test que consume `MVP-121` desde el runner Node de Playwright
@@ -11,13 +46,8 @@ import { createMirrorReader } from "@/lib/hedera/mirror";
  * sesión, almacenes y puertos de Gemini/Groq/Storage/HCS/Mirror llegan como parámetros;
  * aquí no se lee entorno ni se resuelve nada por nombre (sin registry DI genérico).
  *
- * Cubre las factories de servicio/handler que existen hoy en `src/lib/**`. PENDIENTE: el
- * helper de contexto de Auth que valide cookies contra Auth local. `src/lib/supabase/auth.ts`
- * lo ofrece (`createSessionPort`/`createSessionClient`) pero su cliente usa `@supabase/ssr`,
- * que no está en la lista permitida de los guards, y el módulo vecino `session.ts` importa
- * `next/headers` de forma dinámica (solo lo elimina el tree-shaking). Incorporarlo exige
- * decidir esa lista y estabilizar el módulo (flujo de Auth, MVP-030): no se relaja el guard
- * ni se inventa un `userId`. Mientras tanto la sesión entra como `SessionPort` explícito.
+ * Auth usa las mismas factories de producto: los imports nombrados eliminan los helpers
+ * Next no usados; los guards comprueban el artefacto resultante, sin permitir Next.
  */
 export const BRIDGE_API_VERSION = 1 as const;
 
