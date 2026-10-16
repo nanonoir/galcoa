@@ -2,13 +2,20 @@
 -- Autor: auth.uid(); agente/auditoría: solo ejecutor con actor verificado.
 -- El owner de funciones no tiene login, bypass, membresías ni propiedad de tablas.
 create role galcoa_f4_writer nologin noinherit nosuperuser nocreatedb nocreaterole nobypassrls;
-grant usage on schema public, private, auth to galcoa_f4_writer;
-grant execute on function auth.uid() to galcoa_f4_writer;
+grant usage on schema public, private to galcoa_f4_writer;
+-- Supabase no permite al migrador delegar USAGE sobre auth (owner del proveedor).
+-- Puente mínimo: solo devuelve auth.uid(), sin tablas ni actor como argumento.
+create function private.f4_actor() returns uuid
+language sql stable security definer set search_path = '' as $$ select auth.uid() $$;
+revoke all on function private.f4_actor() from public, anon, authenticated, service_role, galcoa_executor;
+grant execute on function private.f4_actor() to galcoa_f4_writer;
 grant select, insert on public.documents to galcoa_f4_writer;
 grant update (message_seq, updated_at) on public.documents to galcoa_f4_writer;
 grant select, insert on public.messages, public.audit_events, public.idempotency_records to galcoa_f4_writer;
 grant usage on sequence public.audit_events_id_seq to galcoa_f4_writer;
-grant select on public.document_revisions, public.hedera_attempts, public.hedera_registrations to galcoa_f4_writer;
+grant select (id, confirmation_status) on public.document_revisions to galcoa_f4_writer;
+grant select (id, version_id, outcome, created_at) on public.hedera_attempts to galcoa_f4_writer;
+grant select (version_id) on public.hedera_registrations to galcoa_f4_writer;
 create policy f4_writer_documents on public.documents to galcoa_f4_writer using (true) with check (true);
 create policy f4_writer_messages on public.messages to galcoa_f4_writer using (true) with check (true);
 create policy f4_writer_audit on public.audit_events to galcoa_f4_writer using (true) with check (true);
@@ -63,7 +70,7 @@ $$;
 create function public.create_document(p_title text, p_key text, p_correlation_id text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  actor uuid := auth.uid(); d public.documents; prior public.idempotency_records;
+  actor uuid := private.f4_actor(); d public.documents; prior public.idempotency_records;
   fp text := encode(sha256(convert_to(jsonb_build_object('title', p_title)::text, 'UTF8')), 'hex');
   result jsonb;
 begin
@@ -125,7 +132,7 @@ end
 $$;
 create function public.append_message(p_document_id uuid, p_content text, p_declared_event_date jsonb, p_key text, p_correlation_id text)
 returns jsonb language sql security definer set search_path = '' as $$
-  select private.f4_append_message(auth.uid(), p_document_id, 'autor', p_content, p_declared_event_date, p_key, p_correlation_id)
+  select private.f4_append_message(private.f4_actor(), p_document_id, 'autor', p_content, p_declared_event_date, p_key, p_correlation_id)
 $$;
 create function public.append_agent_message(p_actor_id uuid, p_document_id uuid, p_content text, p_declared_event_date jsonb, p_key text, p_correlation_id text)
 returns jsonb language sql security definer set search_path = '' as $$
@@ -135,17 +142,17 @@ $$;
 create function public.list_documents() returns jsonb
 language sql stable security definer set search_path = '' as $$
   select coalesce(jsonb_agg(private.f4_document_json(d) order by d.updated_at desc, d.id), '[]'::jsonb)
-    from public.documents d where d.owner_id = auth.uid()
+    from public.documents d where d.owner_id = private.f4_actor()
 $$;
 create function public.get_document(p_document_id uuid) returns jsonb
 language sql stable security definer set search_path = '' as $$
-  select private.f4_document_json(d) from public.documents d where d.id = p_document_id and d.owner_id = auth.uid()
+  select private.f4_document_json(d) from public.documents d where d.id = p_document_id and d.owner_id = private.f4_actor()
 $$;
 create function public.list_messages(p_document_id uuid) returns jsonb
 language sql stable security definer set search_path = '' as $$
   select (select coalesce(jsonb_agg(private.f4_message_json(m) order by m.sequence), '[]'::jsonb)
     from public.messages m where m.document_id = d.id)
-  from public.documents d where d.id = p_document_id and d.owner_id = auth.uid()
+  from public.documents d where d.id = p_document_id and d.owner_id = private.f4_actor()
 $$;
 
 -- Autoría del evento revalidada, sin payload libre ni recurso de otro documento.
@@ -177,6 +184,8 @@ $$;
 
 -- Cambio explícito de owner; CREATE temporal, nunca en runtime.
 grant create on schema public, private to galcoa_f4_writer;
+-- El migrador Supabase no es superusuario. PG17 exige SET para transferir owner.
+grant galcoa_f4_writer to postgres with set true;
 alter function private.f4_document_json(public.documents) owner to galcoa_f4_writer;
 alter function private.f4_message_json(public.messages) owner to galcoa_f4_writer;
 alter function private.f4_valid_declared(jsonb) owner to galcoa_f4_writer;
@@ -188,7 +197,8 @@ alter function public.list_documents() owner to galcoa_f4_writer;
 alter function public.get_document(uuid) owner to galcoa_f4_writer;
 alter function public.list_messages(uuid) owner to galcoa_f4_writer;
 alter function public.append_document_audit(uuid, uuid, text, uuid, text, text, text) owner to galcoa_f4_writer;
-revoke create on schema public, private from galcoa_f4_writer;
+grant usage on schema public to galcoa_executor;
+set local role galcoa_f4_writer;
 revoke all on function private.f4_document_json(public.documents), private.f4_message_json(public.messages), private.f4_valid_declared(jsonb),
   private.f4_append_message(uuid, uuid, text, text, jsonb, text, text) from public, anon, authenticated, service_role, galcoa_executor;
 revoke all on function public.create_document(text, text, text), public.append_message(uuid, text, jsonb, text, text),
@@ -196,6 +206,8 @@ revoke all on function public.create_document(text, text, text), public.append_m
   public.list_messages(uuid), public.append_document_audit(uuid, uuid, text, uuid, text, text, text) from public, anon, authenticated, service_role, galcoa_executor;
 grant execute on function public.create_document(text, text, text), public.append_message(uuid, text, jsonb, text, text),
   public.list_documents(), public.get_document(uuid), public.list_messages(uuid) to authenticated;
-grant usage on schema public to galcoa_executor;
 grant execute on function public.append_agent_message(uuid, uuid, text, jsonb, text, text),
   public.append_document_audit(uuid, uuid, text, uuid, text, text, text) to galcoa_executor;
+reset role;
+revoke create on schema public, private from galcoa_f4_writer;
+grant galcoa_f4_writer to postgres with set false, inherit false;

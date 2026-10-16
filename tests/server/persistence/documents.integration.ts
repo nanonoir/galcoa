@@ -82,10 +82,10 @@ describe("F4 Postgres real, A/B/anon, sin proveedores", () => {
     for (const actor of [{ kind: "anon" }, { kind: "authenticated", userId: a.id }, { kind: "service_role" }] as const) {
       await expectRejected(asActor(actor, `select public.append_agent_message('${a.id}', '${doc}', 'No autorizado', '{"kind":"unknown"}', '${key()}', '${correlation}');`), SQLSTATE.permission);
     }
-    const internal = await psql(`set role galcoa_executor; select public.append_agent_message('${a.id}', '${doc}', 'Respuesta ficticia', '{"kind":"unknown"}', '${key()}', '${correlation}')::text;`);
+    const internal = await psql(`set role galcoa_executor; select public.append_agent_message('${a.id}', '${doc}', 'Respuesta ficticia', '{"kind":"unknown"}', '${key()}', '${correlation}')::text;`, "supabase_admin");
     expect(internal.ok).toBe(true);
     expect(JSON.parse(internal.rows[0][0]).value.sender).toBe("agente");
-    const wrongOwner = await psql(`set role galcoa_executor; select public.append_agent_message('${b.id}', '${doc}', 'Ajeno', '{"kind":"unknown"}', '${key()}', '${correlation}')::text;`);
+    const wrongOwner = await psql(`set role galcoa_executor; select public.append_agent_message('${b.id}', '${doc}', 'Ajeno', '{"kind":"unknown"}', '${key()}', '${correlation}')::text;`, "supabase_admin");
     expect(JSON.parse(wrongOwner.rows[0][0]).status).toBe("not_available");
   });
 
@@ -96,6 +96,27 @@ describe("F4 Postgres real, A/B/anon, sin proveedores", () => {
     await a.client.rpc("append_message", { p_document_id: doc, p_content: "Original", p_declared_event_date: { kind: "unknown" }, p_key: key(), p_correlation_id: correlation });
     await expectRejected(`update public.messages set content = 'Cambio' where document_id = '${doc}';`, SQLSTATE.restrict);
     await expectRejected(`delete from public.messages where document_id = '${doc}';`, SQLSTATE.restrict);
+  });
+
+  it("la RPC directa rechaza fecha inválida y una sesión sin identidad", async () => {
+    const doc = await create();
+    const invalid = await a.client.rpc("append_message", { p_document_id: doc, p_content: "Original",
+      p_declared_event_date: { kind: "unknown", instant: "inventado" }, p_key: key(), p_correlation_id: correlation });
+    expect(invalid.error).not.toBeNull();
+    expect(await psqlOk(`select count(*) from public.messages where document_id = '${doc}';`)).toEqual([["0"]]);
+    await expectRejected(`set role authenticated; select public.create_document('Sin sesión', '${key()}', '${correlation}');`, SQLSTATE.permission);
+  });
+
+  it("auditoría interna revalida recurso, propietario e idempotencia", async () => {
+    const doc = await create();
+    const idem = key();
+    const call = `select public.append_document_audit('${a.id}', '${doc}', 'document.created', '${doc}', 'ok', '${correlation}', '${idem}');`;
+    const result = await psql(`set role galcoa_executor; ${call} ${call}`, "supabase_admin");
+    expect(result.ok).toBe(true);
+    expect(result.rows).toEqual([["created"], ["replayed"]]);
+    await expectRejected(`set role galcoa_executor; select public.append_document_audit('${b.id}', '${doc}', 'document.created', '${doc}', 'ok', '${correlation}', '${key()}');`, SQLSTATE.permission, "supabase_admin");
+    const wrongResource = await psql(`set role galcoa_executor; select public.append_document_audit('${a.id}', '${doc}', 'message.recorded', '${doc}', 'ok', '${correlation}', '${key()}');`, "supabase_admin");
+    expect(wrongResource.ok).toBe(false);
   });
 
   it("un fallo de auditoría revierte documento e idempotencia juntos", async () => {
