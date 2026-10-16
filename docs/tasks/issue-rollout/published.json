@@ -344,7 +344,7 @@
     "key": "delivery-111",
     "title": "MVP-111 · Presentación completa del dashboard",
     "bodyFile": "docs/tasks/issue-rollout/delivery/111-dashboard.md",
-    "plan": "docs/exec-plans/active/mvp/f11-frontend-presentation-tickets.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
     "ids": [
       "MVP-111"
     ],
@@ -358,7 +358,7 @@
     "key": "delivery-112",
     "title": "MVP-112 · Snapshot completo y advertencias",
     "bodyFile": "docs/tasks/issue-rollout/delivery/112-snapshot.md",
-    "plan": "docs/exec-plans/active/mvp/f11-frontend-presentation-tickets.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
     "ids": [
       "MVP-112"
     ],
@@ -372,7 +372,7 @@
     "key": "delivery-113",
     "title": "MVP-113 · Historial de versiones de solo lectura",
     "bodyFile": "docs/tasks/issue-rollout/delivery/113-history.md",
-    "plan": "docs/exec-plans/active/mvp/f11-frontend-presentation-tickets.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
     "ids": [
       "MVP-113"
     ],
@@ -386,7 +386,7 @@
     "key": "delivery-114",
     "title": "MVP-114 · Landing y navegación responsive",
     "bodyFile": "docs/tasks/issue-rollout/delivery/114-landing.md",
-    "plan": "docs/exec-plans/active/mvp/f11-frontend-presentation-tickets.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
     "ids": [
       "MVP-114"
     ],
@@ -400,7 +400,7 @@
     "key": "delivery-115",
     "title": "MVP-115 · Cuatro formularios de acceso como presentación",
     "bodyFile": "docs/tasks/issue-rollout/delivery/115-access.md",
-    "plan": "docs/exec-plans/active/mvp/f11-frontend-presentation-tickets.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
     "ids": [
       "MVP-115"
     ],

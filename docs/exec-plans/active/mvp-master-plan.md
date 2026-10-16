@@ -53,13 +53,13 @@ node -e "const fs=require('node:fs');const counts={};for(const line of fs.readFi
 
 | Estado | Tareas |
 | --- | --- |
-| `completada` | 27 |
+| `completada` | 28 |
 | `en_curso` | 27 |
 | `bloqueada` | 0 |
-| `pendiente` | 19 |
+| `pendiente` | 18 |
 | **Total** | **73** |
 
-Avance: 27/73 (37,0 %). Recuento consolidado el 2026-10-16 al cerrar únicamente MVP-111…115, integradas por PR #52/#58/#59/#60/#61 y verificadas conjuntamente por el coordinador. Los checkpoints parciales no se cuentan como tareas completadas. Actualizar esta tabla en la misma edición que cambie un estado.
+Avance: 28/73 (38,4 %). Recuento consolidado el 2026-10-16 tras cerrar MVP-111…115 (PR #52/#58/#59/#60/#61) y MVP-131 (PR #83, run Linux 38954022116 SUCCESS y revisión independiente sin bloqueantes). MVP-130 sigue pendiente y #35 abierta. Los checkpoints parciales no se cuentan como tareas completadas. Actualizar esta tabla en la misma edición que cambie un estado.
 
 | Fase | Completadas / total |
 | --- | --- |
@@ -76,7 +76,7 @@ Avance: 27/73 (37,0 %). Recuento consolidado el 2026-10-16 al cerrar únicamente
 | F10 Verificador público | 0/2 |
 | F11 Producto y UI | 6/8 |
 | F12 Pruebas y evaluación | 2/4 |
-| F13 Seguridad, despliegue y validación | 0/7 |
+| F13 Seguridad, despliegue y validación | 1/7 |
 
 ## 4. Tablero por fases
 
@@ -224,7 +224,7 @@ La presentación simple se delega al colaborador solo tras `MVP-110`; la integra
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
 | MVP-130 | Seguridad y privacidad transversal | pendiente | MVP-054, MVP-073, MVP-101 | Nahuel (@nanonoir) | Límites de carga y rate limits en endpoints públicos y de upload; logs de acceso sin secretos ni contenido privado; auditoría de que ningún secreto llega al bundle; datos de demo ficticios | [f13-release-security-and-ci](mvp/f13-release-security-and-ci.md) · — · Issue [#35](https://github.com/nanonoir/galcoa/issues/35) (publicación no acredita implementación) |
-| MVP-131 | CI ampliado y protección de ramas | en_curso | MVP-006, MVP-120 | Nahuel (@nanonoir) | CI Linux ejecuta también los tests de servidor/RLS; branch protection y checks requeridos son opcionales posthackathon (no obligatorios para el MVP según AGENTS.md y release-validation; workflow conservado como señal). Si se configuran, requiere aprobación y permisos | [f13-release-security-and-ci](mvp/f13-release-security-and-ci.md) · 2026-10-16 · Issue [#35](https://github.com/nanonoir/galcoa/issues/35), PR [#83](https://github.com/nanonoir/galcoa/pull/83), `4c23db8`: [run Linux verde 38954022116](https://github.com/nanonoir/galcoa/actions/runs/38954022116), validate y job serial servidor/RLS/persistencia/executor/rutas/Auth local con limpieza. Local 984 tests, 69 barreras, 89 navegador, lanzador 4/4; lint/tipos/build correctos. Pendiente revisión/integración; sin MVP-130/121 ni protecciones |
+| MVP-131 | CI ampliado y protección de ramas | completada | MVP-006, MVP-120 | Nahuel (@nanonoir) | CI Linux ejecuta también los tests de servidor/RLS; branch protection y checks requeridos son opcionales posthackathon (no obligatorios para el MVP según AGENTS.md y release-validation; workflow conservado como señal). Si se configuran, requiere aprobación y permisos | [f13-release-security-and-ci](mvp/f13-release-security-and-ci.md) · 2026-10-16 · PR [#83](https://github.com/nanonoir/galcoa/pull/83) integrado `560edf7`; [run Linux 38954022116](https://github.com/nanonoir/galcoa/actions/runs/38954022116) SUCCESS sobre `4c23db8`: validate 2m08s (incluye build) y local-server-db 5m24s, suites seriales y limpieza propias. Local del implementador: 984 tests, 69 barreras, 89 navegador, lanzador 4/4; lint/tipos/build correctos. Revisión independiente PASS WITH FINDINGS sin bloqueantes; revisor/coordinador repitieron 4/4 del lanzador. Salida DB privada, sin artefactos ni proveedores. Issue [#35](https://github.com/nanonoir/galcoa/issues/35) parcial abierta por MVP-130; plan activo. No acredita MVP-121, release Next ni protecciones; cuota Vercel advertida. |
 | MVP-132 | Despliegue en Vercel | pendiente | MVP-026, MVP-118, MVP-130, MVP-131 | Nahuel (@nanonoir) / gestión externa | Proyecto Vercel con nombres de variables de servidor y solo `NEXT_PUBLIC_*` públicas, redirecciones de Auth, migraciones aplicadas; requiere autorización y cuenta; sin secretos en el repo | [f13-deploy-and-demo](mvp/f13-deploy-and-demo.md) · — · Issue [#36](https://github.com/nanonoir/galcoa/issues/36) (publicación no acredita implementación) |
 | MVP-133 | Datos y cuentas de demo | pendiente | MVP-031, MVP-132 | Nahuel (@nanonoir) / gestión externa | Cuentas precreadas/autorizadas (el emisor de correo integrado es limitado y no se desactiva la confirmación por defecto), datos ficticios y guion de demo; credenciales fuera del repo | [f13-deploy-and-demo](mvp/f13-deploy-and-demo.md) · — · Issue [#36](https://github.com/nanonoir/galcoa/issues/36) (publicación no acredita implementación) |
 | MVP-134 | Smoke real integrado | pendiente | MVP-091, MVP-092, MVP-121, MVP-133 | Nahuel (@nanonoir) | Flujo completo en el entorno configurado con Supabase, proveedores de IA y Hedera Testnet reales, con autorización expresa; evidencia sin secretos. Incluye fallo/reintento de sello si es reproducible | [f13-live-validation-and-closure](mvp/f13-live-validation-and-closure.md) · — · Issue [#37](https://github.com/nanonoir/galcoa/issues/37) (publicación no acredita implementación) |

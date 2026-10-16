@@ -37,10 +37,10 @@
 - **Discovered/Recorded**: 2026-10-16
 - **Originating Plan**: `docs/exec-plans/completed/docs-initialization.md` (actualizado en `team-workspace-readiness.md`, `mvp-planning-pack.md` y `f00-integracion-base-ci.md`)
 - **Severity**: Medium (REQ-18)
-- **Description**: La infraestructura de tooling, runner y CI base se completó y verificó en GitHub Actions sobre Linux en `MVP-006` (runs 38883794710 y 38883996495). El [harness MVP-120](completed/f12-server-test-harness.md) quedó integrado por PR #79 con servidor/Auth/RLS locales reales. Sigue pendiente completar la cobertura de negocio/REQ-18 y su matriz (`MVP-121`), y ampliar CI servidor/RLS (`MVP-131`); la protección de ramas es opcional posthackathon.
+- **Description**: La infraestructura de tooling, runner y CI base se completó y verificó en GitHub Actions sobre Linux en `MVP-006` (runs 38883794710 y 38883996495). El [harness MVP-120](completed/f12-server-test-harness.md) quedó integrado por PR #79 con servidor/Auth/RLS locales reales. [MVP-131](active/mvp/f13-release-security-and-ci.md) amplió CI servidor/RLS por PR #83 (`560edf7`) con [run Linux 38954022116](https://github.com/nanonoir/galcoa/actions/runs/38954022116) SUCCESS. Sigue pendiente completar la cobertura de negocio/REQ-18 y su matriz (`MVP-121`); la protección de ramas es opcional posthackathon.
 - **Impact**: La base de CI y verificación estática/browser está operativa y comprobada remotamente en Linux; la cobertura de las reglas de negocio e integridad de persistencia/RLS se incorporará conforme se desarrolle el backend.
-- **Current State**: Parcialmente resuelto. CI base Linux operativo (`MVP-006`) e infraestructura local `MVP-120` completada, con evidencia en su plan archivado. Esto no acredita REQ-18 completo, la matriz `MVP-121`, CI ampliado `MVP-131` ni el transporte HTTP Next íntegro de `MVP-134`. La protección de ramas es opcional posthackathon.
-- **Remediation**: Desarrollar suites de pruebas de negocio con cada feature backend e integrar los tests de servidor/RLS en el CI ampliado (`MVP-131`).
+- **Current State**: Parcialmente resuelto. CI base Linux (`MVP-006`), harness local (`MVP-120`) y CI ampliado (`MVP-131`) completados. Ambos jobs de CI y limpieza comprobados; revisión independiente sin bloqueantes. Esto no acredita REQ-18 completo, la matriz `MVP-121` ni el transporte HTTP Next íntegro de `MVP-134`. La protección de ramas es opcional posthackathon.
+- **Remediation**: Completar la matriz y suites de negocio con cada feature backend (`MVP-121`) y validar el transporte íntegro en `MVP-134`; conservar las suites servidor/RLS ya integradas en CI.
 
 ### 6. Aviso de compatibilidad ESM en configs TypeScript de Vite/Vitest
 
