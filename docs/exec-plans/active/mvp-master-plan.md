@@ -53,29 +53,29 @@ node -e "const fs=require('node:fs');const counts={};for(const line of fs.readFi
 
 | Estado | Tareas |
 | --- | --- |
-| `completada` | 16 |
-| `en_curso` | 1 |
+| `completada` | 20 |
+| `en_curso` | 21 |
 | `bloqueada` | 0 |
-| `pendiente` | 56 |
+| `pendiente` | 32 |
 | **Total** | **73** |
 
-Avance: 16/73 (21,9 %), con F0=6/7, F1=4/5, F2=5/7 y F11=1/8 integradas en la base del equipo. Actualizar esta tabla en la misma edición que cambie un estado.
+Avance: 20/73 (27,4 %). Recuento consolidado el 2026-10-16 desde las filas tras integrar las entregas de acceso y preparación jurídica. Los checkpoints parciales no se cuentan como tareas completadas. Actualizar esta tabla en la misma edición que cambie un estado.
 
 | Fase | Completadas / total |
 | --- | --- |
-| F0 Integración y proceso | 6/7 |
+| F0 Integración y proceso | 7/7 |
 | F1 Decisiones abiertas | 4/5 |
 | F2 Contratos y datos | 5/7 |
 | F3 Autenticación | 0/2 |
 | F4 Documentos, chat y evidencias | 0/5 |
-| F5 Agentes de IA | 0/5 |
-| F6 Reglas y advertencias | 0/3 |
+| F5 Agentes de IA | 1/5 |
+| F6 Reglas y advertencias | 1/3 |
 | F7 Revisión y confirmaciones | 0/9 |
 | F8 Finalización y versiones | 0/5 |
 | F9 Hedera HCS | 0/4 |
 | F10 Verificador público | 0/2 |
 | F11 Producto y UI | 1/8 |
-| F12 Pruebas y evaluación | 0/4 |
+| F12 Pruebas y evaluación | 1/4 |
 | F13 Seguridad, despliegue y validación | 0/7 |
 
 ## 4. Tablero por fases
@@ -154,6 +154,8 @@ Cada decisión se resuelve y documenta (en el ExecPlan consumidor o en un diseñ
 | MVP-062 | Consolidación de advertencias materiales | en_curso | MVP-053, MVP-061 | Gastón (@grancobud), delegado por Nahuel | Advertencias de Agente 1, Agente 2 y reglas unificadas con fuentes; cantidades contradictorias y unidad ausente se muestran sin elegir ni inventar y sin bloquear (PRD §12.4, 12.15) | [f06-rules-and-warnings](mvp/f06-rules-and-warnings.md) · 2026-10-16 · `src/lib/rules/consolidate.ts`: unión de Agente 1, Agente 2 y reglas con origen, revisión y fuentes; agrupación determinista; contradicción con ambas cifras; unidad/fecha no informada; advertencias de otra revisión como desactualizadas; proyección compartible con alias validada por `SharedWarningSchema` y tabla privada aparte · Pendiente: servicio `src/lib/documents/warnings/` que arme la entrada desde persistencia · `tests/server/rules/rules.test.ts` 35/35; lint, typecheck, `npm test` 502, boundaries 67, build exit 0 · Issue [#17](https://github.com/nanonoir/galcoa/issues/17) |
 
 ### F7 — Revisión y confirmaciones (REQ-08, 12, 13, 14, 16, 17)
+
+**Delegación explícita del usuario (2026-10-16):** Gastón (`@grancobud`) ejecuta las Issues #18, #19 y #20, que cubren `MVP-070…076`, en ese orden. GitHub ya refleja la asignación. Las filas que aún indican Nahuel conservan la responsabilidad de coordinación del líder; la implementación de esos IDs pertenece a Gastón. La sesión del líder no modifica sus migraciones, RPC ni pantallas en paralelo. `MVP-077/078` (#21) siguen en la cola del líder.
 
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
