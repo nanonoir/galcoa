@@ -9,7 +9,11 @@ grant update (upload_state, accepted_at) on public.evidences to galcoa_evidence_
 grant select, insert on public.evidence_extractions, public.idempotency_records to galcoa_evidence_writer;
 grant insert on public.audit_events to galcoa_evidence_writer;
 grant usage on sequence public.audit_events_id_seq to galcoa_evidence_writer;
+grant galcoa_f4_writer to postgres with set true;
+set local role galcoa_f4_writer;
 grant execute on function private.f4_valid_declared(jsonb) to galcoa_evidence_writer;
+reset role;
+grant galcoa_f4_writer to postgres with set false,inherit false;
 create policy evidence_writer_documents on public.documents to galcoa_evidence_writer using (true) with check (true);
 create policy evidence_writer_originals on public.evidences to galcoa_evidence_writer using (true) with check (true);
 create policy evidence_writer_extractions on public.evidence_extractions to galcoa_evidence_writer using (true) with check (true);

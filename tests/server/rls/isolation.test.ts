@@ -139,7 +139,7 @@ describe("SQL directo bajo roles de API", () => {
 });
 
 describe("Storage privado: A / B / anon contra el Storage local real", () => {
-  const evidenceBytes = () => new Blob(["evidencia ficticia"], { type: "text/plain" });
+  const evidenceBytes = () => new Blob(["%PDF-evidencia ficticia"], { type: "application/pdf" });
 
   it("evidencias: solo el propietario sube a su reserva, sin sobrescribir ni borrar", async () => {
     const ok = await userA.client.storage.from("evidences-private").upload(docA.evidenceLocation, evidenceBytes());

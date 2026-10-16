@@ -8,8 +8,8 @@ import type { AuditContext, IdempotencyInput } from "../ports";
  * Puertos de evidencias (MVP-042/043). Los servicios dependen de estas
  * interfaces, no de Supabase. El adaptador de filas (tablas `evidences` y
  * `evidence_extractions` de la migración C1, con RPC atómicas de F4) y el de
- * Storage (bucket `evidences-private` de MVP-024) dependen de MVP-025 y de la
- * migración aditiva de F4. Hasta entonces solo existen dobles en tests.
+ * Storage (bucket `evidences-private` de MVP-024) se conectan en persistence.ts
+ * y storage.ts. La DB impone la vigencia de carga autenticada de 120 s.
  */
 
 /** Fila de evidencia del propietario. `reserved` aún no cuenta como original conservado. */
@@ -97,7 +97,7 @@ export type EvidenceStore = {
 
 /** Storage privado (bucket `evidences-private`). Sin URLs públicas ni sobrescritura. */
 export type EvidenceStorage = {
-  /** Permiso de subida directa: un solo objeto, ruta fija, vida corta, sin `upsert`. */
+  /** Carga estándar autenticada: ruta fija reservada en DB, sin token firmado ni upsert. */
   authorizeDirectUpload(
     privateLocation: string,
     options: { contentType: string; maxBytes: number; expiresAt: string },

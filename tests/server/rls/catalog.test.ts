@@ -23,6 +23,8 @@ describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
       "20261016000400",
       "20261016001000",
       "20261016001100",
+      "20261016001200",
+      "20261016001201",
     ]);
   });
 
@@ -90,7 +92,7 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
       await column(
         `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' order by p.proname;`,
       ),
-    ).toEqual(["append_agent_message", "append_document_audit", "append_message", "create_document", "get_document", "list_documents", "list_messages"]);
+    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "create_document", "discard_evidence_reservation", "get_document", "get_evidence", "list_documents", "list_evidence_extractions", "list_evidences", "list_messages", "reserve_evidence"]);
   });
 
   it("toda función propia fija `search_path` y ninguna es ejecutable por PUBLIC ni anon", async () => {

@@ -69,7 +69,7 @@ export function createEvidenceHttpHandler(deps: EvidenceHttpDeps, action: Eviden
       const { store, storage, gemini } = context.forUser(user);
       const session = { currentUserId: async () => user };
       const service = createEvidenceService({ session, store, storage });
-      if (action === "list") return respond(await service.listEvidences(documentId));
+      if (action === ACTION.LIST) return respond(await service.listEvidences(documentId));
       if (action === "read") return respond(await service.readOriginal({ documentId, evidenceId: evidenceId! }));
       if (action === "extractions") {
         const rows = await store.listExtractions(user, documentId);

@@ -25,7 +25,6 @@ export const evidenceHttpDeps: EvidenceHttpDeps = {
         const storage = createEvidenceStorage({ verifiedUserId: userId, session: client, store });
         return { store, storage, gemini: getGeminiStructuredPort() };
       },
-      async close() { await executor?.close(); },
     };
   },
 };
