@@ -1,0 +1,10 @@
+{
+  "mcp": {
+    "servers": {
+      "hedera-docs": {
+        "type": "remote",
+        "url": "https://docs.hedera.com/mcp"
+      }
+    }
+  }
+}
