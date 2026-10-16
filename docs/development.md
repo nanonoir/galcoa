@@ -42,7 +42,20 @@ La ejecución base de Linux en GitHub Actions fue comprobada verde en el PR de i
 
 ## Entorno y seguridad
 
-- `.env` y `.env.local` permanecen ignorados y no se leen ni imprimen desde agentes. `.env.example` se versiona con nombres del PRD, vacíos salvo `HEDERA_NETWORK=testnet`.
+- El único archivo local de entorno es **`.env`** en la raíz. `.env*` sigue ignorado (salvo `.env.example`) y los agentes no lo leen ni imprimen. `.env.example` se versiona con nombres del PRD; solo lleva valores no secretos por defecto.
+- Instalar el `.env` que facilita el usuario (adjunto o ruta): `npm run env:install -- <ruta>`. Copia con el sistema de archivos sin leer el contenido, no sobrescribe un `.env` existente y no hace `git add`. Si el destino existe, pedir autorización.
+- `npm run env:check` (también como `predev`, `prebuild` y `prestart`, y por tanto en el servidor de Playwright) falla si existen `.env.local`, `.env.development(.local)`, `.env.production(.local)` o `.env.test(.local)`: Next los carga **con precedencia sobre `.env`**. Solo mira nombres; el usuario decide moverlos o borrarlos. `.env.local` sigue en `.gitignore` por protección.
+- Vitest y el preview Vite no cargan `.env`: las pruebas usan dobles y datos ficticios. Una prueba de integración autorizada deberá cargar `.env` de forma explícita.
+- Local y Vercel usan los **mismos nombres** (los de `.env.example`). En Vercel se definen en Project Settings → Environment Variables por entorno (Production, Preview, Development); no se sube `.env`. Cambia el valor, no el nombre:
+
+  | Variable | Local (`.env`) | Vercel |
+  | --- | --- | --- |
+  | `NEXT_PUBLIC_APP_URL` | URL de `npm run dev` (p. ej. `http://localhost:3000`) | Dominio de Production; en Preview la URL del deploy (Vercel expone `VERCEL_URL` sin esquema como variable de sistema). No basta con asumir una sola |
+  | `NEXT_PUBLIC_SUPABASE_*` | Proyecto Supabase de desarrollo | Proyecto que corresponda al entorno; son `NEXT_PUBLIC_*` y se incrustan **en build**: cambiarlas exige redeploy |
+  | `SUPABASE_SECRET_KEY`, claves IA, `HEDERA_OPERATOR_*` | Solo servidor | Solo servidor, nunca `NEXT_PUBLIC_*`; Preview puede usar credenciales distintas de Production |
+  | `HEDERA_NETWORK` | `testnet` | `testnet` en todos los entornos (P0) |
+
+  Las URLs de redirección de Supabase Auth se configuran en Supabase, no en el `.env`.
 - Solo `NEXT_PUBLIC_*` puede llegar al cliente; claves IA/Hedera y futuras claves privilegiadas Supabase son exclusivamente de servidor.
 - La plantilla local anterior se preservó sin inspeccionarla como `.env.example.local`, ignorada. Quien clone no necesita ese archivo.
 - Preview sin carga de archivos de entorno ni inyección de secretos; datos ficticios, sin persistencia y solo loopback. No sirve para compartir una demo por red.

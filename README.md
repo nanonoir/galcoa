@@ -32,13 +32,13 @@ Antes de ejecutar Playwright por primera vez: `npx playwright install chromium` 
 
 ## Variables de entorno
 
-Copia la plantilla versionada `.env.example` a `.env.local` **solo al implementar/probar integraciones autorizadas**. No es necesaria para preview, tests ni build. Nunca versiones valores reales:
+El único archivo local de entorno es `.env` en la raíz (no `.env.local`, que Next cargaría con precedencia sobre él: `npm run env:check` lo detecta y falla). Crea `.env` desde la plantilla `.env.example` **solo al implementar/probar integraciones autorizadas**, o instala el que te faciliten con `npm run env:install -- <ruta>` (copia sin leer el contenido ni sobrescribir). No es necesario para preview, tests ni build. Nunca versiones valores reales:
 
-- Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-- IA: `GOOGLE_GENERATIVE_AI_API_KEY`, `GROQ_API_KEY`.
-- Hedera: `HEDERA_NETWORK=testnet`, `HEDERA_ACCOUNT_ID`, `HEDERA_PRIVATE_KEY`, `HEDERA_TOPIC_ID`.
+- Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`.
+- IA: `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `GROQ_API_KEY`.
+- Hedera: `HEDERA_NETWORK=testnet`, `HEDERA_OPERATOR_ID`, `HEDERA_OPERATOR_KEY`, `HEDERA_TOPIC_ID`.
 
-Solo las variables `NEXT_PUBLIC_*` pueden exponerse al navegador. `.env` y `.env.local` siguen ignorados. La plantilla solo contiene nombres y valores vacíos salvo Testnet; las integraciones futuras documentarán cualquier clave privilegiada adicional necesaria, siempre de servidor.
+Los nombres son los mismos en Vercel (Project Settings → Environment Variables; no se sube `.env`); ver diferencias por entorno en [`docs/development.md`](docs/development.md). Solo las variables `NEXT_PUBLIC_*` pueden exponerse al navegador. `.env` y `.env.local` siguen ignorados. La plantilla solo contiene nombres y valores vacíos salvo Testnet; las integraciones futuras documentarán cualquier clave privilegiada adicional necesaria, siempre de servidor.
 
 ## Stack
 

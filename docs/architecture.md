@@ -15,7 +15,7 @@ Este documento es la fuente de decisiones arquitectónicas. El [PRD v1.5](exec-p
 | Verificación | Vitest para contratos/componentes/barreras y Playwright para Chromium; CI base verificado en GitHub Actions Linux ([f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)), suites completas de servidor/RLS y protección de ramas futuras |
 | Base compartida | Contratos Zod de dashboard, escenarios en `src/mocks/`, presentación mínima de referencia y preview Vite aislado |
 | Ausencias de producto | Auth, persistencia, agentes, PDF, Hedera, rutas funcionales y migraciones; los tests actuales no acreditan esos flujos |
-| Entorno | Node 24.18.0, npm >=11 y plantilla `.env.example` sanitizada versionable; archivos locales privados ignorados, sin inspeccionar secretos |
+| Entorno | Node 24.18.0, npm >=11 y plantilla `.env.example` sanitizada versionable; único archivo local privado `.env` (ignorado; guard `env:check` contra `.env.local` y similares), sin inspeccionar secretos |
 
 No se deduce seguridad ni funcionamiento por la presencia de un SDK. Las desviaciones conocidas están en la [deuda técnica](exec-plans/tech-debt-tracker.md); sus resultados de auditoría son históricos, no checks ejecutados en esta definición.
 

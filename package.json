@@ -7,8 +7,13 @@
     "npm": ">=11"
   },
   "scripts": {
+    "env:check": "node scripts/env-file.mjs check",
+    "env:install": "node scripts/env-file.mjs install",
+    "predev": "npm run env:check",
     "dev": "next dev",
+    "prebuild": "npm run env:check",
     "build": "next build",
+    "prestart": "npm run env:check",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
