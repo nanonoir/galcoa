@@ -48,3 +48,11 @@ Estas decisiones posteriores sustituyen los pendientes iniciales anteriores; no 
 - **IA:** el usuario exige usar las capas gratuitas de Gemini y Groq, con los modelos seleccionados `gemini-3.5-flash-lite` y `openai/gpt-oss-120b`. No usar el presupuesto orientativo anterior como permiso para consumir planes pagos; sin fallback a modelos pagos ni habilitación de facturación. La disponibilidad y cuota se comprueban en la única sesión real final, no haciendo llamadas reales durante desarrollo.
 - **Hedera:** la elección/creación del topic se decide al final. Esta respuesta no autoriza todavía crear topics, fondear cuentas ni enviar transacciones. Se mantiene Testnet como único alcance posible.
 - **Jurídica:** uso y demo solo con datos ficticios. El profesional y el dictamen siguen siendo gestiones humanas; #4 no se cierra por tener material preparatorio.
+
+### Acceso interno del servidor: autorización posterior
+
+El usuario autorizó expresamente crear en `galcoa-dev` el mismo acceso limitado probado en local, **después de pasar las pruebas y la revisión independiente**. Esto habilita las migraciones versionadas de persistencia F4 y del login `galcoa_exec_login` necesarias para ese canal. No autoriza reset, borrado de datos, acceso administrador, cambios destructivos ni desactivar TLS. El rol solo hereda las operaciones concretas de `galcoa_executor`, no privilegios generales de tabla. La contraseña se provisiona fuera del repo/chat y la URL privada se carga por el propietario en Vercel. La autorización no acredita que ese acceso ya esté operativo en remoto. Las migraciones y operaciones de evidencias que todavía están en desarrollo requieren su revisión y alcance de despliegue propios.
+
+### Conexiones en ejecución
+
+PR #74/#76 integraron RPC, adaptador y rutas de autor para documentos/mensajes. PR #78 corrigió errores SQL no reintentables. El canal interno se implementa en PR #80, con pool compartido privado y actor ligado a cada contexto; aún pendiente de verificación final e integración. #10 permanece abierta. El transporte de evidencias debe conservar una autorización real de 120 s: no se aceptan URLs firmadas de Supabase que duran 2 h con una fecha de UI ficticia. Se investigó y seleccionó subida estándar autenticada con reserva y vencimiento comprobados por RLS; la implementación y pruebas reales pertenecen al checkpoint de #11.
