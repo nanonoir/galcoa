@@ -3,7 +3,7 @@
     "key": "f00-acceso-colaborador",
     "title": "Confirmar acceso de colaboradores y registrar MVP-007",
     "bodyFile": "docs/tasks/issue-rollout/foundations/f00-acceso-colaborador.md",
-    "plan": "docs/exec-plans/active/mvp/f00-acceso-colaborador.md",
+    "plan": "docs/exec-plans/completed/f00-acceso-colaborador.md",
     "ids": [
       "MVP-007"
     ],

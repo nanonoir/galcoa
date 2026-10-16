@@ -53,29 +53,29 @@ node -e "const fs=require('node:fs');const counts={};for(const line of fs.readFi
 
 | Estado | Tareas |
 | --- | --- |
-| `completada` | 16 |
-| `en_curso` | 1 |
+| `completada` | 20 |
+| `en_curso` | 21 |
 | `bloqueada` | 0 |
-| `pendiente` | 56 |
+| `pendiente` | 32 |
 | **Total** | **73** |
 
-Avance: 16/73 (21,9 %), con F0=6/7, F1=4/5, F2=5/7 y F11=1/8 integradas en la base del equipo. Actualizar esta tabla en la misma edición que cambie un estado.
+Avance: 20/73 (27,4 %). Recuento consolidado el 2026-10-16 desde las filas tras integrar las entregas de acceso y preparación jurídica. Los checkpoints parciales no se cuentan como tareas completadas. Actualizar esta tabla en la misma edición que cambie un estado.
 
 | Fase | Completadas / total |
 | --- | --- |
-| F0 Integración y proceso | 6/7 |
+| F0 Integración y proceso | 7/7 |
 | F1 Decisiones abiertas | 4/5 |
 | F2 Contratos y datos | 5/7 |
 | F3 Autenticación | 0/2 |
 | F4 Documentos, chat y evidencias | 0/5 |
-| F5 Agentes de IA | 0/5 |
-| F6 Reglas y advertencias | 0/3 |
+| F5 Agentes de IA | 1/5 |
+| F6 Reglas y advertencias | 1/3 |
 | F7 Revisión y confirmaciones | 0/9 |
 | F8 Finalización y versiones | 0/5 |
 | F9 Hedera HCS | 0/4 |
 | F10 Verificador público | 0/2 |
 | F11 Producto y UI | 1/8 |
-| F12 Pruebas y evaluación | 0/4 |
+| F12 Pruebas y evaluación | 1/4 |
 | F13 Seguridad, despliegue y validación | 0/7 |
 
 ## 4. Tablero por fases
@@ -92,7 +92,7 @@ Aceptación abreviada: el detalle de cada requisito está en el PRD. Toda tarea 
 | MVP-004 | Preview local y componente de referencia | completada | MVP-002, MVP-003 | Líder | `preview:ui` en loopback sin entorno, selector de escenarios, smoke de render. Alcance: P4; no prueba integración Next | [P4](../completed/team-workspace-readiness.md) · 2026-10-16 histórico |
 | MVP-005 | CI configurado, plantillas Issue/PR y CODEOWNERS | completada | MVP-004 | Líder | Workflow, plantillas y CODEOWNERS en el árbol. Alcance: solo configuración; **ningún run remoto ni protección de ramas** | [P5](../completed/team-workspace-readiness.md) · 2026-10-16 histórico |
 | MVP-006 | Integrar la base en la rama del equipo y obtener el primer run remoto de CI | completada | MVP-005 | Líder | Base técnica y documental integrada en `develop` vía PR #1 (`d6013fe`); run de GitHub Actions en Linux verde verificado en PR (#38883794710) y push develop (#38883996495); ramas `main` y `facu` preservadas; sin cambios en branch protection (MVP-131) | [f00-integracion-base-ci](../completed/f00-integracion-base-ci.md) · 2026-10-16 · PR #1 mergeado (`d6013fe`, commits `3b107db`, `f1aec99`) · CI PR #38883794710 verde · CI push develop #38883996495 verde · clon limpio verificado |
-| MVP-007 | Acceso de colaboradores al repositorio | en_curso | — | Nahuel (@nanonoir) / gestión externa | Permisos por persona: Facu puede ejecutar sus entregas con acceso confirmado sin esperar a Gastón; cada ejecutor necesita su propio permiso. No bloquea preparación de contratos ni Issues | [f00-acceso-colaborador](mvp/f00-acceso-colaborador.md) · 2026-10-16 · GitHub API confirma `jfacundoayala: write`; invitación `grancobud: write` pendiente de aceptación. Checkpoint de Facu cumplido; cierre del equipo pendiente de Gastón · Issue [#3](https://github.com/nanonoir/galcoa/issues/3) (publicación no acredita implementación) |
+| MVP-007 | Acceso de colaboradores al repositorio | completada | — | Nahuel (@nanonoir) / gestión externa | Permisos por persona: Facu puede ejecutar sus entregas con acceso confirmado sin esperar a Gastón; cada ejecutor necesita su propio permiso. No bloquea preparación de contratos ni Issues | [f00-acceso-colaborador](../completed/f00-acceso-colaborador.md) · 2026-10-16 · confirmación de solo lectura por GitHub API: `jfacundoayala`, `grancobud` y `thomasskarp` con permiso `write` sin administración; 0 invitaciones pendientes; modalidad: colaborador directo; PRs mergeados de Facu (#52, #58) y Gastón (p. ej. #39 Gemini, #49 clientes Supabase, #57 verificador) · Issue [#3](https://github.com/nanonoir/galcoa/issues/3) (publicación no acredita implementación) |
 
 ### F1 — Decisiones abiertas del PRD §16
 
@@ -154,6 +154,8 @@ Cada decisión se resuelve y documenta (en el ExecPlan consumidor o en un diseñ
 | MVP-062 | Consolidación de advertencias materiales | en_curso | MVP-053, MVP-061 | Gastón (@grancobud), delegado por Nahuel | Advertencias de Agente 1, Agente 2 y reglas unificadas con fuentes; cantidades contradictorias y unidad ausente se muestran sin elegir ni inventar y sin bloquear (PRD §12.4, 12.15) | [f06-rules-and-warnings](mvp/f06-rules-and-warnings.md) · 2026-10-16 · `src/lib/rules/consolidate.ts`: unión de Agente 1, Agente 2 y reglas con origen, revisión y fuentes; agrupación determinista; contradicción con ambas cifras; unidad/fecha no informada; advertencias de otra revisión como desactualizadas; proyección compartible con alias validada por `SharedWarningSchema` y tabla privada aparte · Pendiente: servicio `src/lib/documents/warnings/` que arme la entrada desde persistencia · `tests/server/rules/rules.test.ts` 35/35; lint, typecheck, `npm test` 502, boundaries 67, build exit 0 · Issue [#17](https://github.com/nanonoir/galcoa/issues/17) |
 
 ### F7 — Revisión y confirmaciones (REQ-08, 12, 13, 14, 16, 17)
+
+**Delegación explícita del usuario (2026-10-16):** Gastón (`@grancobud`) ejecuta las Issues #18, #19 y #20, que cubren `MVP-070…076`, en ese orden. GitHub ya refleja la asignación. Las filas que aún indican Nahuel conservan la responsabilidad de coordinación del líder; la implementación de esos IDs pertenece a Gastón. La sesión del líder no modifica sus migraciones, RPC ni pantallas en paralelo. `MVP-077/078` (#21) siguen en la cola del líder.
 
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |

@@ -13,6 +13,7 @@ import type {
 } from "@/features/auth/contracts/auth-forms";
 import { DashboardReference } from "@/features/dashboard/components/dashboard-reference";
 import type { DashboardViewProps } from "@/features/dashboard/contracts/dashboard-view";
+import { SnapshotView } from "@/features/documents/components/snapshot-view";
 import type { SnapshotViewProps } from "@/features/documents/contracts/snapshot-view";
 import type { VersionHistoryViewProps } from "@/features/documents/contracts/version-history-view";
 import type { LandingViewProps } from "@/features/marketing/contracts/landing-view";
@@ -61,27 +62,24 @@ const dashboard: PreviewEntry = {
   },
 };
 
-/**
- * Entradas con `ScenarioPlaceholder`: preparan los escenarios para los
- * consumidores (MVP-112…115). Al implementarse cada presentación, su entrada
- * pasa a renderizarla; mientras tanto no cuentan como UI de producto.
- */
+/** Snapshot (MVP-112): presentación real de solo lectura; el único callback es el reintento local. */
 const snapshot: PreviewEntry = {
-  id: "snapshot-placeholder",
-  label: "Snapshot (placeholder, MVP-112)",
+  id: "snapshot",
+  label: "Snapshot (MVP-112)",
   scenarios: snapshotScenarios.map(({ id, label }) => ({ id, label })),
   render(scenarioId, handlers) {
     const scenario = snapshotScenarios.find((s) => s.id === scenarioId);
     if (!scenario) return null;
-    const props: Pick<SnapshotViewProps, "state"> = { state: scenario.state };
-    return createElement(ScenarioPlaceholder, {
-      title: "Snapshot congelado",
-      data: props,
-      callbacks: [{ name: "onRetry()", run: handlers.onRetry }],
-    });
+    const props: SnapshotViewProps = { state: scenario.state, onRetry: handlers.onRetry };
+    return createElement(SnapshotView, props);
   },
 };
 
+/**
+ * Entradas con `ScenarioPlaceholder`: preparan los escenarios para los
+ * consumidores (MVP-113…114). Al implementarse cada presentación, su entrada
+ * pasa a renderizarla; mientras tanto no cuentan como UI de producto.
+ */
 const versionHistory: PreviewEntry = {
   id: "version-history-placeholder",
   label: "Historial (placeholder, MVP-113)",

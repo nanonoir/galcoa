@@ -6,9 +6,9 @@ El usuario autorizó ejecutar las tandas desde esta sesión, con worktrees separ
 
 ## Secuencia
 
-- [ ] Tanda 0: #3 acceso, #4 preparación de revisión jurídica y #7 preparación/verificación del entorno remoto.
+- [x] Tanda 0, parte ejecutable: #3 acceso cerrado (PR #64); preparación de #4 integrada (PR #65) y preparación de #7 integrada (PR #63). Dictamen y confirmación del objetivo remoto pendientes; no se declaran completadas #4/#7.
 - [ ] Tanda 1: #9 Auth, #16 chat y #32 harness, únicamente checkpoints con entradas disponibles.
-- [ ] Tandas de confirmación: #18 → #19 → #20 → #21, con avances disjuntos de #31/#32 cuando estén habilitados.
+- [ ] Confirmaciones: #18 → #19 → #20 delegadas expresamente a Gastón por el usuario; esta sesión no las implementa. Consumir sus entregas integradas para #21 y avances disjuntos de #31/#32.
 - [ ] Verificador #25 y composición #31, si no están ya tomados por otro ejecutor.
 - [ ] Validación #33 y seguridad/CI #35 sobre una referencia estable.
 - [ ] Despliegue/demo #36 y validación final #37, respetando permisos externos específicos.
@@ -28,3 +28,9 @@ Cada entrega registra checks reales, alcance parcial/completo y límites; revisi
 ## Evidencia inicial
 
 2026-10-16: GitHub confirma `push` para `grancobud` y `jfacundoayala`. Hay PRs abiertos de Facu #59/#60/#61; no tocarlos. `origin/develop` observado en `f178f3e`. Los planes de cada Issue conservan los requisitos de aceptación.
+
+## Tanda 1 en ejecución
+
+Tres worktrees aislados en `C:/Users/Nahuel/AppData/Local/Temp/opencode/`: `galcoa-flow-auth` (#9), `galcoa-flow-chat` (#16), `galcoa-flow-harness` (#32). Implementadores `claude-code/claude-sonnet-5-5`. La base inicial es `fd3139e`. No se permite resetear simultáneamente la pila local de Supabase: validación con base y procesos browser se reserva y serializa desde el coordinador. El chat no inventa endpoints ausentes; el harness no sustituye factories de producto por clones. Preparaciones parciales no acreditan integración completa.
+
+El usuario confirmó la delegación de #18/#19/#20; GitHub ya tiene `grancobud` como único asignado y comentarios de coordinación. #7 espera confirmación de `galcoa-dev` y permiso específico de aplicar/verificar las cuatro migraciones, sin reset ni borrado. #4 espera dictamen profesional externo.
