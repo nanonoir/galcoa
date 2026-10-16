@@ -2,7 +2,7 @@
 
 Tareas del maestro: `MVP-042`, `MVP-043`
 
-**Estado: implementado con puertos y dobles el 2026-10-16 (rama `issue/11-evidence-extraction`); faltan los adaptadores Supabase/Storage, las RPC, las rutas y la prueba en base real (Nahuel).** Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §4 REQ-04, §6 INV-04/07/09, §11, §12), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-03`, `SH-05`, `SH-07`, `SH-08`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md). No repite esos documentos.
+**Estado: conexión local implementada en `flow/evidence-wiring`, pendiente revisión independiente e integración.** Se conservan los servicios de PR #48; evidencia y contrato HTTP en §8. Sin cloud ni IA real. Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §4 REQ-04, §6 INV-04/07/09, §11, §12), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-03`, `SH-05`, `SH-07`, `SH-08`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md). No repite esos documentos.
 
 ## 1. Objetivo y estado de partida
 
@@ -174,6 +174,15 @@ Aislamiento de Storage entre dos usuarios: `MVP-024`/`MVP-121`, con base local r
 - Regresión local adicional sin reset: persistencia F4 **8/8**, LOGIN ejecutor
   **6/6**, suite local Auth/bridge **8/8**. Los fixtures retiran la contraseña
   efímera de LOGIN en teardown; ninguna URL privada se escribe en archivos.
+- Base actual integrada: `560edf7` (incluye PR #80 y posteriores #83/#84), sin
+  duplicar migraciones anteriores en el diff. Pila galcoa detenida al terminar;
+  permanecen únicamente los dos contenedores protegidos `entrenar-*`.
+- Incidencia operativa: el primer `supabase start` imprimió su salida estándar
+  con configuración efímera local en el registro de herramienta. No se copió
+  a archivos/commits ni corresponde a cloud; las operaciones posteriores de CLI
+  sensibles capturaron la salida en proceso. No afirmar que nunca hubo salida
+  sensible en herramientas. El login SQL de test quedó sin contraseña y la pila
+  fue detenida.
 - Cuatro conexiones LOGIN independientes respetan 3 archivos; también 20 MiB.
   Replay, fingerprint semántico diferente, otro dueño/documento, vencimiento,
   liberación de cupo, hash incorrecto y limpieza están cubiertos. Fallo de
