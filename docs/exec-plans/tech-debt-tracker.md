@@ -32,15 +32,15 @@
 - **Current State**: Parcialmente resuelto en `team-workspace-readiness.md`. Zod y `.env.example` alineados; SDKs de IA aplazados hasta la implementación del chat.
 - **Remediation**: Instalar `ai`, `@ai-sdk/react` y `groq-sdk` en el plan de implementación del chat con agentes.
 
-### 5. Sin tests ni CI (lógica de negocio y CI remoto pendientes)
+### 5. Cobertura de tests de negocio y suites completas de servidor/RLS (CI base Linux remoto verificado)
 
 - **Discovered/Recorded**: 2026-10-16
-- **Originating Plan**: `docs/exec-plans/completed/docs-initialization.md` (actualizado en `team-workspace-readiness.md` y `mvp-planning-pack.md`)
+- **Originating Plan**: `docs/exec-plans/completed/docs-initialization.md` (actualizado en `team-workspace-readiness.md`, `mvp-planning-pack.md` y `f00-integracion-base-ci.md`)
 - **Severity**: Medium (REQ-18)
-- **Description**: La infraestructura de tooling, runner y CI se resolvió en `team-workspace-readiness.md`: se configuraron Vitest (Node y jsdom), Playwright (Chromium para preview y Next smoke), comprobación estática de barreras (`tests/boundaries/`) y el workflow de GitHub Actions (`.github/workflows/ci.yml`). La suite local ejecuta 91 tests Vitest, 51 de barreras y 15 tests browser en Playwright. Sin embargo, las suites de tests automatizados para las reglas de negocio del PRD (REQ-01 a REQ-17, y notarización HCS en REQ-18) y la ejecución remota de CI en runners Linux de GitHub Actions continúan pendientes.
-- **Impact**: La infraestructura técnica de CI y pruebas está operativa localmente; la cobertura de las reglas de negocio e integración remota se verificará conforme se implemente el backend.
-- **Current State**: Parcialmente resuelto (tooling, harness de pruebas y configuración CI listos y validados en clon limpio; la cobertura de especificaciones y estrategia de tests se planificó en los 36 ExecPlans [F12-01..F12-03, F13-01..F13-03], pero la implementación de tests de negocio, ejecución remota y cobertura de producto REQ-01 a REQ-18 siguen pendientes de ejecución real sin cambios de código/dependencias en esta fase de planificación).
-- **Remediation**: Desarrollar suites de pruebas de negocio con cada feature backend e iniciar la ejecución remota del workflow en GitHub Actions con el primer PR.
+- **Description**: La infraestructura de tooling, runner y CI base se completó y verificó en GitHub Actions sobre Linux en `MVP-006` (`.github/workflows/ci.yml` ejecutado exitosamente en runs 38883794710 y 38883996495), cerrando la brecha de ejecución remota de CI para la base del equipo. Sin embargo, las suites de tests automatizados para las reglas de negocio del PRD (REQ-01 a REQ-17, y notarización HCS en REQ-18), las pruebas reales de servidor/RLS (`MVP-120`, `MVP-121`) y el CI ampliado con branch protection (`MVP-131`) continúan pendientes de implementación.
+- **Impact**: La base de CI y verificación estática/browser está operativa y comprobada remotamente en Linux; la cobertura de las reglas de negocio e integridad de persistencia/RLS se incorporará conforme se desarrolle el backend.
+- **Current State**: Parcialmente resuelto. El CI remoto en Linux para la base (lint, tipos, Vitest, barreras, build y Playwright) está operativo y verificado verde en GitHub Actions (`MVP-006`). La cobertura de producto REQ-01 a REQ-18, las pruebas de servidor/RLS (`MVP-120`, `MVP-121`) y la protección de ramas (`MVP-131`) siguen pendientes de ejecución real con el desarrollo de cada módulo.
+- **Remediation**: Desarrollar suites de pruebas de negocio con cada feature backend e integrar los tests de servidor/RLS en el CI ampliado (`MVP-131`).
 
 ### 6. Aviso de compatibilidad ESM en configs TypeScript de Vite/Vitest
 

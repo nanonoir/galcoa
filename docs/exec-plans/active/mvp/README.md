@@ -2,14 +2,14 @@
 
 Índice por plan de los ExecPlans preparados por adelantado, derivados del [plan maestro](../mvp-master-plan.md). **No es un ExecPlan** ni cuenta como tal. No guarda estados: el estado, las dependencias y la evidencia de cada tarea viven solo en el maestro. Que un plan exista no autoriza ejecutarlo; antes deben cumplirse sus dependencias y autorizaciones.
 
-Cobertura: **36 planes** (grupo A 11, B 8, C 8, D 9) que cubren **68 IDs** pendientes, sin omisiones ni duplicados; el resto del maestro (`MVP-001…005`) está completado y enlaza su cierre histórico. Cada plan declara sus IDs en la línea `Tareas del maestro:`.
+Cobertura: **36 planes** preparados (35 activos bajo este directorio que cubren **67 IDs** pendientes + 1 completado y archivado en [`completed/`](../../completed/f00-integracion-base-ci.md) que cubre `MVP-006`; los índices y este catálogo no son ExecPlans). Cada plan declara sus IDs en la línea `Tareas del maestro:`.
 
-Grupos: A = F0–F3, B = F4–F6, C = F7–F10, D = F11–F13.
+Grupos: A = F0–F3 (10 activos + 1 archivado), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (9 activos).
 
 | Plan | Grupo | IDs del maestro | Título |
 | --- | --- | --- | --- |
 | [f00-acceso-colaborador](f00-acceso-colaborador.md) | A | MVP-007 | Acceso del colaborador al repositorio (acción externa) |
-| [f00-integracion-base-ci](f00-integracion-base-ci.md) | A | MVP-006 | Integrar la base y obtener el primer run remoto de CI |
+| [f00-integracion-base-ci](../../completed/f00-integracion-base-ci.md) | A | MVP-006 | Integrar la base y obtener el primer run remoto de CI (completado y archivado) |
 | [f01-decisiones-confirmacion-y-sello](f01-decisiones-confirmacion-y-sello.md) | A | MVP-011…012 | Decisiones de capacidades públicas (tokens) y de manifiesto/reconciliación HCS |
 | [f01-decisiones-ingesta-y-modelos](f01-decisiones-ingesta-y-modelos.md) | A | MVP-010, MVP-013 | Decisiones de adjuntos/extracción y de modelos, coste y calidad |
 | [f01-revision-juridica](f01-revision-juridica.md) | A | MVP-014 | Revisión jurídica externa del lenguaje de confirmación y la privacidad |

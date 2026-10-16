@@ -12,7 +12,7 @@ Este documento es la fuente de decisiones arquitectónicas. El [PRD v1.5](exec-p
 | UI | shadcn `base-nova` en `src/components/ui/`, hook `use-mobile`; `src/lib/utils.ts` reexporta `cn`, que está en uso |
 | Configuración | Next 16.4.2, React 19, React Compiler, Tailwind v4, alias `@/*` → `src/*` |
 | Dependencias | SDK de Supabase, IA, PDF y Hedera instalados; no constituyen integraciones implementadas |
-| Verificación | Vitest para contratos/componentes/barreras y Playwright para Chromium; workflow CI definido, ejecución remota no comprobada |
+| Verificación | Vitest para contratos/componentes/barreras y Playwright para Chromium; CI base verificado en GitHub Actions Linux ([f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)), suites completas de servidor/RLS y protección de ramas futuras |
 | Base compartida | Contratos Zod de dashboard, escenarios en `src/mocks/`, presentación mínima de referencia y preview Vite aislado |
 | Ausencias de producto | Auth, persistencia, agentes, PDF, Hedera, rutas funcionales y migraciones; los tests actuales no acreditan esos flujos |
 | Entorno | Node 24.18.0, npm >=11 y plantilla `.env.example` sanitizada versionable; archivos locales privados ignorados, sin inspeccionar secretos |
@@ -97,7 +97,7 @@ Alternativas descartadas: Storybook añade infraestructura desproporcionada para
 
 ## Herramientas de la base y próximas integraciones
 
-Contratos del primer ticket y herramientas ya incorporados. Los consumidores reales de servicios y sus pruebas se implementarán con cada funcionalidad. CI configurado no significa CI ejecutado en GitHub ni protección de ramas activa.
+Contratos del primer ticket y herramientas ya incorporados. Los consumidores reales de servicios y sus pruebas se implementarán con cada funcionalidad. El CI base de Linux está comprobado verde en GitHub Actions ([f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)); la protección de ramas y suites ampliadas de servidor/RLS permanecen futuras (MVP-131).
 
 | Área | Decisión y criterio |
 | --- | --- |
