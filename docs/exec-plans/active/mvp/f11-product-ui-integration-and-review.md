@@ -39,7 +39,7 @@ Fuera de alcance: lógica de chat, adjuntos y streaming (`MVP-054`, que entrega 
 | `tests/e2e/`, `playwright.config.ts` | Líder | Nuevos specs de rutas integradas |
 | `src/mocks/`, `src/features/*/fixtures/` | — | **Prohibido** importarlos desde rutas/containers (barrera existente) |
 
-Propiedad de rutas (resuelta): `src/app/(app)/documents/[id]/page.tsx` pertenece **solo a `MVP-116`** (carga autorizada, envoltorio y montaje del container de chat). `MVP-054` ([`f04-connected-chat`](f04-connected-chat.md)) entrega containers, consumers de API/adapters y pruebas de contrato en `src/features/chat`, sin tocar esa página. Las rutas de auth de `MVP-031` ([`f03-auth-flujos-reales`](f03-auth-flujos-reales.md)) son de su propio plan, no hay conflicto con este.
+Propiedad de rutas (resuelta): `src/app/(app)/documents/[id]/page.tsx` pertenece **solo a `MVP-116`** (carga autorizada, envoltorio y montaje del container de chat). `MVP-054` ([`f04-connected-chat`](f04-connected-chat.md)) entrega containers, consumers de API/adapters y pruebas de contrato en `src/features/chat`, sin tocar esa página. Las rutas de auth de `MVP-031` ([`f03-auth-flujos-reales`](../../completed/f03-auth-flujos-reales.md)) son de su propio plan, no hay conflicto con este.
 
 ## 5. Insumos y salidas
 

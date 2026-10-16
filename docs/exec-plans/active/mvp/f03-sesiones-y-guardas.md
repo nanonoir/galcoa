@@ -6,7 +6,7 @@ Tareas del maestro: `MVP-030`
 
 Requisitos PRD: REQ-01, REQ-17; [§11](../../GALCOA-PRD-v1.4.md) (sesiones por cookies, autorización y RLS); INV-11 (autoría autenticada).
 
-Referencias: [fundaciones SH-07](../../../design/mvp-shared-foundations.md) (cookies SSR; autorización por operación, no solo guardas de navegación; no cachear respuestas privadas) · [arquitectura](../../../architecture.md) · [clientes Supabase](f02-clientes-supabase.md) · [auth con flujos reales](f03-auth-flujos-reales.md).
+Referencias: [fundaciones SH-07](../../../design/mvp-shared-foundations.md) (cookies SSR; autorización por operación, no solo guardas de navegación; no cachear respuestas privadas) · [arquitectura](../../../architecture.md) · [clientes Supabase](f02-clientes-supabase.md) · [auth con flujos reales](../../completed/f03-auth-flujos-reales.md).
 
 ## Precondiciones y checkpoints
 
