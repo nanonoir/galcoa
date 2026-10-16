@@ -26,7 +26,7 @@ export function createEvidenceDoubles(options: { documents: Record<string, strin
   const objects = new Map<string, Uint8Array>();
   const audit: { type: string; evidenceId: string; correlationId: string }[] = [];
   const removed: string[] = [];
-  const signedUploads: { location: string; maxBytes: number; expiresInSeconds: number }[] = [];
+  const signedUploads: { location: string; maxBytes: number; expiresAt: string }[] = [];
   let tick = 0;
   const now = () => new Date(Date.UTC(2026, 9, 16, 15, 0, tick++)).toISOString();
   const fail = { reserve: false, accept: false, download: false, append: false, signedUpload: false };
@@ -60,6 +60,7 @@ export function createEvidenceDoubles(options: { documents: Record<string, strin
         declaredEventDate: input.declaredEventDate,
         uploadedAt: now(),
         acceptedAt: null,
+        uploadExpiresAt: "2026-10-16T15:02:00.000Z",
       };
       evidences.set(evidence.evidenceId, evidence);
       idempotency.set(key, { fingerprint: input.idempotency.fingerprint, evidenceId: evidence.evidenceId });
@@ -102,10 +103,10 @@ export function createEvidenceDoubles(options: { documents: Record<string, strin
   };
 
   const storage: EvidenceStorage = {
-    async createSignedUpload(location, opts) {
+    async authorizeDirectUpload(location, opts) {
       if (fail.signedUpload) throw new Error("storage caído");
-      signedUploads.push({ location, maxBytes: opts.maxBytes, expiresInSeconds: opts.expiresInSeconds });
-      return { url: `https://storage.invalid/upload/${location}`, token: "permiso-ficticio", expiresAt: now() };
+      signedUploads.push({ location, maxBytes: opts.maxBytes, expiresAt: opts.expiresAt });
+      return { transport: "authenticated", bucket: "evidences-private", objectPath: location, contentType: opts.contentType, maxBytes: opts.maxBytes, expiresAt: opts.expiresAt };
     },
     async download(location) {
       if (fail.download) throw new Error("storage caído");

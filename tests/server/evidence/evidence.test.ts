@@ -85,7 +85,8 @@ describe("Carga privada en dos pasos (MVP-042)", () => {
     expect(reserved.ok).toBe(true);
     if (!reserved.ok) return;
     expect(reserved.value.upload).not.toBeNull();
-    expect(ctx.signedUploads).toEqual([{ location: `${DOC}/obj-1`, maxBytes: bytes.byteLength, expiresInSeconds: UPLOAD_PERMIT_SECONDS }]);
+    expect(UPLOAD_PERMIT_SECONDS).toBe(120);
+    expect(ctx.signedUploads).toEqual([{ location: `${DOC}/obj-1`, maxBytes: bytes.byteLength, expiresAt: reserved.value.evidence.uploadExpiresAt }]);
     expect(JSON.stringify(reserved.value.evidence)).not.toContain("obj-1");
 
     ctx.upload(`${DOC}/obj-1`, bytes);
@@ -266,9 +267,10 @@ describe("Carga privada en dos pasos (MVP-042)", () => {
 });
 
 describe("Aislamiento del módulo (MVP-042)", () => {
-  it("el código de evidencias no importa Supabase, proveedores de IA ni dobles", () => {
+  it("los servicios puros de evidencias no importan Supabase, proveedores de IA ni dobles", () => {
     const dir = path.resolve(import.meta.dirname, "../../../src/lib/documents/evidence");
-    for (const file of readdirSync(dir)) {
+    expect(readdirSync(dir)).toEqual(expect.arrayContaining(["inspect.ts", "ports.ts", "service.ts"]));
+    for (const file of ["inspect.ts", "ports.ts", "service.ts"]) {
       const imports = readFileSync(path.join(dir, file), "utf8")
         .split(/\r?\n/)
         .filter((l) => l.startsWith("import "));

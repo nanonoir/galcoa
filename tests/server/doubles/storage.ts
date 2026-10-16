@@ -12,7 +12,7 @@ import type { TestClock } from "../support/clock";
  * que el servicio llegue a aceptar).
  */
 
-export type StorageOperation = "createSignedUpload" | "download" | "remove" | "createSignedRead";
+export type StorageOperation = "authorizeDirectUpload" | "download" | "remove" | "createSignedRead";
 
 export type InMemoryEvidenceStorage = EvidenceStorage & {
   /** Subida directa del cliente al objeto (fuera del puerto). */
@@ -44,12 +44,11 @@ export function createInMemoryEvidenceStorage(clock?: { now(): Date } | TestCloc
     has: (privateLocation) => objects.has(privateLocation),
     failNext: (operation, error) => void pendingFailures.set(operation, error),
 
-    async createSignedUpload(privateLocation, options) {
-      enter("createSignedUpload", privateLocation);
+    async authorizeDirectUpload(privateLocation, options) {
+      enter("authorizeDirectUpload", privateLocation);
       return {
-        url: `https://storage.invalid/upload/${encodeURIComponent(privateLocation)}`,
-        token: `token-${calls.length}`,
-        expiresAt: new Date(now().getTime() + options.expiresInSeconds * 1000).toISOString(),
+        transport: "authenticated", bucket: "evidences-private", objectPath: privateLocation,
+        contentType: options.contentType, maxBytes: options.maxBytes, expiresAt: options.expiresAt,
       };
     },
     async download(privateLocation) {
