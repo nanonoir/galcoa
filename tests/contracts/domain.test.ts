@@ -257,6 +257,16 @@ describe("MVP-021 confirmación", () => {
     expect(ConfirmationCommandSchema.safeParse(value).success).toBe(false);
   });
 
+  it.each([
+    ["confirmar", thirdConfirm],
+    ["rechazar", thirdReject],
+  ])("nombre de 200 puntos de código pasa y 201 falla al %s", (_n, base) => {
+    expect(ConfirmationCommandSchema.safeParse({ ...base, declaredName: "ñ".repeat(200) }).success).toBe(true);
+    expect(ConfirmationCommandSchema.safeParse({ ...base, declaredName: "ñ".repeat(201) }).success).toBe(false);
+    expect(ConfirmationCommandSchema.safeParse({ ...base, declaredName: "😀".repeat(200) }).success).toBe(true);
+    expect(ConfirmationCommandSchema.safeParse({ ...base, declaredName: "😀".repeat(201) }).success).toBe(false);
+  });
+
   const result = {
     schemaVersion: 1, responseId: "p1", revisionId: "r1", snapshotId: "s1", snapshotHash: H("a"),
     respondedAt: T, replayed: false, confirmationStatus: "parcial",

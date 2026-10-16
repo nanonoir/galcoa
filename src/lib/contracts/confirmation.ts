@@ -24,7 +24,14 @@ const ReviewTargetShape = {
   idempotencyKey: IdempotencyKeySchema,
 };
 
-const declaredName = z.string().trim().min(1);
+/** Nombre autodeclarado: no vacío tras `trim`, máximo 200 puntos de código (decisión técnica F1). */
+export const DeclaredNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine((value) => Array.from(value).length <= 200, "Máximo 200 caracteres");
+
+const declaredName = DeclaredNameSchema;
 
 const confirmShape = { decision: z.literal("confirmar"), checkboxChecked: z.literal(true) };
 const rejectShape = {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { IdSchema, InstantSchema, SchemaVersionSchema, Sha256HexSchema } from "./common";
+import { DeclaredNameSchema } from "./confirmation";
 import { HcsStatusSchema } from "./document";
 import { ThirdPartyRoleSchema } from "./review";
 
@@ -15,7 +16,7 @@ export const ReceiptSchema = z.strictObject({
   responseId: IdSchema,
   role: z.enum(["autor", ...ThirdPartyRoleSchema.options]),
   /** `null` para el autor; nombre autodeclarado (no identidad verificada) para terceros. */
-  declaredName: z.string().min(1).nullable(),
+  declaredName: DeclaredNameSchema.nullable(),
   respondedAt: InstantSchema,
 });
 
