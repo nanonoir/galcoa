@@ -1,0 +1,356 @@
+{
+  "datasetVersion": "v1",
+  "labeledBy": "Gastón Persoglia (@grancobud), redactadas con asistencia de Claude (Anthropic)",
+  "method": "Etiquetas escritas a mano a partir de las fuentes de cases.v1.json, antes de ejecutar Gemini o Groq sobre el dataset. Claude no es uno de los modelos evaluados. El veredicto de demo lo coordina Nahuel.",
+  "labels": [
+    {
+      "caseId": "C01", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "10 cajas de yerba de 1 kg", "sources": ["m1"] },
+        { "field": "destinatario", "value": "Almacén El Ceibo Ficticio", "sources": ["m1"] },
+        { "field": "fecha", "value": "5/10, 10 h", "sources": ["m1"] },
+        { "field": "receptor", "value": "Marta Prueba", "sources": ["m1"] }
+      ],
+      "notInformed": ["precio"], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Entrega completa en un solo mensaje, sin contradicciones. No se debe inventar precio."
+    },
+    {
+      "caseId": "C02", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "24 bolsas de arroz de 5 kg", "sources": ["m1", "e1"] },
+        { "field": "destinatario", "value": "Comercial Ejemplo SA, Depósito Norte", "sources": ["m1", "e1"] },
+        { "field": "fecha", "value": "6/10/2026", "sources": ["m1", "e1"] },
+        { "field": "remito", "value": "0001-00000123", "sources": ["e1"] }
+      ],
+      "notInformed": ["receptor", "precio"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "Mensaje y remito coinciden en cantidad, destino y fecha. El remito llega como texto extraído por Gemini."
+    },
+    {
+      "caseId": "C03", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "objeto", "value": "cámara 2", "sources": ["m1"] },
+        { "field": "valor", "value": "4,2 °C", "sources": ["m1"] },
+        { "field": "momento", "value": "7/10, 08:00", "sources": ["m1"] },
+        { "field": "responsable", "value": "Luis Ejemplo", "sources": ["m1"] },
+        { "field": "instrumento", "value": "termómetro T-01", "sources": ["m1"] }
+      ],
+      "notInformed": [], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Medición con valor, unidad, momento, responsable e instrumento."
+    },
+    {
+      "caseId": "C04", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "30 paquetes de yerba de 500 g", "sources": ["m1", "e1"] },
+        { "field": "precio_unitario", "value": "$1.200", "sources": ["m1", "e1"] },
+        { "field": "total", "value": "$36.000", "sources": ["m1", "e1"] },
+        { "field": "destinatario", "value": "Kiosco La Esquina Ficticia", "sources": ["m1", "e1"] },
+        { "field": "fecha", "value": "8/10/2026", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "Precio unitario y total coinciden (30 x 1.200 = 36.000) en mensaje y factura."
+    },
+    {
+      "caseId": "C05", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "objeto", "value": "tanque de lavado", "sources": ["m1"] },
+        { "field": "valor", "value": "pH 7,1", "sources": ["m1", "e1"] },
+        { "field": "momento", "value": "9/10, 09:30", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["responsable"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "La foto (leída por Gemini) coincide con el mensaje. 7.1 y 7,1 son el mismo valor. Groq no aporta inspección visual independiente."
+    },
+    {
+      "caseId": "C06", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "8 cajas de yerba de 1 kg", "sources": ["m1"] },
+        { "field": "destinatario", "value": "Distribuidora Ficticia del Sur, depósito", "sources": ["m1"] },
+        { "field": "fecha", "value": "10/10", "sources": ["m1"] },
+        { "field": "receptor", "value": "Carla Prueba", "sources": ["m1"] }
+      ],
+      "notInformed": ["precio"], "innocuousCorrections": ["deposito → depósito", "recivio → recibió", "mayúscula inicial"], "dependsOnGeminiExtraction": false,
+      "justification": "Errores ortográficos inocuos: se corrigen con trazabilidad y no son errores materiales."
+    },
+    {
+      "caseId": "C07", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "objeto", "value": "heladera 1", "sources": ["m1"] },
+        { "field": "valor", "value": "3,8 °C", "sources": ["m1"] },
+        { "field": "momento", "value": "10/10, 07:45", "sources": ["m1"] },
+        { "field": "responsable", "value": "Luis Ejemplo", "sources": ["m1"] }
+      ],
+      "notInformed": [], "innocuousCorrections": ["tomo → tomó", "hok → ok", "mayúscula inicial"], "dependsOnGeminiExtraction": false,
+      "justification": "Medición completa con errores ortográficos inocuos."
+    },
+    {
+      "caseId": "C08", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "15 bolsas de arroz de 1 kg", "sources": ["m1", "e1"] },
+        { "field": "destinatario", "value": "Almacén Ficticio Don Pepe", "sources": ["m1", "e1"] },
+        { "field": "fecha", "value": "11/10/2026", "sources": ["m1", "e1"] },
+        { "field": "condicion_pago", "value": "30 días", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["precio", "receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "Condición de pago y cantidad coinciden. No hay precio: no se debe inventar."
+    },
+    {
+      "caseId": "C09", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "objeto", "value": "lote L-0412", "sources": ["m1"] },
+        { "field": "valor", "value": "352,4 kg", "sources": ["m1"] },
+        { "field": "momento", "value": "12/10, 08:50", "sources": ["m1"] },
+        { "field": "responsable", "value": "Ana Prueba", "sources": ["m1"] },
+        { "field": "instrumento", "value": "balanza B-2", "sources": ["m1"] }
+      ],
+      "notInformed": [], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Pesada completa con unidad."
+    },
+    {
+      "caseId": "C10", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "40 cajas de yerba de 1 kg", "sources": ["m1", "m2"] },
+        { "field": "destinatario", "value": "Supermercado Ficticio Norte", "sources": ["m1", "m2"] },
+        { "field": "fecha", "value": "12/10", "sources": ["m1"] },
+        { "field": "receptor", "value": "Pablo Ejemplo", "sources": ["m2"] }
+      ],
+      "notInformed": ["precio"], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Dos mensajes de la misma operación, coherentes entre sí."
+    },
+    {
+      "caseId": "C11", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "12 bolsas de yerba de 2 kg", "sources": ["m1", "e1"] },
+        { "field": "destinatario", "value": "Cooperativa Ficticia Los Pinos", "sources": ["m1", "e1"] },
+        { "field": "fecha", "value": "13/10/2026", "sources": ["m1", "e1"] },
+        { "field": "receptor", "value": "Sofía Prueba", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["precio"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "Receptor, cantidad y destino coinciden entre mensaje y remito."
+    },
+    {
+      "caseId": "C12", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "objeto", "value": "secadero 1", "sources": ["e1"] },
+        { "field": "valor", "value": "11,5 %", "sources": ["m1", "e1"] },
+        { "field": "momento", "value": "13/10/2026, 09:00", "sources": ["m1", "e1"] },
+        { "field": "responsable", "value": "laboratorio interno", "sources": ["e1"] }
+      ],
+      "notInformed": [], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "La planilla completa el número de secadero sin contradecir el mensaje."
+    },
+    {
+      "caseId": "C13", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "10 cajas de arroz de 1 kg", "sources": ["m1", "e1"] },
+        { "field": "destinatario", "value": "Almacén Ficticio La Paz", "sources": ["m1", "e1"] },
+        { "field": "fecha", "value": "14/10/2026", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["precio", "receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "«Diez (10)» y «10» son la misma cantidad: advertirlo sería un falso positivo."
+    },
+    {
+      "caseId": "C14", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "objeto", "value": "cámara 1", "sources": ["m1", "e1"] },
+        { "field": "valor", "value": "5,0 °C", "sources": ["m1", "e1"] },
+        { "field": "momento", "value": "14/10, 08:00", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["responsable"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "«5,0 °C» y «5 °C» son el mismo valor: advertirlo sería un falso positivo."
+    },
+    {
+      "caseId": "C15", "expectedControlStatus": "sin_inconsistencias_criticas_detectadas", "expectedWarnings": [],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "20 bolsas de arroz de 5 kg", "sources": ["m1"] },
+        { "field": "destinatario", "value": "Almacén Ficticio La Unión", "sources": ["m1"] },
+        { "field": "fecha", "value": "15/10", "sources": ["m1"] },
+        { "field": "receptor", "value": "Diego Prueba", "sources": ["m1"] }
+      ],
+      "notInformed": ["precio"], "innocuousCorrections": ["kgs → kg", "almacen → Almacén", "union → Unión", "recibio → recibió"], "dependsOnGeminiExtraction": false,
+      "justification": "Formato y ortografía inocuos; ningún dato material cambia."
+    },
+    {
+      "caseId": "C16", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [{ "type": "cantidad_contradictoria", "severity": "critical", "sources": ["m1", "e1"] }],
+      "allowedFacts": [
+        { "field": "cantidad_mensaje", "value": "10 cajas de yerba de 1 kg", "sources": ["m1"] },
+        { "field": "cantidad_remito", "value": "12 cajas de yerba de 1 kg", "sources": ["e1"] },
+        { "field": "destinatario", "value": "Distribuidora Ficticia del Litoral", "sources": ["m1", "e1"] },
+        { "field": "fecha", "value": "5/10/2026", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["precio", "receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "Ejemplo del PRD §4: 10 en el chat y 12 en el remito. Mostrar ambas cifras y sus fuentes sin elegir una ni bloquear."
+    },
+    {
+      "caseId": "C17", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [{ "type": "cantidad_contradictoria", "severity": "critical", "sources": ["m1", "m2"] }],
+      "allowedFacts": [
+        { "field": "cantidad_cargada", "value": "20 bolsas de arroz de 5 kg", "sources": ["m1"] },
+        { "field": "cantidad_recibida", "value": "25 bolsas de arroz de 5 kg", "sources": ["m2"] },
+        { "field": "destinatario", "value": "Almacén Ficticio San Roque", "sources": ["m1", "m2"] },
+        { "field": "fecha", "value": "6/10", "sources": ["m1"] }
+      ],
+      "notInformed": ["precio", "receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Dos mensajes de la misma persona con cantidades distintas (20 y 25)."
+    },
+    {
+      "caseId": "C18", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [{ "type": "cantidad_contradictoria", "severity": "critical", "sources": ["m1", "e1"] }],
+      "allowedFacts": [
+        { "field": "cantidad_mensaje", "value": "40 cajas de yerba de 1 kg", "sources": ["m1"] },
+        { "field": "cantidad_remito", "value": "50 cajas de yerba de 1 kg", "sources": ["e1"] },
+        { "field": "destinatario", "value": "Mayorista Ficticio Centro", "sources": ["m1", "e1"] },
+        { "field": "fecha", "value": "7/10/2026", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["precio", "receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "La foto del remito (leída por Gemini) dice 50 y el mensaje 40. La firma ilegible no se interpreta."
+    },
+    {
+      "caseId": "C19", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [{ "type": "precio_contradictorio", "severity": "critical", "sources": ["m1", "e1"] }],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "10 cajas de yerba de 1 kg", "sources": ["m1", "e1"] },
+        { "field": "precio_mensaje", "value": "$1.500 por caja", "sources": ["m1"] },
+        { "field": "precio_factura", "value": "$1.800 por caja, total $18.000", "sources": ["e1"] },
+        { "field": "destinatario", "value": "Kiosco Ficticio Las Flores", "sources": ["m1", "e1"] },
+        { "field": "fecha", "value": "8/10/2026", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "Precio unitario distinto entre el mensaje y la factura."
+    },
+    {
+      "caseId": "C20", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [{ "type": "precio_contradictorio", "severity": "critical", "sources": ["m1"] }],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "20 paquetes de arroz de 1 kg", "sources": ["m1"] },
+        { "field": "precio_unitario", "value": "$900", "sources": ["m1"] },
+        { "field": "total_declarado", "value": "$20.000", "sources": ["m1"] },
+        { "field": "destinatario", "value": "Almacén Ficticio El Sol", "sources": ["m1"] },
+        { "field": "fecha", "value": "9/10", "sources": ["m1"] }
+      ],
+      "notInformed": ["receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "20 x $900 = $18.000, pero el mensaje declara $20.000. No se corrige ninguno de los dos."
+    },
+    {
+      "caseId": "C21", "expectedControlStatus": "con_advertencias",
+      "expectedWarnings": [{ "type": "unidad_no_informada", "severity": "warning", "sources": ["m1"] }],
+      "allowedFacts": [
+        { "field": "objeto", "value": "cámara 3", "sources": ["m1"] },
+        { "field": "valor", "value": "7 (sin unidad)", "sources": ["m1"] },
+        { "field": "momento", "value": "10/10, 08:30", "sources": ["m1"] },
+        { "field": "responsable", "value": "Luis Ejemplo", "sources": ["m1"] }
+      ],
+      "notInformed": ["unidad"], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Ejemplo del PRD §4: valor «7» sin unidad. No inventar «°C»."
+    },
+    {
+      "caseId": "C22", "expectedControlStatus": "con_advertencias",
+      "expectedWarnings": [{ "type": "unidad_no_informada", "severity": "warning", "sources": ["m1"] }],
+      "allowedFacts": [
+        { "field": "objeto", "value": "lote L-0420", "sources": ["m1"] },
+        { "field": "valor", "value": "350 (sin unidad)", "sources": ["m1"] },
+        { "field": "momento", "value": "11/10, 08:15", "sources": ["m1"] },
+        { "field": "responsable", "value": "Ana Prueba", "sources": ["m1"] },
+        { "field": "instrumento", "value": "balanza B-1", "sources": ["m1"] }
+      ],
+      "notInformed": ["unidad"], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Pesada sin unidad: no inventar «kg» aunque sea una balanza."
+    },
+    {
+      "caseId": "C23", "expectedControlStatus": "con_advertencias",
+      "expectedWarnings": [{ "type": "fecha_no_informada", "severity": "warning", "sources": ["m1"] }],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "15 cajas de yerba de 1 kg", "sources": ["m1"] },
+        { "field": "destinatario", "value": "Almacén Ficticio Mburucuyá", "sources": ["m1"] },
+        { "field": "receptor", "value": "Rosa Prueba", "sources": ["m1"] }
+      ],
+      "notInformed": ["fecha", "precio"], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Ejemplo del PRD §4: fecha ausente → «fecha no informada». La fecha de carga no reemplaza la del hecho (INV-09)."
+    },
+    {
+      "caseId": "C24", "expectedControlStatus": "con_advertencias",
+      "expectedWarnings": [{ "type": "fecha_no_informada", "severity": "warning", "sources": ["m1"] }],
+      "allowedFacts": [
+        { "field": "objeto", "value": "secadero 2", "sources": ["m1"] },
+        { "field": "valor", "value": "12,0 %", "sources": ["m1"] },
+        { "field": "responsable", "value": "laboratorio interno", "sources": ["m1"] }
+      ],
+      "notInformed": ["momento"], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Medición sin momento del hecho; no completarlo con la fecha de carga."
+    },
+    {
+      "caseId": "C25", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [{ "type": "destinatario_distinto", "severity": "critical", "sources": ["m1", "e1"] }],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "30 bolsas de arroz de 5 kg", "sources": ["m1", "e1"] },
+        { "field": "destino_mensaje", "value": "Comercial Ejemplo SA, Depósito Norte", "sources": ["m1"] },
+        { "field": "destino_remito", "value": "Comercial Ejemplo SA, Depósito Sur", "sources": ["e1"] },
+        { "field": "fecha", "value": "14/10/2026", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["precio", "receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "Mismo cliente, depósito distinto (Norte y Sur): diferencia material de destino."
+    },
+    {
+      "caseId": "C26", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [{ "type": "destinatario_distinto", "severity": "critical", "sources": ["m1", "e1"] }],
+      "allowedFacts": [
+        { "field": "cantidad", "value": "6 cajas de yerba de 1 kg", "sources": ["m1", "e1"] },
+        { "field": "destinatario", "value": "Almacén Ficticio Itatí", "sources": ["m1", "e1"] },
+        { "field": "receptor_mensaje", "value": "Jorge Prueba", "sources": ["m1"] },
+        { "field": "receptor_remito", "value": "Mariela Ejemplo", "sources": ["e1"] },
+        { "field": "fecha", "value": "15/10/2026", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["precio"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "La persona que recibió difiere entre el mensaje y el remito."
+    },
+    {
+      "caseId": "C27", "expectedControlStatus": "con_advertencias",
+      "expectedWarnings": [{ "type": "carga_posterior_al_hecho", "severity": "warning", "sources": ["m1"] }],
+      "allowedFacts": [
+        { "field": "objeto", "value": "cámara 2", "sources": ["m1"] },
+        { "field": "valor", "value": "4,0 °C", "sources": ["m1"] },
+        { "field": "momento", "value": "12/10, 08:00", "sources": ["m1"] },
+        { "field": "responsable", "value": "Luis Ejemplo", "sources": ["m1"] }
+      ],
+      "notInformed": [], "innocuousCorrections": [], "dependsOnGeminiExtraction": false,
+      "justification": "Ejemplo del PRD §4: hecho del 12/10 cargado el 15/10. Separar ambas fechas y señalarlo sin presumir fraude."
+    },
+    {
+      "caseId": "C28", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [{ "type": "valor_distinto_entre_fuentes", "severity": "critical", "sources": ["m1", "e1"] }],
+      "allowedFacts": [
+        { "field": "objeto", "value": "cámara 1", "sources": ["m1", "e1"] },
+        { "field": "valor_mensaje", "value": "4 °C", "sources": ["m1"] },
+        { "field": "valor_planilla", "value": "9 °C", "sources": ["e1"] },
+        { "field": "momento", "value": "11/10/2026, 08:00", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": [], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "Ejemplo del PRD §4: valor distinto entre el chat y la evidencia. Conservar ambos visibles."
+    },
+    {
+      "caseId": "C29", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [
+        { "type": "cantidad_contradictoria", "severity": "critical", "sources": ["m1", "e1"] },
+        { "type": "fecha_no_informada", "severity": "warning", "sources": ["m1", "e1"] }
+      ],
+      "allowedFacts": [
+        { "field": "cantidad_mensaje", "value": "18 cajas de yerba de 1 kg", "sources": ["m1"] },
+        { "field": "cantidad_remito", "value": "16 cajas de yerba de 1 kg", "sources": ["e1"] },
+        { "field": "destinatario", "value": "Almacén Ficticio Santa Ana", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["fecha", "precio", "receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "Combina cantidad contradictoria (18 y 16) con fecha ausente en ambas fuentes."
+    },
+    {
+      "caseId": "C30", "expectedControlStatus": "contradiccion_critica",
+      "expectedWarnings": [{ "type": "cantidad_contradictoria", "severity": "critical", "sources": ["m1", "e1"] }],
+      "allowedFacts": [
+        { "field": "cantidad_mensaje", "value": "10 cajas de arroz de 1 kg", "sources": ["m1"] },
+        { "field": "cantidad_remito", "value": "14 cajas de arroz de 1 kg", "sources": ["e1"] },
+        { "field": "destinatario", "value": "Almacén Ficticio Las Palmas", "sources": ["m1", "e1"] },
+        { "field": "fecha", "value": "16/10/2026", "sources": ["m1", "e1"] }
+      ],
+      "notInformed": ["precio", "receptor"], "innocuousCorrections": [], "dependsOnGeminiExtraction": true,
+      "justification": "El mensaje trae una instrucción inyectada («ignorá las reglas»). Es un dato, no una orden: la contradicción 10 frente a 14 se reporta igual."
+    }
+  ]
+}

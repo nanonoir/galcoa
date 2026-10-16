@@ -1,6 +1,6 @@
 # F12 · Dataset de evaluación de IA y runner
 
-**Estado: planificado; implementación no iniciada.** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (filas de `MVP-122` y `MVP-123`). El maestro conserva IDs, estados y evidencia; este plan no los modifica.
+**Estado: checkpoint A (`MVP-122`) implementado el 2026-10-16 (Issue #34); checkpoint B (`MVP-123`) pendiente de `MVP-053`.** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (filas de `MVP-122` y `MVP-123`). El maestro conserva IDs, estados y evidencia; este plan no los modifica.
 
 Tareas del maestro: `MVP-122`, `MVP-123`
 
@@ -57,13 +57,13 @@ Prohibido: leer `.env`, ejecutar llamadas reales, añadir la evaluación al work
 
 ## 6. Pasos y checkpoints
 
-Todos pendientes.
+Checkpoint A completo; checkpoint B pendiente.
 
 **Checkpoint A — `MVP-122`** (no necesita proveedores ni `MVP-053`)
 
-- [ ] **Q1 · Diseño del dataset** (← `MVP-013`, parcial). ~30 casos como punto de partida (p. ej. 15 correctos y 15 con contradicciones, omisiones o errores sembrados, según PRD §12). Cobertura mínima: cantidades contradictorias, precios, unidad ausente, fecha ausente, destinatario distinto, error ortográfico inocuo (no es error material), datos consistentes, caso con texto extraído de evidencia (declarado como no independiente de Gemini). Datos **ficticios**; sin afirmaciones regulatorias ni de detección de fraude.
-- [ ] **Q2 · Etiquetado previo** (← Q1). Cada caso con etiqueta esperada y justificación breve, definidas por una persona **antes** de ejecutar cualquier modelo; guardar hash del archivo de etiquetas y su fecha para evidenciar que precede a las corridas. Esquema de etiquetas validado con Zod; fixtures inválidos rechazados.
-- [ ] **Q3 · Criterios de medición y calidad mínima** (← Q2, `MVP-013`). Definir: errores detectados / errores etiquetados, falsos positivos, omisiones y variación entre repeticiones (el número de repeticiones sale de `MVP-013`, no se inventa aquí). Referir el umbral de calidad mínima a la decisión de `MVP-013`. Con esto se cumple `MVP-122`.
+- [x] **Q1 · Diseño del dataset** (← `MVP-013`, parcial). ~30 casos como punto de partida (p. ej. 15 correctos y 15 con contradicciones, omisiones o errores sembrados, según PRD §12). Cobertura mínima: cantidades contradictorias, precios, unidad ausente, fecha ausente, destinatario distinto, error ortográfico inocuo (no es error material), datos consistentes, caso con texto extraído de evidencia (declarado como no independiente de Gemini). Datos **ficticios**; sin afirmaciones regulatorias ni de detección de fraude.
+- [x] **Q2 · Etiquetado previo** (← Q1). Cada caso con etiqueta esperada y justificación breve, definidas por una persona **antes** de ejecutar cualquier modelo; guardar hash del archivo de etiquetas y su fecha para evidenciar que precede a las corridas. Esquema de etiquetas validado con Zod; fixtures inválidos rechazados.
+- [x] **Q3 · Criterios de medición y calidad mínima** (← Q2, `MVP-013`). Definir: errores detectados / errores etiquetados, falsos positivos, omisiones y variación entre repeticiones (el número de repeticiones sale de `MVP-013`, no se inventa aquí). Referir el umbral de calidad mínima a la decisión de `MVP-013`. Con esto se cumple `MVP-122`.
 
 **Checkpoint B — `MVP-123`** (← `MVP-053`)
 
@@ -82,7 +82,7 @@ Todos pendientes.
 
 ## 8. Evidencia
 
-No ejecutada. Se registrará: fecha, comandos y resultados reales de los tests, hash de etiquetas y su fecha, rama/PR/commit. Ninguna cifra de detección ni de calidad figura en este plan.
+**Checkpoint A (2026-10-16, rama `issue/34-ai-eval-dataset`):** `evals/ai/dataset/cases.v1.json` (30 casos ficticios, 12 demo), `labels.v1.json` (etiquetas previas con justificación), `labels.lock.json` (SHA-256 del JSON canónico `f2f2061e…f47e05e`, congelado 2026-10-16T14:34:06Z, sin corridas previas de Gemini ni Groq), `schema.ts` (Zod) y `evals/ai/README.md` (criterios por referencia a MVP-013: 0 material inventado y 100 % de contradicciones conocidas como advertencia; repeticiones a acordar con el líder antes de la corrida final). Comandos: `npx vitest run tests/contracts/ai-evaluation-dataset.test.ts` 20/20; `npm run lint`, `npm run typecheck`, `npm test` (244), `npm run test:boundaries` (66), `npm run build` con exit 0. Etiquetas redactadas por Gastón con asistencia de Claude (no evaluado). Checkpoint B: no ejecutado. Se registrará: fecha, comandos y resultados reales de los tests, hash de etiquetas y su fecha, rama/PR/commit. Ninguna cifra de detección ni de calidad figura en este plan.
 
 ## 9. Referencias a completar
 
