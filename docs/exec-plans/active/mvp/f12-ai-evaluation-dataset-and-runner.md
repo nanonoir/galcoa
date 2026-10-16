@@ -1,6 +1,6 @@
 # F12 · Dataset de evaluación de IA y runner
 
-**Estado: checkpoint A (`MVP-122`) implementado el 2026-10-16 (Issue #34); checkpoint B (`MVP-123`) pendiente de `MVP-053`.** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (filas de `MVP-122` y `MVP-123`). El maestro conserva IDs, estados y evidencia; este plan no los modifica.
+**Estado: checkpoint A (`MVP-122`) implementado el 2026-10-16 (Issue #34); checkpoint B (`MVP-123`) implementado con dobles el 2026-10-16; falta el mecanismo de ejecución del líder.** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (filas de `MVP-122` y `MVP-123`). El maestro conserva IDs, estados y evidencia; este plan no los modifica.
 
 Tareas del maestro: `MVP-122`, `MVP-123`
 
@@ -57,7 +57,7 @@ Prohibido: leer `.env`, ejecutar llamadas reales, añadir la evaluación al work
 
 ## 6. Pasos y checkpoints
 
-Checkpoint A completo; checkpoint B pendiente.
+Checkpoint A completo; checkpoint B implementado (Q6 parcial: el script y el mecanismo `server-only` son del líder).
 
 **Checkpoint A — `MVP-122`** (no necesita proveedores ni `MVP-053`)
 
@@ -67,8 +67,8 @@ Checkpoint A completo; checkpoint B pendiente.
 
 **Checkpoint B — `MVP-123`** (← `MVP-053`)
 
-- [ ] **Q4 · Runner** (← Q3, `MVP-053`). Carga dataset, valida etiquetas, invoca el servicio real del Agente 2 solo con configuración de servidor tomada del proceso (ejecutada por el líder fuera del agente), y registra por corrida: modelos y versiones, versión de prompt, entradas por referencia, salida validada, momento. No incluye prompts completos en logs por defecto.
-- [ ] **Q5 · Cómputo de métricas** (← Q4). Detección, falsos positivos, omisiones y variación; salida tabular y JSON. Tests **deterministas con resultados sintéticos** que verifican el cálculo (no la calidad de ningún modelo). Si falta la configuración, el runner falla con error técnico explícito: nunca simula resultados.
+- [x] **Q4 · Runner** (← Q3, `MVP-053`). Carga dataset, valida etiquetas, invoca el servicio real del Agente 2 solo con configuración de servidor tomada del proceso (ejecutada por el líder fuera del agente), y registra por corrida: modelos y versiones, versión de prompt, entradas por referencia, salida validada, momento. No incluye prompts completos en logs por defecto.
+- [x] **Q5 · Cómputo de métricas** (← Q4). Detección, falsos positivos, omisiones y variación; salida tabular y JSON. Tests **deterministas con resultados sintéticos** que verifican el cálculo (no la calidad de ningún modelo). Si falta la configuración, el runner falla con error técnico explícito: nunca simula resultados.
 - [ ] **Q6 · Aislamiento de CI** (← Q5). Comprobar que el script no está en el workflow ni en `npm test`, y que un PR no lo dispara; un test de configuración lo verifica. Mecanismo de ejecución (script Node vs proyecto Vitest dedicado) con módulos `server-only`: decisión local abierta del líder.
 
 ## 7. Validación
@@ -82,7 +82,7 @@ Checkpoint A completo; checkpoint B pendiente.
 
 ## 8. Evidencia
 
-**Checkpoint A (2026-10-16, rama `issue/34-ai-eval-dataset`):** `evals/ai/dataset/cases.v1.json` (30 casos ficticios, 12 demo), `labels.v1.json` (etiquetas previas con justificación), `labels.lock.json` (SHA-256 del JSON canónico `f2f2061e…f47e05e`, congelado 2026-10-16T14:34:06Z, sin corridas previas de Gemini ni Groq), `schema.ts` (Zod) y `evals/ai/README.md` (criterios por referencia a MVP-013: 0 material inventado y 100 % de contradicciones conocidas como advertencia; repeticiones a acordar con el líder antes de la corrida final). Comandos: `npx vitest run tests/contracts/ai-evaluation-dataset.test.ts` 20/20; `npm run lint`, `npm run typecheck`, `npm test` (244), `npm run test:boundaries` (66), `npm run build` con exit 0. Etiquetas redactadas por Gastón con asistencia de Claude (no evaluado). Checkpoint B: no ejecutado. Se registrará: fecha, comandos y resultados reales de los tests, hash de etiquetas y su fecha, rama/PR/commit. Ninguna cifra de detección ni de calidad figura en este plan.
+**Checkpoint A (2026-10-16, rama `issue/34-ai-eval-dataset`):** `evals/ai/dataset/cases.v1.json` (30 casos ficticios, 12 demo), `labels.v1.json` (etiquetas previas con justificación), `labels.lock.json` (SHA-256 del JSON canónico `f2f2061e…f47e05e`, congelado 2026-10-16T14:34:06Z, sin corridas previas de Gemini ni Groq), `schema.ts` (Zod) y `evals/ai/README.md` (criterios por referencia a MVP-013: 0 material inventado y 100 % de contradicciones conocidas como advertencia; repeticiones a acordar con el líder antes de la corrida final). Comandos: `npx vitest run tests/contracts/ai-evaluation-dataset.test.ts` 20/20; `npm run lint`, `npm run typecheck`, `npm test` (244), `npm run test:boundaries` (66), `npm run build` con exit 0. Etiquetas redactadas por Gastón con asistencia de Claude (no evaluado). **Checkpoint B (2026-10-16, rama `issue/34-ai-eval-runner`):** `evals/ai/runner.ts`, `metrics.ts`, `report.ts` y `live.ts` (habilitación `GALCOA_EVAL_LIVE=1` más configuración de servidor; sin ella falla antes de crear clientes). El runner pasa cada caso por los servicios reales de MVP-051 y MVP-053 sobre puertos en memoria, con un solo reintento transitorio y repeticiones explícitas. Pruebas: `tests/contracts/ai-evaluation-runner.test.ts` 21/21 (cálculo con corridas sintéticas, runner con dobles de proveedor, habilitación y aislamiento de CI); `npm run lint`, `npm run typecheck`, `npm test` (386), `npm run test:boundaries` (67), `npm run build` con exit 0. Sin llamadas reales ni cifras. Pendiente del líder (Q6): mecanismo `server-only` y script `eval:ai`, propuesta en `evals/ai/README.md`. Para la corrida final se registrará: fecha, comandos y resultados reales de los tests, hash de etiquetas y su fecha, rama/PR/commit. Ninguna cifra de detección ni de calidad figura en este plan.
 
 ## 9. Referencias a completar
 
