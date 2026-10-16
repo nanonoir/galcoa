@@ -251,6 +251,67 @@ La fila de cada ID se actualiza en el maestro solo tras integrar y repetir check
 
 ## 10. Pendientes y solicitudes
 
+### Checkpoint transporte interno #10 (en ejecución)
+
+Decisión técnica local en data-transactions §7: login mínimo aditivo y adapter
+pg server-only ligado al usuario verificado, solo agente/auditoría F4. Pasos:
+migración sin password, allowlist parametrizada, composición opcional, barreras
+y unitarios; después, con reserva explícita, LOGIN real y catálogo desde cero.
+Sin operaciones cloud, sin cambiar contratos HTTP ni store, sin cerrar
+MVP-040/041/044. Provisión remota y revisión independiente quedan pendientes.
+
+Evidencia de este checkpoint (2026-10-16): `npm ci` y altas acotadas de
+`pg`/`@types/pg`; unitarios de persistencia **32/32** (17 del transporte),
+barreras **69/69**, `npm run typecheck`, ESLint focalizado y build Next: exit 0.
+Sin Docker ni llamadas cloud. npm informa nueve vulnerabilidades altas también
+presentes antes del alta; no se ejecutó audit fix ni se actualizaron otros paquetes.
+Suite real preparada (NO ejecutada, espera reserva del flujo 32):
+`npx.cmd vitest run --config tests/server/persistence/executor/vitest.local.config.ts`.
+Reutiliza setup RLS y reset de las **seis** migraciones, contraseña aleatoria
+efímera en memoria, LOGIN sin SET ROLE, catálogo, replay y rollback forzado.
+Después de esa prueba: repetir catálogo RLS con `RLS_SKIP_RESET=1`, revisar
+independientemente rol/transporte y recién evaluar aceptación. No hay evidencia
+de LOGIN real ni provisión remota todavía; PR sin merge/cierre de IDs.
+
+**Reserva local concedida, evidencia posterior (2026-10-16, PR #80):**
+primera ejecución de la suite executor con reset: **5/5**, aplicando desde cero
+las seis migraciones (PostgreSQL 17). Tras ampliar negativos, repetición sin
+reset: **6/6**. LOGIN real por TCP con password criptográfico efímero generado
+en memoria; `current_user = session_user = galcoa_exec_login`, sin SET ROLE
+para establecer la conexión. El mismo adapter pg, ligado a usuario comprobado
+con Auth local, escribe agente/auditoría y reproduce idempotencia. Fallo forzado
+de auditoría revierte mensaje, secuencia e idempotencia. Catálogo confirma
+membresía única, INHERIT true/SET false, ejecutor NOLOGIN, sin propiedad,
+SELECT/DML general ni CREATE de esquema; ningún rol API alcanza esos roles.
+Negativos: password erróneo, SET ROLE, helper privado, RPC no enumerada,
+actor ajeno y llamada de agente desde authenticated rechazados.
+Sobre esa misma base sin reset: RLS **119/119**, persistencia F4 **8/8**,
+factories HTTP con Auth/RPC locales **2/2**. Typecheck y ESLint del test
+ampliado: exit 0. Credenciales solo transitorias en proceso; password del rol
+retirado en teardown. Pila galcoa propia detenida; solo siguen los dos
+contenedores entrenar ajenos, intactos. Reserva liberada.
+No acredita Supavisor/TLS remotos ni provisión cloud. Revisión independiente
+pendiente antes de merge; no se cierran MVP-040/041/044 ni el pendiente global.
+
+**Delta de revisión PR #80 (2026-10-16):** revisión independiente inicial
+PASS WITH FINDINGS; se corrige el warning de un pool por request. Ahora hay
+un owner privado por proceso con pool único perezoso `max:2`; wrappers ligados
+a cada actor sin cierre compartido. Tests tienen owners propios y teardown
+propio. Rotación de configuración requiere reinicio, falla cerrada sin acumular
+pools. API `createExecutorRpc(userId)` compatible; el wrapper ya no tiene
+`close()`: los consumidores de tests deben cerrar su factory/owner propio.
+Solo se conservan las dos RPC F4 de esta rama.
+Tras merge de `origin/develop` (`c865be2`, PR #78/#79): focal servidor
+persistencia/HTTP **57/57** (suite executor **21**, incluye ocho contextos A/B
+concurrentes con un solo pool y negativos de actor/RPC, rotación y ownership
+de close); barreras **69/69**, typecheck, ESLint focalizado y build: exit 0.
+`npm audit --omit=dev`: **0 vulnerabilidades**. Sin actualización de paquetes.
+No se inició ni modificó Docker/DB ni se repitieron pruebas reales durante
+este delta: la evidencia LOGIN/RLS anterior corresponde al commit anterior,
+no se presenta como reejecutada con pool compartido. Ver §7 del diseño para
+precondición de rol preexistente y límite de privilegios PUBLIC de base.
+Pendiente revisión independiente del delta antes de merge; sin acceso cloud.
+
 **Referencias** (documentos objetivo ya disponibles; los parámetros operativos siguen pendientes de F1):
 
 - `RQ-B1` — [sources-and-ai](../../../specs/sources-and-ai.md): fuentes admitidas y límite de longitud de mensaje; el valor aprobado es de `MVP-013` (§7 de la spec, propuesto, no aprobado).

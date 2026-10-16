@@ -4,6 +4,8 @@
 
 /** Paquetes de servidor/proveedores que nunca deben alcanzar presentación, contratos ni preview. */
 export const SERVER_PACKAGES = [
+  "pg",
+  "pg/*",
   "@supabase/*",
   "@hiero-ledger/*",
   "@hashgraph/*",
