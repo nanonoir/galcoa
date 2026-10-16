@@ -24,6 +24,8 @@ describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
       "20261016000400",
       "20261016001000",
       "20261016001100",
+      "20261016001200",
+      "20261016001201",
       "20261016002000",
     ]);
   });
@@ -92,11 +94,7 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
       await column(
         `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' order by p.proname;`,
       ),
-    ).toEqual([
-      "append_agent_message", "append_document_audit", "append_message", "confirm_as_author", "create_document", "freeze_revision",
-      "get_active_revision", "get_document", "get_freeze_source", "get_revision_state", "hit_rate_limit", "issue_invitation",
-      "list_documents", "list_messages", "read_invitation", "respond_invitation", "revoke_invitation",
-    ]);
+    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "confirm_as_author", "create_document", "discard_evidence_reservation", "freeze_revision", "get_active_revision", "get_document", "get_evidence", "get_freeze_source", "get_revision_state", "hit_rate_limit", "issue_invitation", "list_documents", "list_evidence_extractions", "list_evidences", "list_messages", "read_invitation", "reserve_evidence", "respond_invitation", "revoke_invitation"]);
   });
 
   it("toda función propia fija `search_path` y ninguna es ejecutable por PUBLIC ni anon", async () => {

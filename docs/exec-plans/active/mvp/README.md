@@ -2,9 +2,9 @@
 
 Índice por plan de los ExecPlans preparados por adelantado, derivados del [plan maestro](../mvp-master-plan.md). **No es un ExecPlan** ni cuenta como tal. No guarda estados: el estado, las dependencias y la evidencia de cada tarea viven solo en el maestro. Que un plan exista no autoriza ejecutarlo; antes deben cumplirse sus dependencias y autorizaciones.
 
-Cobertura: **36 planes** preparados (27 activos bajo este directorio + 9 completados y archivados en [`completed/`](../../completed/)). Algunos planes activos contienen checkpoints ya completados y otros pendientes: el estado por ID vive únicamente en el maestro. Los índices y este catálogo no son ExecPlans. Cada plan declara sus IDs en la línea `Tareas del maestro:`.
+Cobertura: **36 planes** preparados (26 activos bajo este directorio + 10 completados y archivados en [`completed/`](../../completed/)). Algunos planes activos contienen checkpoints ya completados y otros pendientes: el estado por ID vive únicamente en el maestro. Los índices y este catálogo no son ExecPlans. Cada plan declara sus IDs en la línea `Tareas del maestro:`.
 
-Grupos: A = F0–F3 (4 activos + 7 archivados), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (7 activos + 2 archivados).
+Grupos: A = F0–F3 (4 activos + 7 archivados), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (6 activos + 3 archivados).
 
 | Plan | Grupo | IDs del maestro | Título |
 | --- | --- | --- | --- |
@@ -36,7 +36,7 @@ Grupos: A = F0–F3 (4 activos + 7 archivados), B = F4–F6 (8 activos), C = F7�
 | [f09-01-hedera-hcs-testnet](f09-01-hedera-hcs-testnet.md) | C | MVP-090…093 | Hedera HCS Testnet: cliente, sello, reconciliación y Mirror Node |
 | [f10-01-verificador-publico](f10-01-verificador-publico.md) | C | MVP-100…101 | Verificador público |
 | [f11-frontend-delegation-package](../../completed/f11-frontend-delegation-package.md) | D | MVP-110 | Paquete de delegación frontend (completado y archivado) |
-| [f11-frontend-presentation-tickets](f11-frontend-presentation-tickets.md) | D | MVP-111…115 | Presentación delegable: dashboard, snapshot, historial, landing y formularios de acceso |
+| [f11-frontend-presentation-tickets](../../completed/f11-frontend-presentation-tickets.md) | D | MVP-111…115 | Presentación delegable: dashboard, snapshot, historial, landing y formularios de acceso (completado y archivado) |
 | [f11-product-ui-integration-and-review](f11-product-ui-integration-and-review.md) | D | MVP-116, MVP-118 | Integración de dashboard, historial y documento; revisión transversal de accesibilidad y responsive |
 | [f12-ai-evaluation-dataset-and-runner](f12-ai-evaluation-dataset-and-runner.md) | D | MVP-122…123 | Dataset de evaluación de IA y runner |
 | [f12-critical-flow-matrix-and-e2e](f12-critical-flow-matrix-and-e2e.md) | D | MVP-121 | Matriz del PRD §12 y E2E del flujo crítico |

@@ -63,7 +63,7 @@ describe("Storage en memoria contra el puerto real", () => {
 
   it("subida pendiente, objeto presente, lectura y borrado", async () => {
     const storage = createInMemoryEvidenceStorage(createTestClock());
-    const upload = await storage.createSignedUpload(location, { contentType: "application/pdf", maxBytes: 10, expiresInSeconds: 60 });
+    const upload = await storage.authorizeDirectUpload(location, { contentType: "application/pdf", maxBytes: 10, expiresAt: "2026-01-15T12:01:00.000Z" });
     expect(upload.expiresAt).toBe("2026-01-15T12:01:00.000Z");
     expect(await storage.download(location)).toBeNull();
 

@@ -1,6 +1,6 @@
 # Ficha de delegación: presentación del historial de versiones (MVP-113)
 
-**Estado: contrato y escenarios disponibles (probados con Vitest); borrador local sin Issue ni asignación.** Pendientes: referencia visual y publicación del Issue (ver «Huecos»). Reglas comunes: [dashboard-presentation](dashboard-presentation.md), [frontend-delivery](../specs/frontend-delivery.md) (§2–§5, F-03, F-06, F-07) y [plan de tickets](../exec-plans/active/mvp/f11-frontend-presentation-tickets.md).
+**Estado: presentación completada por Facu e integrada por PR [#60](https://github.com/nanonoir/galcoa/pull/60).** Issue #28 aún abierta al consultar: cierre operativo pendiente, no implementación. Aceptación verificada; evidencia y límites en el [plan cerrado](../exec-plans/completed/f11-frontend-presentation-tickets.md#resultado-de-implementación). La lista conserva criterios del ticket, no trabajo pendiente. Reglas: [dashboard-presentation](dashboard-presentation.md), [frontend-delivery](../specs/frontend-delivery.md) (§2–§5, F-03, F-06, F-07).
 
 ## Objetivo
 
@@ -11,7 +11,7 @@ Referencias: PRD REQ-09, REQ-10 (estados), INV-05, INV-18, §5, §10; [SH-01, SH
 ## Contrato y alcance
 
 - Props (existen): `VersionHistoryViewProps { state; selectedVersionId: string | null; onSelect(versionId); onRetry }` en `src/features/documents/contracts/version-history-view.ts`. Estado: `VersionHistoryViewState` en `src/lib/contracts/version-history-view.ts` (`loading` · `error{message}` · `ready{versions: VersionHistoryItem[]}`; item: `versionId`, `number`, `previousVersionId`, `revisionId`, `snapshotId`, `finalizedAt`, `hcsStatus`). Sin PDF, manifiesto ni hashes. Historial vacío = `ready` con `versions: []`. Un sello `fallido` se lee como sello pendiente, no como finalización fallida.
-- Escenarios (existen): `versionHistoryScenarios` en `src/mocks/documents.ts` — `loading`, `error`, `empty`, `single-registered`, `v1-registered-v2-pending`, `seal-failed` (cada uno con su `selectedVersionId`). Preview: «Historial (placeholder, MVP-113)».
+- Escenarios: `versionHistoryScenarios` en `src/mocks/documents.ts` — `loading`, `error`, `empty`, `single-registered`, `v1-registered-v2-pending`, `seal-failed` (cada uno con su `selectedVersionId`). Preview real: «Historial (MVP-113)».
 
 **Allowlist propuesta (a confirmar en el Issue):**
 
@@ -32,12 +32,9 @@ Sin barrel. Disjunto de `MVP-112`. **Prohibido:** igual que [snapshot-presentati
 - [ ] Tests de escenarios, selección y negativos.
 - [ ] Capturas a 360 y 1280 px: varias versiones, sello pendiente, registrado, vacío, error.
 
-## Huecos
+## Resolución de preparación
 
-1. Contrato y escenarios ya existen (ver arriba). El líder conectará la entrada del preview a tu componente al integrarlo.
-2. Cierre formal de `MVP-110` y del Issue: pendiente.
-3. Referencia visual no fijada.
-4. Asignación: ver [índice](README.md).
+MVP-110 completada; wireframe técnico aceptado y ticket asignado a Facu. La excepción autorizada permitió editar exclusivamente import/entrada propia del registro, su prueba y casos E2E, con un único escritor. Historial real conectado al preview; no acredita persistencia ni MVP-116.
 
 ## Validación y entrega
 

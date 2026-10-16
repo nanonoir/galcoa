@@ -252,8 +252,8 @@ describe("MVP-044 · auditoría solo-agregar", () => {
     correlationId: "corr-1",
   } as const;
 
-  it("catálogo cerrado inicial: document.created y message.recorded", () => {
-    expect([...AUDIT_EVENT_TYPES].sort()).toEqual(["document.created", "message.recorded"]);
+  it("catálogo cerrado: documentos, mensajes, evidencias y extracciones", () => {
+    expect([...AUDIT_EVENT_TYPES].sort()).toEqual(["document.created", "evidence.accepted", "extraction.recorded", "message.recorded"]);
   });
 
   it.each([
