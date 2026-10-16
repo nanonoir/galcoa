@@ -20,6 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:boundaries": "vitest run --project boundaries",
+    "test:rls": "vitest run --config vitest.rls.config.ts",
+    "test:server:local": "vitest run --config vitest.server-local.config.ts",
     "test:e2e": "playwright test",
     "preview:ui": "vite --config preview/vite.config.ts"
   },

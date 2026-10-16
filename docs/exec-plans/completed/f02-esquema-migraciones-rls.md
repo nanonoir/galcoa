@@ -1,20 +1,20 @@
 # ExecPlan F2 — Esquema SQL, migraciones y RLS/Storage con prueba de dos usuarios
 
-**Estado: planificado; no implementado.** No cambia estados del [maestro](../mvp-master-plan.md).
+**Estado: implementado (MVP-022/023/024), rama `issue/5-esquema-rls`.** Estados en el [maestro](../active/mvp-master-plan.md).
 
 Tareas del maestro: `MVP-022`, `MVP-023`, `MVP-024`
 
-Requisitos PRD: REQ-17 y REQ-01 (aislamiento), REQ-15 (auditoría); [§8 y §12.1](../../GALCOA-PRD-v1.4.md); INV-05, INV-08, INV-11–14, INV-18.
+Requisitos PRD: REQ-17 y REQ-01 (aislamiento), REQ-15 (auditoría); [§8 y §12.1](../GALCOA-PRD-v1.4.md); INV-05, INV-08, INV-11–14, INV-18.
 
-Referencias: [fundaciones SH-01, SH-04, SH-05, SH-07, SH-09](../../../design/mvp-shared-foundations.md) · [arquitectura](../../../architecture.md) · [desarrollo](../../../development.md) · [plan de contratos](../../completed/f02-contratos-dominio.md) · [decisiones de confirmación y sello](../../completed/f01-decisiones-confirmacion-y-sello.md).
+Referencias: [fundaciones SH-01, SH-04, SH-05, SH-07, SH-09](../../design/mvp-shared-foundations.md) · [arquitectura](../../architecture.md) · [desarrollo](../../development.md) · [plan de contratos](f02-contratos-dominio.md) · [decisiones de confirmación y sello](f01-decisiones-confirmacion-y-sello.md).
 
 ## Precondiciones y checkpoints
 
 - `MVP-022` depende en el maestro de `MVP-021`, `MVP-011` y `MVP-012`: con `MVP-021` integrada se puede **bosquejar** el SQL de C1, pero empezar la implementación de `MVP-022`/`MVP-023` exige además `MVP-011` y `MVP-012` documentadas; no se marcan ni se inician como ejecución antes. `MVP-022` → `MVP-023` → `MVP-024` en cadena.
-- Parte del diseño **RQ-A1** ([data-transactions](../../../design/data-transactions.md), ya disponible; ver abajo) antes de `MVP-022`: define tablas, locks, permisos de RPC, staging y leases.
+- Parte del diseño **RQ-A1** ([data-transactions](../../design/data-transactions.md), ya disponible; ver abajo) antes de `MVP-022`: define tablas, locks, permisos de RPC, staging y leases.
 - Checkpoints por migración (aditivos): **C1 núcleo** (`documents`, `messages`, `evidences`/extracciones, `drafts`, `verification_reports`, `audit_events`, claves de idempotencia) se bosqueja con `MVP-021` + RQ-A1, y su implementación espera a `MVP-011/012`; **C2 revisión** (revisiones, snapshots, solicitudes y respuestas) usa el registro de `MVP-011` para columnas de capacidad; **C3 versión y sello** (versiones, finalización durable/staging, `hedera_registrations` e intentos) usa `MVP-012`.
 - Si `MVP-011` o `MVP-012` no están documentadas, no se inicia la implementación de `MVP-022/023` (solo el bosquejo de C1 y el diseño RQ-A1). Una vez ambas existan, las migraciones siguen siendo aditivas por checkpoint y las tres tareas no pasan a `completada` hasta cubrir C1–C3. Las RPC y consumidores posteriores traen su propia migración; no se concentra DDL grande en este plan.
-- Todo es local: Supabase **local** con credenciales efímeras de la propia instancia; ningún proyecto remoto y ninguna credencial privada (el remoto es [`MVP-026`](f02-entorno-supabase-remoto.md)).
+- Todo es local: Supabase **local** con credenciales efímeras de la propia instancia; ningún proyecto remoto y ninguna credencial privada (el remoto es [`MVP-026`](../active/mvp/f02-entorno-supabase-remoto.md)).
 
 ## Objetivo y aceptación
 
@@ -39,7 +39,7 @@ Referencias: [fundaciones SH-01, SH-04, SH-05, SH-07, SH-09](../../../design/mvp
 ## Pasos
 
 1. Comprobar que la CLI `supabase` (devDependency) y su runtime de contenedores están disponibles y confirmar sus subcomandos con la ayuda de la versión instalada; no asumir comandos.
-2. Leer RQ-A1 ([data-transactions](../../../design/data-transactions.md)) y revisar contra los contratos de `MVP-021`.
+2. Leer RQ-A1 ([data-transactions](../../design/data-transactions.md)) y revisar contra los contratos de `MVP-021`.
 3. `MVP-022` (con `MVP-021`, `MVP-011` y `MVP-012` disponibles): cerrar el diseño por checkpoints C1–C3 sin copiar el DDL completo en el documento.
 4. `MVP-023` C1 (solo tras `MVP-022`, que exige `MVP-011/012`): inicializar `supabase/` y escribir las migraciones del núcleo; probar aplicar desde cero y reaplicar tras reset.
 5. `MVP-023` C2/C3 cuando cumplan precondiciones; añadir triggers de inmutabilidad y pruebas negativas.
@@ -70,23 +70,31 @@ Postgres/Supabase local real (SH-09): migración desde cero, RLS y Storage con d
 
 ## Referencias a completar
 
-- **RQ-A1** — Diseño [data-transactions](../../../design/data-transactions.md): modelo y propiedad de las escrituras, locks y orden de bloqueo, catálogo de comandos y permisos, claves de idempotencia, finalización durable/fencing, RLS/Storage, costuras de tests (§7) y ownership de migraciones (§8). Documento objetivo disponible; los parámetros operativos pendientes (`MVP-010/011/012/013/014/025/026`) siguen abiertos. Consumidor: este plan y luego `MVP-040`, `MVP-044`, `MVP-070…075`, `MVP-080…083`, `MVP-091/092`.
+- **RQ-A1** — Diseño [data-transactions](../../design/data-transactions.md): modelo y propiedad de las escrituras, locks y orden de bloqueo, catálogo de comandos y permisos, claves de idempotencia, finalización durable/fencing, RLS/Storage, costuras de tests (§7) y ownership de migraciones (§8). Documento objetivo disponible; los parámetros operativos pendientes (`MVP-010/011/012/013/014/025/026`) siguen abiertos. Consumidor: este plan y luego `MVP-040`, `MVP-044`, `MVP-070…075`, `MVP-080…083`, `MVP-091/092`.
 
 ## Checklist
 
-- [ ] `MVP-011` y `MVP-012` documentadas (precondición para implementar `MVP-022/023`).
-- [ ] RQ-A1 (documento disponible) revisado contra los contratos de `MVP-021`.
-- [ ] `MVP-022` cerrado (C1, C2, C3).
-- [ ] Migraciones C1 aplicables desde cero.
-- [ ] Migraciones C2 y C3 con pruebas negativas.
-- [ ] RLS y buckets privados con prueba de dos usuarios y `anon`.
-- [ ] Chequeo de catálogo de RLS y suite documentada.
-- [ ] Filas de `MVP-022`, `MVP-023`, `MVP-024` actualizadas.
+- [x] `MVP-011` y `MVP-012` documentadas (precondición para implementar `MVP-022/023`).
+- [x] RQ-A1 (documento disponible) revisado contra los contratos de `MVP-021`.
+- [x] `MVP-022` cerrado (C1, C2, C3).
+- [x] Migraciones C1 aplicables desde cero.
+- [x] Migraciones C2 y C3 con pruebas negativas.
+- [x] RLS y buckets privados con prueba de dos usuarios y `anon`.
+- [x] Chequeo de catálogo de RLS y suite documentada.
+- [x] Filas de `MVP-022`, `MVP-023`, `MVP-024` actualizadas.
 
 ## Progreso y evidencia
 
-No ejecutado.
+2026-10-16, Supabase local (CLI 2.121.0, Docker). Migraciones aditivas: `20261016000100_c1_core`, `20261016000200_c2_revision`, `20261016000300_c3_version_seal`, `20261016000400_rls_storage`. RLS en las 24 tablas; `authenticated` solo SELECT por propietario; `anon` y `service_role` sin grants; tablas solo-servidor sin lectura; buckets privados `evidences-private` y `versions-private`.
+
+Evidencia: `npm run test:rls` 3 archivos, 119 tests (reset desde cero en cada ejecución); `npm run lint` y `npm run typecheck` OK; `npm test` 224; `npm run test:boundaries` 66.
+
+Integración: PR #38 mergeado en `develop` (`fbd4c75`).
+
+Revisión independiente posterior (sesión `ses_ebaeed9a9ffeccyZyQQgy7716a`, tras el merge): PASS WITH FINDINGS. Ejecutó `npm run lint`, `npm run typecheck`, 224 tests, 66 de barreras y `npm run build` (PASS); inspeccionó el SQL (24 tablas con RLS y sus políticas) y los 119 tests de la base. **No volvió a ejecutar la suite RLS** (la base local estaba apagada). Único hallazgo: error documental en el maestro (`pendiente` sustituido por `completada` en tres textos), corregido en una rama posterior. Esta revisión no fue previa al merge.
+
+Límites: la revisión independiente fue posterior al merge y sin re-ejecución de la suite con base; un superusuario puede deshabilitar triggers; `SET ROLE` no prueba escalada de roles (se verifica en catálogo); el CI de la suite RLS queda en MVP-131; `galcoa_executor` sin permisos hasta las RPC de cada tarea.
 
 ## Cierre
 
-Actualizar **solo** las filas `MVP-022`, `MVP-023` y `MVP-024` (evidencia con comandos reales, rama/PR) y recontar §3 tras integrar. Archivar en [`completed/`](../../completed/). Dobles o tests sin base real no acreditan `MVP-024`. **Al archivar:** mover el plan a `docs/exec-plans/completed/`, conservar su enlace en las filas de sus IDs actualizándolo a la nueva ubicación y corregir los relativos del propio plan (pierden un nivel: `../../../x` → `../../x`, `../../GALCOA-PRD-v1.4.md` → `../GALCOA-PRD-v1.4.md`; el maestro pasa a `../active/mvp-master-plan.md` y los planes hermanos aún activos a `../active/mvp/<plan>.md`). El cierre registra solo los IDs propios, el recuento del §3 del maestro y la evidencia de la integración en `develop` (hasta la transición de `MVP-006`, la base vigente). Se archiva únicamente al completar; ningún plan se archiva ahora.
+Actualizar **solo** las filas `MVP-022`, `MVP-023` y `MVP-024` (evidencia con comandos reales, rama/PR) y recontar §3 tras integrar. Archivar en [`completed/`](). Dobles o tests sin base real no acreditan `MVP-024`. **Al archivar:** mover el plan a `docs/exec-plans/completed/`, conservar su enlace en las filas de sus IDs actualizándolo a la nueva ubicación y corregir los relativos del propio plan (pierden un nivel: `../../../x` → `../../x`, `../../GALCOA-PRD-v1.4.md` → `../GALCOA-PRD-v1.4.md`; el maestro pasa a `../active/mvp-master-plan.md` y los planes hermanos aún activos a `../active/mvp/<plan>.md`). El cierre registra solo los IDs propios, el recuento del §3 del maestro y la evidencia de la integración en `develop` (hasta la transición de `MVP-006`, la base vigente). Se archiva únicamente al completar; ningún plan se archiva ahora.

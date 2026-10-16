@@ -122,6 +122,17 @@ describe("ESLint: contratos, producto y preview", () => {
     expect(await lint({ ...files, [ok]: 'import { client } from "@/lib/supabase/client";\nexport const X = client;\n' }, ok)).toEqual([]);
   });
 
+  it("producto: no importa tests/ (harness de servidor, MVP-120)", async () => {
+    const files = { ...base, "tests/server/support/x.ts": "export const x = 1;\n" };
+    for (const [file, line] of [
+      ["src/lib/x.ts", 'import { x } from "../../tests/server/support/x";'],
+      ["src/app/x.tsx", 'import { x } from "../../tests/server/support/x";'],
+    ] as const) {
+      const messages = await lint({ ...files, [file]: `${line}\nexport const X = x;\n` }, file);
+      expect(messages.length, file).toBeGreaterThan(0);
+    }
+  });
+
   it("mocks: solo dependen de contratos", async () => {
     const file = "src/mocks/n.ts";
     expect(await lint({ ...base, [file]: 'import { D } from "@/lib/contracts/doc";\nexport const n = D;\n' }, file)).toEqual([]);

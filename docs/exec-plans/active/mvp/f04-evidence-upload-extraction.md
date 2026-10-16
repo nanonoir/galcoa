@@ -2,7 +2,7 @@
 
 Tareas del maestro: `MVP-042`, `MVP-043`
 
-**Estado: planificado, no ejecutado.** Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §4 REQ-04, §6 INV-04/07/09, §11, §12), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-03`, `SH-05`, `SH-07`, `SH-08`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md). No repite esos documentos.
+**Estado: implementado con puertos y dobles el 2026-10-16 (rama `issue/11-evidence-extraction`); faltan los adaptadores Supabase/Storage, las RPC, las rutas y la prueba en base real (Nahuel).** Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §4 REQ-04, §6 INV-04/07/09, §11, §12), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-03`, `SH-05`, `SH-07`, `SH-08`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md). No repite esos documentos.
 
 ## 1. Objetivo y estado de partida
 
@@ -86,7 +86,7 @@ Aislamiento de Storage entre dos usuarios: `MVP-024`/`MVP-121`, con base local r
 
 ## 8. Validación, evidencia y rollback
 
-Checks: `lint`, `typecheck`, `npm test`, `test:boundaries` y `build` (rutas y dependencias). **Evidencia actual: no ejecutado.** La extracción real con Gemini y Storage remoto no se prueban aquí: requieren autorización y credenciales (`MVP-134/135`); no se leen secretos ni se llama a proveedores. Un fallo de proveedor no se reemplaza con un mock ni con «texto extraído» ficticio. Rollback: revertir archivos del plan; objetos de prueba en Storage local se eliminan con el entorno local.
+Checks: `lint`, `typecheck`, `npm test`, `test:boundaries` y `build` (rutas y dependencias). **Evidencia (2026-10-16):** `src/lib/documents/evidence/` (inspect, ports, service) y `src/lib/ai/extraction/` (prompt-v1, service con lector); pruebas `tests/server/evidence/` y `tests/server/extraction/` 43/43 con dobles de Storage, base y modelo Gemini (puerto real de MVP-050 con `MockLanguageModelV4`); `npx vitest run --project server` 163, `npm test` 429, lint, typecheck, boundaries 67 y build en verde. Archivos de Files API no hacen falta: cada archivo mide ≤ 10 MiB y la solicitud entra inline (§7.5). Sin llamadas reales. Límites: el conteo de páginas es determinista sin librería (un PDF cuyo árbol de páginas solo está en flujos comprimidos se rechaza como ilegible); el nombre original no se guarda porque la tabla `evidences` no tiene columna para eso. La extracción real con Gemini y Storage remoto no se prueban aquí: requieren autorización y credenciales (`MVP-134/135`); no se leen secretos ni se llama a proveedores. Un fallo de proveedor no se reemplaza con un mock ni con «texto extraído» ficticio. Rollback: revertir archivos del plan; objetos de prueba en Storage local se eliminan con el entorno local.
 
 ## 9. Cierre
 

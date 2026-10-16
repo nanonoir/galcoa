@@ -2,7 +2,7 @@
 
 Tareas del maestro: `MVP-050`
 
-**Estado: planificado, no ejecutado.** Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§0, §4 REQ-05, INV-04, INV-07, D-05), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-07`, `SH-08`, `SH-09`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md).
+**Estado: implementado con dobles (2026-10-16, Issue #12).** Pendiente de archivar por el líder; la conexión real a Gemini no se probó (MVP-134/135). Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§0, §4 REQ-05, INV-04, INV-07, D-05), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-07`, `SH-08`, `SH-09`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md).
 
 ## 1. Objetivo y estado de partida
 
@@ -41,15 +41,15 @@ Independientes de `MVP-013` y que pueden avanzar antes: instalación y compatibi
 
 ## 5. Pasos
 
-- [ ] Verificar `MVP-013` documentado y leer la fila; revisar `package.json` y `docs/architecture.md` («Herramientas de la base»).
-- [ ] Consultar la documentación oficial de las versiones a instalar (AI SDK, Google provider; referencias del PRD §18) para la API de generación estructurada y de cancelación; **no** copiar recetas de memoria.
-- [ ] `npm install ai @ai-sdk/google @ai-sdk/react`; revisar el lockfile, compatibilidad de peers y `npm audit`; comparar con la deuda #3 del [tracker](../../tech-debt-tracker.md) sin cerrar la deuda desde aquí.
-- [ ] Fábrica del cliente en `src/lib/ai/`: lee configuración **al invocar**, no al importar (el `build` no inicializa proveedores, `SH-09`). Si falta la clave: error técnico estable (`ai_config_missing`, nombre propuesto) sin fallback ni salida simulada.
-- [ ] Puerto de generación estructurada: recibe entrada delimitada (datos no confiables), esquema Zod de salida, `AbortSignal` y parámetros de `MVP-013`; devuelve resultado validado o error técnico estable con código, etapa, posibilidad de reintento y correlación no sensible (`SH-02`). **No expone `tools`**: la llamada no puede registrar herramientas (INV-04).
-- [ ] Salida inválida frente al esquema = error técnico de esa etapa (reintentable), no reporte fabricado y no tratado como advertencia de contenido; las advertencias `critical` no tienen relación con este error.
-- [ ] Registrar uso (tokens, latencia) cuando el proveedor lo informe, con correlación; sin prompts completos ni contenido por defecto (`SH-08`).
-- [ ] Dobles de éxito, timeout, cancelación, respuesta mal formada y configuración ausente en `tests/server/`.
-- [ ] Documentar en el archivo del cliente (comentario breve) que ningún agente recibe credenciales, SQL ni herramientas de blockchain.
+- [x] Verificar `MVP-013` documentado y leer la fila; revisar `package.json` y `docs/architecture.md` («Herramientas de la base»).
+- [x] Consultar la documentación oficial de las versiones a instalar (AI SDK, Google provider; referencias del PRD §18) para la API de generación estructurada y de cancelación; **no** copiar recetas de memoria.
+- [x] ~~`npm install ai @ai-sdk/google @ai-sdk/react`~~: ya instalados (Issue #12 §6.1: no reinstalar); sin cambios de lockfile. La deuda #3 del [tracker](../../tech-debt-tracker.md) no se cierra desde aquí.
+- [x] Fábrica del cliente en `src/lib/ai/`: lee configuración **al invocar**, no al importar (el `build` no inicializa proveedores, `SH-09`). Si falta la clave: error técnico estable (`ai_config_missing`, nombre propuesto) sin fallback ni salida simulada.
+- [x] Puerto de generación estructurada: recibe entrada delimitada (datos no confiables), esquema Zod de salida, `AbortSignal` y parámetros de `MVP-013`; devuelve resultado validado o error técnico estable con código, etapa, posibilidad de reintento y correlación no sensible (`SH-02`). **No expone `tools`**: la llamada no puede registrar herramientas (INV-04).
+- [x] Salida inválida frente al esquema = error técnico de esa etapa (reintentable), no reporte fabricado y no tratado como advertencia de contenido; las advertencias `critical` no tienen relación con este error.
+- [x] Registrar uso (tokens, latencia) cuando el proveedor lo informe, con correlación; sin prompts completos ni contenido por defecto (`SH-08`).
+- [x] Dobles de éxito, timeout, cancelación, respuesta mal formada y configuración ausente en `tests/server/`.
+- [x] Documentar en el archivo del cliente (comentario breve) que ningún agente recibe credenciales, SQL ni herramientas de blockchain.
 
 ## 6. Casos de test por aceptación
 
@@ -64,7 +64,7 @@ Independientes de `MVP-013` y que pueden avanzar antes: instalación y compatibi
 
 ## 7. Validación, evidencia y rollback
 
-`npm run lint`, `npm run typecheck`, `npm test`, `npm run test:boundaries` y `npm run build` (dependencias y config). **Evidencia actual: no ejecutado.** Conexión real a Gemini: **no se prueba aquí**; requiere autorización y credenciales (`MVP-134/135`) y el repositorio no las lee. Un fallo de red o de proveedor no se presenta como éxito ni se cubre con un mock en producción. Rollback: revertir `package.json`/lockfile/`src/lib/ai/` en la rama; no hay efectos externos.
+`npm run lint`, `npm run typecheck`, `npm test`, `npm run test:boundaries` y `npm run build` (dependencias y config). **Evidencia (2026-10-16, rama `issue/12-gemini-provider`):** paquetes ya presentes (`ai` 7.0.142, `@ai-sdk/google` 4.0.98), sin cambios de `package.json`/lockfile; suite dedicada `npx vitest run --config tests/server/ai/gemini/vitest.config.ts` 20/20 (éxito, timeout, abort, salida inválida, salida cortada, error de proveedor, configuración ausente, sin herramientas, contexto excedido, tope inline de 19 MiB, sin filtrado de secretos, `server-only`); `npm run lint`, `npm run typecheck`, `npm test` (224), `npm run test:boundaries` (66) y `npm run build` con exit 0. Decisiones locales: `maxRetries: 0` en el SDK (el único reintento aprobado lo decide el llamador con `retryable`, MVP-052); contexto estimado de forma conservadora (~3 caracteres por token; archivos con estimación del llamador, ~258 por página de PDF) y rechazo sin truncar; códigos `AI_*` en mayúsculas por el formato del contrato técnico (`ai_config_missing` → `AI_CONFIG_MISSING`). Límites: los archivos se envían inline (tope 19 MiB, rechazo sin truncar); Files API para cargas grandes queda para MVP-043. El build no importa todavía `src/lib/ai` (sin consumidores). Conexión real a Gemini: **no se prueba aquí**; requiere autorización y credenciales (`MVP-134/135`) y el repositorio no las lee. Un fallo de red o de proveedor no se presenta como éxito ni se cubre con un mock en producción. Rollback: revertir `package.json`/lockfile/`src/lib/ai/` en la rama; no hay efectos externos.
 
 ## 8. Cierre
 

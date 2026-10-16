@@ -32,6 +32,32 @@ Los callbacks del preview solo muestran eventos locales y no persisten. Rechazo,
 
 `typecheck` ejecuta `next typegen` antes de TypeScript: genera `next-env.d.ts` y tipos de rutas como `LayoutProps` desde un clon limpio, sin depender de un build/dev previo ni versionar archivos generados.
 
+## Base local, migraciones y RLS
+
+Requiere Docker. Las migraciones están en `supabase/migrations/` (aditivas; una migración integrada no se edita, se corrige con otra) y la configuración local en `supabase/config.toml`.
+
+1. `npx supabase start`: levanta Postgres/Auth/Storage locales con claves efímeras propias de la instancia (no se versionan ni se leen de `.env`).
+2. `npm run test:rls`: suite con base real (`vitest.rls.config.ts`, `tests/server/rls/`). Ejecuta `supabase db reset --local --no-seed` antes de correr (migración desde cero) y comprueba catálogo (RLS en toda tabla, buckets privados, grants), aislamiento entre usuarios A/B/`anon` y triggers de inmutabilidad/append-only. `RLS_SKIP_RESET=1` omite el reset al iterar. No forma parte de `npm test`.
+3. `npx supabase stop` al terminar.
+
+Límites: un superusuario puede deshabilitar triggers (la protección es contra los roles de aplicación); la simulación de roles con `SET ROLE` no prueba escalada de roles, por eso el catálogo verifica los roles alcanzables desde `authenticator`; el rol `galcoa_executor` (NOLOGIN, sin permisos) se completa con las RPC de cada tarea; la suite en CI es de `MVP-131`. Los helpers de `tests/server/rls/harness.ts` los reutiliza `MVP-120`.
+
+## Harness de tests de servidor (MVP-120)
+
+Tres niveles, cada uno con su comando y lo que **no** acredita:
+
+| Comando | Qué ejecuta | Requiere |
+| --- | --- | --- |
+| `npm test` (proyecto `server`; solo: `npx vitest run --project server`) | `tests/server/**` salvo `rls/` y `local/`: dobles guionados (`tests/server/doubles/`), reloj y bloqueo de red (`support/`), builders validados con Zod (`builders/`), puente de test (`bridge/`) y guards | Nada: sin Docker ni credenciales |
+| `npm run test:server:local` | `tests/server/local/**` contra Postgres/Auth locales reales: usuarios A/B/`anon` y concurrencia con conexiones independientes (un `psql` o cliente por llamada, aserciones por `pg_backend_pid`). Hace `supabase db reset --local --no-seed` antes | Docker + `npx supabase start` |
+| `npm run test:rls` | Suite RLS/grants/inmutabilidad de `MVP-024` | Docker + `npx supabase start` |
+
+Si falta Docker o la pila local, `test:server:local` y `test:rls` **fallan** con un mensaje explícito (globalSetup compartido); nunca se omiten en silencio. `RLS_SKIP_RESET=1` omite el reset. Una base real acredita SQL/RLS locales, no Supabase cloud, SMTP ni proveedores; los dobles no acreditan integración.
+
+- **`server-only`** se sustituye por `tests/server/support/server-only-sentinel.ts` solo en `vitest.config.ts` (proyecto `server`), `vitest.server-local.config.ts` y el bundle del puente. Next y el producto conservan el import real (hay tests que lo comprueban); `eslint` prohíbe que `src/` importe `tests/`.
+- **Dobles**: `scriptedGeminiModel` se inyecta en `createModel` del puerto real; `ScriptedBehavior` (éxito, fallo, salida inválida, latencia con reloj de test, cuelgue hasta cancelar, resultado incierto) es la base para los dobles de Groq/Storage/HCS/Mirror, que se escribirán contra los puertos reales de `MVP-053/083/090` cuando existan.
+- **Puente Node para Playwright** (`tests/server/bridge/build.ts`): `buildTestBridge({ entry })` compila con la API programática de Vite (`configFile:false`, `envFile:false`, SSR/ESM, alias `@/` y `server-only` solo ahí) a `node_modules/.cache/galcoa-tests/<runId>/handlers.mjs`; aplica los guards (`guards.ts`) y lanza si el grafo incluye `src/app`, `next/*`, SDK reales de IA/HCS o dependencias fuera de la lista permitida; `smokeImportBridge` importa el ESM en un proceso Node limpio; `cleanup()` borra solo su directorio. No es un servidor ni un clon de la app y no acredita el transporte HTTP de Next (`MVP-134`).
+
 ## Navegador y CI
 
 Instalar Chromium antes de la primera ejecución: `npx playwright install chromium`. Linux/CI: `npx playwright install --with-deps chromium`. Playwright arranca y limpia sus servidores propios; si el puerto ya está ocupado, resolver la colisión sin terminar procesos ajenos. No reutilizar una instancia desconocida para obtener un resultado verde.

@@ -100,8 +100,8 @@ export function createZones(basePath) {
     },
     {
       target: ["src/app/**", "src/lib/**", "src/components/**", "src/hooks/**", "src/features/*/containers/**", "src/features/*/components/**"],
-      from: ["src/mocks/**", "src/features/*/fixtures/**", "preview/**"],
-      message: "El código de producto no importa mocks, fixtures ni preview.",
+      from: ["src/mocks/**", "src/features/*/fixtures/**", "preview/**", "tests/**"],
+      message: "El código de producto no importa mocks, fixtures, preview ni tests.",
     },
     {
       target: "src/mocks/**",

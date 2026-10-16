@@ -1,0 +1,7 @@
+{
+  "datasetVersion": "v1",
+  "labelsFile": "labels.v1.json",
+  "canonicalSha256": "f2f2061e4bb68a4930e9a697e76e020125e5d147b8edd3067f111a545f47e05e",
+  "frozenAt": "2026-10-16T14:34:06Z",
+  "evaluatedModelsRunBeforeFreeze": false
+}
