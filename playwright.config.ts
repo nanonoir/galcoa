@@ -48,7 +48,7 @@ export default defineConfig({
     },
     {
       name: "next",
-      testMatch: "next.spec.ts",
+      testMatch: ["next.spec.ts", "responsive-a11y.spec.ts"],
       use: { ...devices["Desktop Chrome"], browserName: "chromium", baseURL: `http://127.0.0.1:${NEXT_PORT}` },
     },
   ],
