@@ -36,6 +36,14 @@ describe("ChatAttachmentViewSchema y ChatErrorViewSchema", () => {
     expect(ChatAttachmentViewSchema.safeParse({ ...attachment, reasonCode: "motivo libre" }).success).toBe(false);
   });
 
+  it("exige coherencia entre estado, progreso, motivo y reintento", () => {
+    const failed = { ...attachment, status: "failed", progress: null, reasonCode: "STORAGE_ERROR", retryable: true };
+    expect(ChatAttachmentViewSchema.safeParse(failed).success).toBe(true);
+    expect(ChatAttachmentViewSchema.safeParse({ ...attachment, status: "extracted" }).success).toBe(false);
+    expect(ChatAttachmentViewSchema.safeParse({ ...failed, status: "uploaded" }).success).toBe(false);
+    expect(ChatAttachmentViewSchema.safeParse({ ...attachment, progress: null, retryable: true }).success).toBe(false);
+  });
+
   it("el error técnico exige código estable y tipo conocido", () => {
     const error = { kind: "network", code: "NETWORK_ERROR", retryable: true, correlationId: null };
     expect(ChatErrorViewSchema.safeParse(error).success).toBe(true);

@@ -42,7 +42,8 @@ Los callbacks ordinarios nacen en el container cliente; no se pasan funciones de
 
 - [ ] Verificar `MVP-040`, `MVP-042`, `MVP-052` y `MVP-053` integradas; leer los endpoints reales resultantes. *(2026-10-16: los servicios están integrados —`src/lib/documents/{messages,turns,evidence,contrast}`—, pero `src/app/api/` no existe: ningún Route Handler. Pendiente.)*
 - [x] Contrato de props de chat en `src/features/chat/contracts/` y escenarios ficticios (historial, vacío, streaming, error de proveedor, adjunto rechazado, carga en curso) validados con Zod.
-- [x] Componentes de presentación: lista de mensajes, composer, adjunto con estado, mensajes de error técnico con acción de reintentar; región viva accesible para el streaming, foco predecible, teclado completo, responsive.
+- [x] Componentes de presentación: lista de mensajes, composer, adjunto con estado, mensajes de error técnico con acción de reintentar; región viva accesible para el streaming, foco predecible. *(Verificado en jsdom; el composer conserva el borrador hasta que el historial confirma el mensaje.)*
+- [ ] Teclado completo y responsive: **pendiente de revisión manual** en navegador real (móvil y escritorio); jsdom no lo demuestra.
 - [ ] Container: historial inicial recibido como DTO del servidor; envío con `clientMessageId` (idempotencia de `MVP-052`); cancelar con `AbortController`; reintentar el mismo turno sin crear otro mensaje; carga de adjuntos con la clave de idempotencia de `MVP-042` y manejo de motivos de rechazo estables.
 - [ ] Pipeline completo en el consumer: tras una carga exitosa invocar la extracción de `MVP-042/043`; tras la redacción/stream de `MVP-052` y tras la extracción, invocar el contraste persistido de `MVP-053` (Groq) automáticamente. Si una etapa falla, el adjunto o el contraste quedan en estado de error técnico visible («cargado sin extracción», «contraste no disponible») sin afirmar lo contrario ni bloquear el chat.
 - [ ] Estados de error visibles que distinguen impedimento técnico (red, proveedor, almacenamiento, permisos) de advertencias de contenido; nunca mensajes de éxito si el servidor no confirmó.
@@ -58,7 +59,7 @@ Los callbacks ordinarios nacen en el container cliente; no se pasan funciones de
 | Contraste conectado | El consumer, con respuestas simuladas, invoca el contraste tras el stream y tras la extracción de un adjunto; fallo del contraste visible y sin bloquear; no equivale a integración real |
 | Adjuntos | Rechazo técnico visible con el motivo; progreso; reintento; adjunto aceptado listado |
 | Estados de error visibles | Fallo de proveedor, de red y de permisos renderizan mensaje distinto y accesible; sin éxito falso |
-| Accesibilidad | Región viva, foco tras enviar/cancelar, navegación por teclado (jsdom) y revisión manual en móvil/escritorio |
+| Accesibilidad | Región viva; foco tras enviar/cancelar verificado en jsdom; navegación por teclado completa y responsive: **revisión manual pendiente** en móvil/escritorio |
 | Flujo real conectado | Pendiente para `MVP-121`/`MVP-134`: requiere Supabase local y dobles de servidor; se declara no ejecutado hasta entonces |
 
 ## 6.1 Avance del checkpoint (2026-10-16, rama `flow/16-chat`)

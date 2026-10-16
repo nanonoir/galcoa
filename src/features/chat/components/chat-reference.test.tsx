@@ -21,8 +21,10 @@ function renderState(state: ChatViewState, maxMessageChars = 8000) {
     onAttach: vi.fn(),
     onRetryAttachment: vi.fn(),
   };
-  render(<ChatReference state={state} maxMessageChars={maxMessageChars} {...handlers} />);
-  return { ...handlers, user: userEvent.setup() };
+  const view = render(<ChatReference state={state} maxMessageChars={maxMessageChars} {...handlers} />);
+  const rerenderState = (next: ChatViewState) =>
+    view.rerender(<ChatReference state={next} maxMessageChars={maxMessageChars} {...handlers} />);
+  return { ...handlers, rerenderState, user: userEvent.setup() };
 }
 
 const forbiddenClaims = /certificad|validado|garantizad|firma digital|identidad verificada|verificado visualmente/i;
@@ -120,14 +122,35 @@ describe("ChatReference", () => {
     expect(screen.getByText("1.9 MB")).toBeInTheDocument();
   });
 
-  it("envía el texto original sin recortar, limpia el composer y devuelve el foco", async () => {
-    const { user, onSend } = renderState(scenarioState("empty"));
+  it("envía el texto original sin recortar, lo conserva hasta la confirmación y devuelve el foco", async () => {
+    const empty = scenarioState("empty");
+    const { user, onSend, rerenderState } = renderState(empty);
     const composer = screen.getByLabelText("Mensaje");
     await user.type(composer, "  hola  ");
     await user.click(screen.getByRole("button", { name: "Enviar" }));
     expect(onSend).toHaveBeenCalledWith("  hola  ");
-    expect(composer).toHaveValue("");
+    expect(composer).toHaveValue("  hola  ");
     expect(composer).toHaveFocus();
+    // Sin confirmación no se duplica el envío.
+    expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
+    rerenderState({
+      ...empty,
+      messages: [{ messageId: "m-new", sender: "autor", content: "  hola  ", sentAt: "2026-10-16T12:00:00.000Z" }],
+    });
+    expect(screen.getByLabelText("Mensaje")).toHaveValue("");
+  });
+
+  it("si onSend falla, el texto se conserva y se puede reintentar", async () => {
+    const { user, onSend } = renderState(scenarioState("empty"));
+    onSend.mockImplementationOnce(() => {
+      throw new Error("fallo técnico");
+    });
+    await user.type(screen.getByLabelText("Mensaje"), "hola");
+    await user.click(screen.getByRole("button", { name: "Enviar" }));
+    expect(screen.getByLabelText("Mensaje")).toHaveValue("hola");
+    await user.click(screen.getByRole("button", { name: "Enviar" }));
+    expect(onSend).toHaveBeenCalledTimes(2);
+    expect(onSend).toHaveBeenLastCalledWith("hola");
   });
 
   it("no envía vacío ni por encima del límite", async () => {

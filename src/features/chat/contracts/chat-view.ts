@@ -43,6 +43,17 @@ export const ChatAttachmentViewSchema = z.strictObject({
   /** Motivo estable del servidor (`rejected`/`failed`); la presentación no lo interpreta. */
   reasonCode: z.string().regex(/^[A-Z][A-Z0-9_]*$/).nullable(),
   retryable: z.boolean(),
+}).superRefine((attachment, ctx) => {
+  const failed = attachment.status === "rejected" || attachment.status === "failed";
+  if (attachment.progress !== null && attachment.status !== "uploading") {
+    ctx.addIssue({ code: "custom", path: ["progress"], message: "El progreso solo aplica a `uploading`." });
+  }
+  if (attachment.reasonCode !== null && !failed) {
+    ctx.addIssue({ code: "custom", path: ["reasonCode"], message: "El motivo solo aplica a `rejected` o `failed`." });
+  }
+  if (attachment.retryable && !failed) {
+    ctx.addIssue({ code: "custom", path: ["retryable"], message: "El reintento solo aplica a `rejected` o `failed`." });
+  }
 });
 
 export const ChatErrorKindSchema = z.enum(["network", "provider", "storage", "permissions", "other"]);

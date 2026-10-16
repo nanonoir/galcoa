@@ -144,14 +144,28 @@ export function ChatReference({
 
   const busy = state.streaming !== null;
   const tooLong = draft.length > maxMessageChars;
-  const canSend = !busy && !tooLong && draft.trim().length > 0;
+  // El borrador se conserva tras `onSend` hasta que el estado recibido lo confirme
+  // (mensaje nuevo en el historial) o informe un error: un envío fallido no pierde el texto.
+  const [sent, setSent] = useState<{ content: string; count: number; error: unknown } | null>(null);
+  if (sent && state.messages.length > sent.count) {
+    setSent(null);
+    if (draft === sent.content) setDraft("");
+  }
+  const awaitingAck =
+    sent !== null && draft === sent.content && state.messages.length === sent.count && state.turnError === sent.error;
+  const canSend = !busy && !awaitingAck && !tooLong && draft.trim().length > 0;
   const contrastLabel = contrastLabels[state.contrast];
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSend) return;
-    onSend(draft);
-    setDraft("");
+    setSent({ content: draft, count: state.messages.length, error: state.turnError });
+    try {
+      onSend(draft);
+    } catch {
+      // Fallo técnico del callback: el texto queda en el composer para reintentar.
+      setSent(null);
+    }
     textareaRef.current?.focus();
   }
 
