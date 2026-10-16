@@ -73,6 +73,13 @@ export function createRevisionService(deps: RevisionDeps) {
           expectedDraftRevision,
           content: frozen.content,
           snapshotHash: frozen.snapshotHash,
+          canonicalHex: frozen.canonicalHex,
+          controlStatus: source.controlStatus,
+          sources: frozen.aliasTable.map(({ alias, ref }) => {
+            const found = source.sourceRefs[ref];
+            if (!found) throw new Error("Fuente sin referencia");
+            return { alias, ...found };
+          }),
           idempotency: {
             key: idempotencyKey,
             fingerprint: commandFingerprint({ schemaVersion: 1, action: "revision.freeze", documentId, expectedDraftRevision, selection }),

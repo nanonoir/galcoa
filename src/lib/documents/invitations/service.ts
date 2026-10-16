@@ -91,6 +91,8 @@ export function createInvitationService(deps: InvitationDeps) {
             return failure("ROLE_NOT_SELECTED", "validacion", false, correlationId);
           case "revision_not_active":
             return failure("REVISION_NOT_ACTIVE", "confirmacion", false, correlationId);
+          case "already_responded":
+            return failure("ALREADY_RESPONDED", "confirmacion", false, correlationId);
           case "idempotency_conflict":
             return failure("IDEMPOTENCY_CONFLICT", "persistencia", false, correlationId);
           default:
