@@ -2,7 +2,7 @@
 
 Tareas del maestro: `MVP-040`, `MVP-041`, `MVP-044`
 
-**Estado: checkpoint de autor implementado y probado con Supabase local (2026-10-16), PR #74 → #76 sin merge.** Conserva los servicios puros de Gastón (#43) y agrega RPC, adaptador, sesión real y HTTP. Evidencia local: persistencia 8/8, HTTP de dominio con Auth/RPC 2/2 y RLS 119/119. **Pendientes:** revisión independiente, integración y transporte productivo acotado del ejecutor para agente/auditoría interna. No se marca ningún ID completado. Fuentes: [maestro](../mvp-master-plan.md) (IDs, dependencias y evidencia), [PRD v1.5](../../GALCOA-PRD-v1.4.md), [fundaciones compartidas](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-04`, `SH-07`), [arquitectura](../../../architecture.md) y [desarrollo](../../../development.md). Este plan no repite esos documentos: los referencia.
+**Estado: autor y transporte interno integrados (#74/#76/#80); migraciones F4 y LOGIN mínimo aplicadas en `galcoa-dev` (2026-10-16).** Conserva los servicios puros de Gastón (#43). Evidencia local histórica: persistencia 8/8, HTTP de dominio con Auth/RPC 2/2, RLS 119/119 y LOGIN real 6/6. **Pendientes:** provisión privada del operador y comprobación de conexión/TLS/Supavisor/despliegue; catálogo remoto no acredita ese recorrido. `MVP-040/041/044` permanecen parciales. Fuentes: [maestro](../mvp-master-plan.md) (IDs, dependencias y evidencia), [PRD v1.5](../../GALCOA-PRD-v1.4.md), [fundaciones compartidas](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-04`, `SH-07`), [arquitectura](../../../architecture.md) y [desarrollo](../../../development.md). Este plan no repite esos documentos: los referencia.
 
 ## 1. Objetivo y estado de partida
 
@@ -311,6 +311,54 @@ este delta: la evidencia LOGIN/RLS anterior corresponde al commit anterior,
 no se presenta como reejecutada con pool compartido. Ver §7 del diseño para
 precondición de rol preexistente y límite de privilegios PUBLIC de base.
 Pendiente revisión independiente del delta antes de merge; sin acceso cloud.
+
+### Aplicación remota autorizada — 2026-10-16
+
+Autorización explícita posterior a pruebas/revisión: crear el mismo acceso limitado
+en `galcoa-dev`. PR #80 integrado en `ca957b03ac7305f4ddaa08b7774915d5ab68e0e9`,
+con revisión final PASS del delta de pool. Solo se aplicaron
+`20261016001000_f4_persistence.sql` y `20261016001100_executor_login.sql`;
+sin reset, borrados, usuarios Auth, contraseñas ni cambios de configuración.
+Se amplía únicamente la autorización remota de este checkpoint; las prohibiciones
+anteriores describen las etapas locales, no esta ejecución.
+
+- Preflight de catálogo/historial: cuatro bases alineadas, 24/24 tablas con RLS,
+  siete RPC F4 ausentes; writer/login ausentes y executor NOLOGIN sin bypass.
+- Fuente: `fetch` de ambos archivos públicos al commit exacto, pasando la cadena
+  intacta a `apply_migration` (sin transcripción ni normalización). SHA-256 del
+  blob Git y del SQL guardado en `statements[1]` coinciden: F4
+  `566c7a4f3a525c8b644e7b59c13f8e86066d62ff7bcccf5ed80568afb7318e80`;
+  LOGIN `befc41b9d63e85e458280f30c1b1df7db69da2d7f88a017d987a6756b17db621`.
+  El checkout Windows solo difiere por CRLF; no se editaron migraciones.
+- Ambas aplicaciones exitosas. Historial reconciliado solo en `version`,
+  con transacción, bloqueo y guardas de nombres/IDs/huellas/cantidad:
+  `20261016191628` → `20261016001000`, `20261016191633` → `20261016001100`.
+  Seis filas finales; las cuatro bases intactas. MD5 de `statements::text`
+  antes/después: F4 `d7470d33cc19e021b6a799b88ef68441`, LOGIN
+  `fa75f4896c11d55fe2671c758703c86d`. No se borró ni reaplicó historial.
+- Postflight real: RLS 24/24; `authenticated` conserva solo SELECT en 18 tablas;
+  anon/service_role/PUBLIC sin grants de tabla en public. Cinco RPC de autor
+  para authenticated y dos internas para executor, firmas exactas sin EXECUTE
+  de anon/service_role/PUBLIC. Helpers privados y owner mínimo según migración;
+  writer sin tablas propias, membresías ni CREATE de esquema.
+- LOGIN con límite 5, INHERIT true y sin superusuario/BYPASSRLS/CREATEDB/
+  CREATEROLE/REPLICATION; única membresía saliente a executor con INHERIT true,
+  SET false y ADMIN false. Executor/writer siguen NOLOGIN; roles API y
+  authenticator no alcanzan ninguno. Login sin acceso efectivo directo a tablas
+  public ni CREATE de esquema/base; USAGE solo en public entre esquemas de app.
+  CONNECT/TEMPORARY heredados de PUBLIC en la base siguen existentes; no se
+  afirma «cero privilegios». Membresías administrativas del migrador `postgres`
+  no permiten INHERIT/SET y no se alteraron fuera del SQL revisado.
+- Buckets de evidencias/versiones privados. Advisors: cuatro INFO de tablas
+  servidor sin políticas, cinco WARN esperados por las RPC de autor definers y
+  dos WARN preexistentes de `public.rls_auto_enable`, intacta. Referencias y
+  límites de aceptación en [evidencia remota F2](f02-entorno-supabase-remoto.md).
+
+No se consultaron datos de usuarios ni secretos. LOGIN creado con `PASSWORD NULL`
+por el archivo original; no se intentó conectar con él ni se probó TLS/Supavisor
+remoto. El propietario debe seguir [provisión del ejecutor](../../../development.md#ejecutor-interno-f4-provisión-privada-del-operador).
+No se repitieron tests locales ni se tocó Docker reservado por otro flujo.
+No se cierran IDs, Auth remoto ni despliegue por esta evidencia de catálogo.
 
 **Referencias** (documentos objetivo ya disponibles; los parámetros operativos siguen pendientes de F1):
 
