@@ -1,12 +1,12 @@
 # ExecPlan F3 — Registro, login, logout y recuperación reales
 
-**Estado: en curso (desarrollado y verificado en local; en revisión, sin mergear).** E2E real Playwright + Supabase local + Mailpit ejecutado: 3/3 verde. Falta ruta privada (`MVP-116`), correo real y remoto.
+**Estado: completado (2026-10-16).** Integrado en `develop` mediante [PR #70](https://github.com/nanonoir/galcoa/pull/70), merge `a0c6d0fe5b00b363367a30024068296cb1d369d0`. Aceptación local de `MVP-031` satisfecha; ruta privada de producto (`MVP-116`), correo real y remoto son seguimientos separados, no bloqueos de este cierre.
 
 Tareas del maestro: `MVP-031`
 
-Requisitos PRD: REQ-01; [§0 límite de correo](../../GALCOA-PRD-v1.4.md), [§10 pantallas](../../GALCOA-PRD-v1.4.md), [§11](../../GALCOA-PRD-v1.4.md).
+Requisitos PRD: REQ-01; [§0 límite de correo](../GALCOA-PRD-v1.4.md), [§10 pantallas](../GALCOA-PRD-v1.4.md), [§11](../GALCOA-PRD-v1.4.md).
 
-Referencias: [fundaciones SH-07 (entrada de Auth de navegador aislada) y SH-09](../../../design/mvp-shared-foundations.md) · [arquitectura: presentación vs container](../../../architecture.md) · [sesiones y guardas](f03-sesiones-y-guardas.md) · [clientes Supabase](f02-clientes-supabase.md) · [desarrollo](../../../development.md).
+Referencias: [fundaciones SH-07 (entrada de Auth de navegador aislada) y SH-09](../../design/mvp-shared-foundations.md) · [arquitectura: presentación vs container](../../architecture.md) · [sesiones y guardas](../active/mvp/f03-sesiones-y-guardas.md) · [clientes Supabase](../active/mvp/f02-clientes-supabase.md) · [desarrollo](../../development.md).
 
 ## Precondiciones y checkpoints
 
@@ -59,9 +59,9 @@ Vitest Node con dobles para los adaptadores y el mapeo de errores; componentes (
 - Enumeración de cuentas por tiempos o mensajes distintos: probar respuestas uniformes.
 - Límite de correos del emisor integrado dificulta pruebas remotas.
 
-## Decisiones pendientes
+## Decisiones resueltas
 
-- Mecanismo exacto (adaptador de servidor vs. cliente de navegador aislado): decide el líder al implementar, con preferencia por el servidor (SH-07).
+- Mecanismo: adaptadores de servidor (Route Handlers), sin cliente de navegador (SH-07).
 - Ninguna sobre la cobertura de callback y nueva contraseña: están dentro del requisito de recuperación (paso 1).
 
 ## Referencias a completar
@@ -73,11 +73,11 @@ Ninguna: SH-07 y SH-09 bastan. Si el equipo quiere una nota breve de Auth/correo
 - [x] `MVP-030` (PR #50) y `MVP-115` (PR #58) integradas en `develop`.
 - [x] Formulario de nueva contraseña verificado en `MVP-115` (`NewPasswordForm`). No hay pantalla de callback en la presentación: el callback es un Route Handler que redirige (aviso de enlace inválido en `/acceso`).
 - [x] Adaptadores de servidor y callback con redirecciones seguras (checkpoint A, con dobles).
-- [ ] Container conectado a la presentación (hecho); flujo local completo: suite Playwright escrita, **no ejecutada** (falta instancia local con confirmación activa).
-- [ ] Mensajes sin filtrar existencia de cuentas: verificados con dobles (vitest); contra Supabase real, pendiente en la suite local.
-- [x] Límites del emisor de correo documentados en [`auth-local.md`](../../../auth-local.md).
+- [x] Container conectado a la presentación y flujo local real ejecutado: Playwright + Supabase local + Mailpit, 3/3 verde, con confirmación activa.
+- [x] Mensajes sin filtrar existencia de cuentas: verificados con dobles y respuestas uniformes en la suite real local.
+- [x] Límites del emisor de correo documentados en [`auth-local.md`](../../auth-local.md).
 - [x] No aplica: se eligió adaptador de servidor, sin cliente de navegador ni cambios de barreras.
-- [ ] Fila de `MVP-031` actualizada.
+- [x] Fila de `MVP-031` actualizada y recuentos consolidados con autorización del coordinador; sin cambiar otros IDs.
 
 ## Progreso y evidencia
 
@@ -87,7 +87,7 @@ Origen confiable: lista cerrada desde `NEXT_PUBLIC_APP_URL` (coincidencia exacta
 
 Comprobado (último run, tras integrar `origin/develop`, con Supabase local propio): `npm run lint`, `npm run typecheck`, `npm test` (846 pasan, 44 archivos), `npm run test:boundaries`, `npm run build`, `npm run test:e2e:auth` (3 pasan: registro→Mailpit→confirmar→acceso→guarda→logout→recuperación→nueva contraseña→acceso; respuestas uniformes; origen/destinos externos), `npm run test:rls` (119 pasan), `npm run test:server:local` (3 pasan), `npm run test:e2e` (68 pasan). Negativo de configuración: con `AUTH_E2E=1` y datos faltantes la suite falla (no omite).
 
-**No comprobado:** correo real/remoto y ruta privada (`MVP-116`). Limitación documentada: la sesión de recuperación es completa con `secure_password_change = false` ([`auth-local.md`](../../../auth-local.md)).
+**No comprobado:** correo real/remoto y ruta privada de producto (`MVP-116`); sí se probó la guarda de `/nueva-contrasena`. Limitación documentada: la sesión de recuperación es completa con `secure_password_change = false` ([`auth-local.md`](../../auth-local.md)).
 
 ## Cierre
 
@@ -95,6 +95,27 @@ Comprobado (último run, tras integrar `origin/develop`, con Supabase local prop
 
 Tras las cuatro correcciones previas de revisión independiente (base `d7999c3`), se atendió el último WARNING: el logger instalado de Next imprime `request.url`, incluido el `code` del callback. `next.config.ts` excluye únicamente el prefijo `/api/auth/callback` mediante `logging.incomingRequests.ignore`; no desactiva los logs de las demás rutas. Se actualizó la nota local para explicar la mitigación y su límite: no cubre logs externos/de producción.
 
-Validación de esta corrección: `npx vitest run tests/server/auth-flow src/features/auth/containers` (90 tests, 4 archivos), `npm run lint`, `npm run typecheck`, `npm run build` y `git diff --check`: correctos. Prueba directa adicional con `logRequests` de Next 16.4.2 instalado y la configuración real: callback con código ficticio no escribe en stdout; `/api/auth/login` sí se registra y el código ficticio no aparece. No se arrancaron servidores ni servicios, ni se repitieron aquí las suites reales de Supabase/Playwright; la evidencia anterior corresponde a su ejecución previa. Sin lectura de `.env` ni llamadas a proveedores. El plan sigue abierto hasta la aceptación/integración principal.
+Validación de esta corrección: `npx vitest run tests/server/auth-flow src/features/auth/containers` (90 tests, 4 archivos), `npm run lint`, `npm run typecheck`, `npm run build` y `git diff --check`: correctos. Prueba directa adicional con `logRequests` de Next 16.4.2 instalado y la configuración real: callback con código ficticio no escribe en stdout; `/api/auth/login` sí se registra y el código ficticio no aparece. No se arrancaron servidores ni servicios, ni se repitieron aquí las suites reales de Supabase/Playwright; la evidencia anterior corresponde a su ejecución previa. Sin lectura de `.env` ni llamadas a proveedores. La integración principal quedó realizada por PR #70.
 
-Actualizar **solo** la fila `MVP-031` (evidencia con comandos reales, rama/PR) y recontar §3 tras integrar. Archivar en [`completed/`](../../completed/). Un flujo con dobles o el preview no cierra esta tarea; se exige la prueba local real. **Al archivar:** mover el plan a `docs/exec-plans/completed/`, conservar su enlace en las filas de sus IDs actualizándolo a la nueva ubicación y corregir los relativos del propio plan (pierden un nivel: `../../../x` → `../../x`, `../../GALCOA-PRD-v1.4.md` → `../GALCOA-PRD-v1.4.md`; el maestro pasa a `../active/mvp-master-plan.md` y los planes hermanos aún activos a `../active/mvp/<plan>.md`). El cierre registra solo los IDs propios, el recuento del §3 del maestro y la evidencia de la integración en `develop` (hasta la transición de `MVP-006`, la base vigente). Se archiva únicamente al completar; ningún plan se archiva ahora.
+## Implementation Outcome
+
+### Implemented
+
+Cinco adaptadores POST, callback PKCE, páginas y containers de registro, acceso, cierre de sesión, recuperación y nueva contraseña. Confirmación de email local activa; errores neutrales, orígenes canónicos de `NEXT_PUBLIC_APP_URL` y destinos internos cerrados. Guarda real de `/nueva-contrasena` y mitigación de logs del callback en desarrollo. Entrega integrada por PR #70; este archivo cierra únicamente `MVP-031`/Issue #9.
+
+### Deviations from Design
+
+La nota de operación y límites vive en `docs/auth-local.md`, enlazada desde este plan, en vez de duplicarse en desarrollo. El callback es un Route Handler que redirige, no una pantalla de presentación. Se eligió servidor sin cliente de navegador. La guarda E2E usa `/nueva-contrasena`; las páginas privadas de producto y montaje de `LogoutButton` siguen en `MVP-116`, como permitía el plan.
+
+### Validation
+
+Evidencia histórica del implementador en PR #70: 846 Vitest, 67 barreras, 3 Auth E2E reales con Mailpit (incluyen confirmación, nueva contraseña y nuevo acceso), 119 RLS locales, 3 servidor local y 68 E2E generales; lint, tipos y build correctos. Revisión independiente `ses_eba300f78ffe6FxWh3s93m9e6d`: cuatro advertencias iniciales corregidas y verificadas con 119 pruebas focalizadas. Última advertencia del logger corregida en `6221659`; después se verificaron 90 pruebas focalizadas, 8 regresiones del logger, harness del logger instalado, lint, tipos y build. El coordinador leyó la configuración y confirmó las 8 regresiones. No se repitió la suite completa después del último fix: no se afirma un nuevo total completo ni prueba remota. Sin hallazgos críticos pendientes comunicados por la revisión/coordinación.
+
+Validación documental del archivado: `git diff --cached --check`, parseo de los dos JSON de publicación, recuento de 73 IDs (21 completados, 28 en curso, 24 pendientes), catálogo de 36 planes (28 activos y 8 archivados) y comprobación de que solo cambió la fila de `MVP-031`. Verificador local de Markdown: 123 archivos, 917 enlaces relativos; quedan tres enlaces rotos preexistentes al plan F2 archivado en clientes Supabase, entorno remoto y harness. Ninguno apunta a Auth; no se corrigieron fuera del alcance. No se ejecutaron tests de producto durante este cierre exclusivamente documental.
+
+### Follow-up
+
+- `MVP-116`: navegación privada de producto y montaje del botón de cierre.
+- `MVP-026`/`MVP-132`/`MVP-133`: configuración de URLs remotas, demo y correo real; el usuario conserva deliberadamente URLs locales hasta preparar Vercel. `NEXT_PUBLIC_APP_URL` debe incluir el origen exacto del despliegue; un Preview distinto no queda autorizado automáticamente.
+- `MVP-130`/`MVP-132`: configurar/verificar logs externos de Vercel/proxies; la mitigación local no los cubre. La sesión de recuperación completa permanece documentada en `auth-local.md`, sin rediseño de Auth.
+- Issue #9 se cierra por el coordinador únicamente después del merge del PR documental; este cierre no la modifica directamente.

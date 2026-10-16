@@ -2,19 +2,19 @@
 
 **Decisión técnica:** conservar una aplicación Next.js 16 con `src/` y npm. El líder integra rutas, contratos y servidor; el colaborador comienza con componentes de presentación autocontenidos. Esta separación permite trabajar antes de tener backend sin construir un producto ficticio ni exponer servicios al navegador.
 
-Este documento es la fuente de decisiones arquitectónicas. El [PRD v1.5](exec-plans/GALCOA-PRD-v1.4.md) conserva la autoridad sobre producto. Se implementó la base de contratos, preview y herramientas de colaboración; las rutas e integraciones de producto del árbol objetivo siguen pendientes. La evidencia de preparación se registra en su plan.
+Este documento es la fuente de decisiones arquitectónicas. El [PRD v1.5](exec-plans/GALCOA-PRD-v1.4.md) conserva la autoridad sobre producto. Se implementaron la base de contratos, preview y herramientas de colaboración y los flujos locales de Auth; el árbol objetivo no implica que todas sus integraciones existan. La evidencia por entrega vive en el maestro y sus planes.
 
 ## Estado actual (verificado el 2026-10-16)
 
 | Área | Hoy |
 | --- | --- |
-| `src/app/` | Layout, página plantilla, CSS global y favicon; sin rutas funcionales del producto |
+| `src/app/` | Base Next y rutas funcionales de Auth (`/registro`, `/acceso`, `/recuperar`, `/nueva-contrasena`), cinco POST y callback; páginas privadas de producto en MVP-116 |
 | UI | shadcn `base-nova` en `src/components/ui/`, hook `use-mobile`; `src/lib/utils.ts` reexporta `cn`, que está en uso |
 | Configuración | Next 16.4.2, React 19, React Compiler, Tailwind v4, alias `@/*` → `src/*` |
 | Dependencias | SDK de Supabase, IA, PDF y Hedera instalados; no constituyen integraciones implementadas |
 | Verificación | Vitest para contratos/componentes/barreras y Playwright para Chromium; CI base verificado en GitHub Actions Linux ([f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)), suites completas de servidor/RLS futuras (MVP-131) y protección de ramas opcional posthackathon |
 | Base compartida | Contratos Zod de dominio completos, paquete frontend delegado con escenarios en `src/mocks/` y fixtures validados con Zod, presentación mínima de referencia y preview Vite aislado |
-| Ausencias de producto | Auth, persistencia/base de datos, agentes de IA, PDF, Hedera, rutas funcionales y migraciones (sin runtime backend implementado); los tests actuales prueban contratos y barreras, no integraciones conectadas |
+| Integración local de Auth y datos | Migraciones/RLS, clientes Supabase y guardas integrados; Auth real local con Supabase + Mailpit por PR #70 (MVP-031). Adaptadores de servidor, sin cliente Auth de navegador. [Operación y límites](auth-local.md); [evidencia](exec-plans/completed/f03-auth-flujos-reales.md). No acredita correo remoto, Vercel ni integraciones reales de IA/PDF/Hedera |
 | Entorno | Node 24.18.0, npm >=11 y plantilla `.env.example` sanitizada versionable; único archivo local privado `.env` (ignorado; guard `env:check` contra `.env.local` y similares), sin inspeccionar secretos |
 
 No se deduce seguridad ni funcionamiento por la presencia de un SDK. Las desviaciones conocidas están en la [deuda técnica](exec-plans/tech-debt-tracker.md); sus resultados de auditoría son históricos, no checks ejecutados en esta definición.
@@ -97,7 +97,7 @@ Alternativas descartadas: Storybook añade infraestructura desproporcionada para
 
 ## Herramientas de la base y próximas integraciones
 
-Contratos de dominio y paquete de delegación frontend ya incorporados e integrados en `develop` local (224 tests Vitest/barreras y 15 Playwright pasando). Los consumidores reales de servicios, el runtime backend y sus pruebas de integración se implementarán con cada funcionalidad. El CI base de Linux está comprobado verde en GitHub Actions ([f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)); las suites ampliadas de servidor/RLS corresponden a MVP-131 y la protección de ramas es opcional posthackathon.
+Contratos de dominio y paquete de delegación frontend incorporados en `develop` (224 tests Vitest/barreras y 15 Playwright, evidencia histórica de esa base). Auth cuenta con prueba real local y RLS con pruebas locales: ver planes y maestro, sin extrapolar a otros consumidores ni a remoto. El CI base de Linux está comprobado verde en GitHub Actions ([f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)); las suites ampliadas de servidor/RLS corresponden a MVP-131 y la protección de ramas es opcional posthackathon.
 
 | Área | Decisión y criterio |
 | --- | --- |

@@ -89,7 +89,7 @@
     "key": "f03-auth-flujos-reales",
     "title": "Conectar registro, acceso, logout y recuperación completos con Auth local",
     "bodyFile": "docs/tasks/issue-rollout/foundations/f03-auth-flujos-reales.md",
-    "plan": "docs/exec-plans/active/mvp/f03-auth-flujos-reales.md",
+    "plan": "docs/exec-plans/completed/f03-auth-flujos-reales.md",
     "ids": [
       "MVP-031"
     ],

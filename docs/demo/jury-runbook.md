@@ -111,11 +111,11 @@ Límite: los casos con texto extraído de una foto/PDF dependen de la extracció
 
 ## 6. Dependencias y huecos concretos
 
-Hoy **no** existen: Auth, base de datos, IA, PDF ni Hedera (AGENTS.md, «Estado actual»). Cada tramo del guion exige:
+Auth está comprobada contra Supabase local y existen migraciones/RLS; los módulos de IA, PDF y Hedera no acreditan por sí solos un recorrido integrado ni llamadas reales. La demo completa sigue pendiente. El [maestro](../exec-plans/active/mvp-master-plan.md) conserva el estado y la evidencia de cada tramo:
 
 | Tramo | Requiere (maestro) | Estado hoy |
 | --- | --- | --- |
-| Login, cuentas de demo | `MVP-031`, `MVP-133` | pendientes |
+| Login, cuentas de demo | `MVP-031`, `MVP-133` | Auth local integrada (PR #70); cuentas de demo y comprobación remota pendientes (MVP-133) |
 | Chat, evidencias, redacción, contraste | `MVP-054`, `MVP-053` y dependencias | pendientes |
 | Congelar, selección, enlaces | `MVP-070`…`077` | pendientes |
 | PDF, versión | `MVP-080`…`084` | pendientes |
