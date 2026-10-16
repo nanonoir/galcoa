@@ -2,7 +2,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LandingViewProps } from "@/features/marketing/contracts/landing-view";
 
-import { SiteNavigation, siteNavigationProps } from "./site-navigation";
+import { SiteNavigation } from "./site-navigation";
 
 /**
  * Landing pública (MVP-114; PRD REQ-02, §5, §10, §11). Muestra el copy que
@@ -12,9 +12,9 @@ import { SiteNavigation, siteNavigationProps } from "./site-navigation";
 export function LandingPage({ content }: LandingViewProps) {
   return (
     <div className="flex flex-col">
-      <SiteNavigation {...siteNavigationProps(content)} />
+      <SiteNavigation brand={content.brand} links={content.navigation} />
 
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 py-10">
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 py-10">
         <section aria-labelledby="landing-title" className="flex flex-col items-start gap-4">
           <h1 id="landing-title" className="text-3xl font-semibold tracking-tight sm:text-4xl">
             {content.heading}
@@ -57,7 +57,7 @@ export function LandingPage({ content }: LandingViewProps) {
             </ul>
           )}
         </section>
-      </div>
+      </main>
     </div>
   );
 }
