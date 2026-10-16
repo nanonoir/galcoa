@@ -20,6 +20,15 @@ export interface DocumentStoreContext {
   executor?: DocumentRpc;
 }
 
+const SQLSTATE_FAILURE = { "42501": "NO_SESSION", "22023": "INVALID_INPUT" } as const;
+
+/** Clasificación local segura; nunca conserva el error original del SDK. */
+export class DocumentPersistenceError extends Error {
+  constructor(readonly code: (typeof SQLSTATE_FAILURE)[keyof typeof SQLSTATE_FAILURE]) {
+    super("Operación de persistencia rechazada");
+  }
+}
+
 const writeResult = <T extends z.ZodType>(value: T) => z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("created"), value }),
   z.strictObject({ status: z.literal("replayed"), value }),
@@ -36,7 +45,11 @@ export function createDocumentStore(context: DocumentStoreContext): DocumentStor
     const client = internal ? context.executor : context.session;
     if (!client) throw new Error("Transporte del ejecutor no disponible");
     const { data, error } = await client.rpc(name, args);
-    if (error) throw new Error("Persistencia no disponible");
+    if (error) {
+      const code = typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
+      if (code === "42501" || code === "22023") throw new DocumentPersistenceError(SQLSTATE_FAILURE[code]);
+      throw new Error("Persistencia no disponible");
+    }
     return data;
   }
   function document(value: unknown) {

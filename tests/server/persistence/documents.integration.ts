@@ -115,8 +115,7 @@ describe("F4 Postgres real, A/B/anon, sin proveedores", () => {
     expect(result.ok).toBe(true);
     expect(result.rows).toEqual([["created"], ["replayed"]]);
     await expectRejected(`set role galcoa_executor; select public.append_document_audit('${b.id}', '${doc}', 'document.created', '${doc}', 'ok', '${correlation}', '${key()}');`, SQLSTATE.permission, "supabase_admin");
-    const wrongResource = await psql(`set role galcoa_executor; select public.append_document_audit('${a.id}', '${doc}', 'message.recorded', '${doc}', 'ok', '${correlation}', '${key()}');`, "supabase_admin");
-    expect(wrongResource.ok).toBe(false);
+    await expectRejected(`set role galcoa_executor; select public.append_document_audit('${a.id}', '${doc}', 'message.recorded', '${doc}', 'ok', '${correlation}', '${key()}');`, "22023", "supabase_admin");
   });
 
   it("un fallo de auditoría revierte documento e idempotencia juntos", async () => {
