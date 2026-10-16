@@ -24,7 +24,7 @@ Nota dedicada de MVP-031. Contenido listo para trasladarse a una sección de [`d
 ## Limitaciones conocidas (no inventadas ni ocultas)
 
 - **La sesión de recuperación es una sesión completa.** Con `secure_password_change = false` (valor actual de `supabase/config.toml`) Supabase permite cambiar la contraseña con esa sesión sin reautenticar, y mientras el usuario no cierre sesión puede usar el resto de la aplicación. No se creó un «compartimento» propio; si se quisiera restringirla, es decisión del líder (p. ej. activar `secure_password_change`), no de este flujo.
-- **El `code` aparece en el log de peticiones de `next dev`** (`GET /api/auth/callback?code=…`). Es de un solo uso y inútil sin la cookie del verificador PKCE, pero no se garantiza que no esté en logs de la plataforma; la aplicación no lo registra.
+- **Logs del callback:** `next.config.ts` configura `logging.incomingRequests.ignore` para excluir `/api/auth/callback` del log de peticiones de `next dev`, evitando registrar su query con `code`. Las demás rutas conservan sus logs. Esta opción solo afecta al servidor de desarrollo: no cubre los logs externos de Vercel, proxies u otras plataformas ni garantiza que allí no se registre la URL; deben configurarse por separado. La aplicación no registra el código.
 - Los límites de correo y Mailpit son de la instancia local; el correo real y el proyecto remoto no se probaron aquí.
 
 ## Prueba real local (E2E)

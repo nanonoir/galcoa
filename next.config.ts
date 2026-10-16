@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  logging: {
+    incomingRequests: {
+      ignore: [/^\/api\/auth\/callback/],
+    },
+  },
   reactCompiler: true,
   turbopack: {
     rules: {
