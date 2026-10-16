@@ -1,6 +1,6 @@
 # F12 · Harness de tests de servidor
 
-**Estado: en curso (H1–H5 hechos; H6 y H7 parciales; ver §6 y §8).** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (fila de `MVP-120`). El maestro conserva IDs, estados y evidencia; este plan no los modifica.
+**Estado: en curso (H1–H5 hechos; H6/H7 implementados y validados, pendientes de revisión principal e integración; ver §8).** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (fila de `MVP-120`). El maestro conserva IDs, estados y evidencia; este plan no los modifica.
 
 Tareas del maestro: `MVP-120`
 
@@ -52,7 +52,7 @@ Principio: **no hay fallback mock en producción** (maestro §2). Los dobles se 
 
 ## 6. Pasos y checkpoints
 
-H1–H5 hechos; H6 y H7 parciales (el motivo y lo pendiente están en cada paso). Ningún paso se marca hecho si depende de un puerto o factory que aún no existe en `develop`.
+H1–H5 hechos. Los párrafos H6/H7 siguientes conservan el checkpoint anterior a este fix: su pendiente técnico de Auth y revalidación local queda resuelto por el checkpoint 3 (§8). Las casillas de cierre siguen abiertas hasta revisión principal e integración; no se archiva ni cambia el maestro.
 
 - [x] **H1 · Proyectos Vitest de servidor** (← `MVP-002`). Entorno Node, resolución de `@/*`, setup propio; `npm test` por defecto no exige Docker ni credenciales. Casos negativos que prueban que un test falla cuando debe. *Hecho:* proyecto `server` en `vitest.config.ts` (alias de `server-only` solo ahí) y `vitest.server-local.config.ts` para la base real (script `test:server:local`).
 - [x] **H2 · Dobles de proveedores** (← H1). Implementan el mismo contrato que el servicio real; comportamientos configurables por test (éxito, fallo, latencia, cancelación, salida inválida contra Zod, resultado incierto de HCS). Sin red y sin credenciales; verificar con un test que ningún doble hace `fetch`/importa SDK real. *Hecho:* motor `ScriptedBehavior`, reloj, bloqueo de red y dobles contra los puertos reales: `scriptedGeminiModel` (MVP-050), `scriptedGroqClient` (`createClient` de `createGroqStructuredPort`, MVP-053), `createInMemoryEvidenceStorage` (`EvidenceStorage`, MVP-042/043; `failNext`, `put` para objeto ya presente o subida sin commit), `scriptedHcsTransport` (`HcsTransport` de `createHcsClient`: recibo, rechazo terminal, timeout incierto con efecto aplicado) y `scriptedMirrorFetch` (`fetch` de `createMirrorReader`: coincide, 404, 5xx, red caída, respuesta inválida, retraso con reloj). Tests en `tests/server/harness/provider-doubles.test.ts`; el test de aislamiento recorre también los dobles nuevos. Límite: el doble de Storage cumple el puerto, no prueba el adaptador real de Supabase Storage (MVP-083).
@@ -88,6 +88,18 @@ Revisión independiente posterior y fix acotado, 2026-10-16 · rama `fix/server-
 Checkpoint 2, 2026-10-16 · rama `flow/32-harness` (base fd3139e) · worktree nuevo sin `.env`, `npm.cmd ci` desde el lockfile · Node v24.18.0, Vitest 5.0.5 · sin red de proveedores ni Supabase: `npx vitest run --project server` 377 pasan (20 archivos, 3 ejecuciones consecutivas); `npm test` 689 pasan (36 archivos); `test:boundaries` 67; `lint`, `typecheck` y `build` sin errores. No ejecutado: `test:server:local` y `test:rls` (no se levantó Docker/Supabase local, recurso compartido); no se probó el helper de Auth (pendiente). Hallazgo: dos archivos de test que construyen en el mismo caché del puente compiten con la comparación antes/después de `bridge.test.ts`; por eso las pruebas del entry viven en ese mismo archivo.
 
 No acredita `MVP-121`, el transporte HTTP de Next (`MVP-134`) ni cloud/proveedores.
+
+### Checkpoint 3 · Issue #32 H6/H7 (2026-10-16)
+
+Base actualizada por `git fetch origin && git merge origin/develop` (fast-forward a `5eed6e1`), sin reset ni cambios SQL. Auth #9 ya estaba integrado por PR #70/#75. No se tocó su plan completado.
+
+Resultado final tras añadir la fixture negativa de composición Auth/Next: `npm test` **925/925**, puente focal **26/26**, eslint focal correcto. `supabase stop` ejecutado: únicamente siguen activos los dos contenedores `entrenar-*` ajenos. Sin procesos ni stack de esta tarea pendientes.
+
+- Resuelto el pendiente técnico H6: `entry.ts` exporta `createLocalAuthContext({ url, publishableKey, cookies }) → { session, cookieChanges, cookieHeaders }`, usando **las mismas** factories nombradas de `auth.ts`/`session.ts`. El primer intento con Vite funcionó: tree-shaking elimina helpers Next y el guard efectivo rechaza tanto `next/headers` directo como `getCurrentSession` (fixture de composición productiva). Se permite explícitamente `@supabase/ssr` junto a `@supabase/supabase-js` solo para runtime Auth/RPC local. No fue necesario separar módulos productores de MVP-025/030 (Issues #6/#8); **cero cambios `src/**`**, cero duplicación de lógica Auth, cero dependencia nueva.
+- URL restringida a loopback IPv4/puerto 54321, sin credenciales/ruta/query/hash, y clave pública comprobada antes del cliente/fetch. Configuración del CLI local inyectada mediante `EnvReader`; no se lee `.env`, no se acepta UID, ni se pasa `service_role` al pipeline. La clave privilegiada solo permanece en el helper de seed compartido de MVP-024.
+- `tests/server/local/auth-bridge.test.ts` reutiliza `createTestUser` y `readLocalStack`: cookies SSR reales de A/B adaptadas por `createSessionClient`, ESM ejercido en procesos Node limpios, dominio `createEvidenceService` a través de `createBridgeHandlers` (A permitido, B no disponible, sin cookies no sesión), cookies corruptas/token inválido, cookie vencida con refresco real y devolución de cookies/headers. Indisponibilidad usa respuesta 500 de transporte **explícitamente simulada** sobre el cliente real, conserva `AUTH_UNAVAILABLE` y caché por request; no acredita caída real de Auth. Almacén de dominio en memoria explícito: no se presenta como persistencia SQL.
+- H7: este worktree nuevo ya tenía `npm ci` sin `.env` (checkpoint 2); comprobaciones actuales sin copiar entorno: `test:server:local` **8/8** (2 archivos; reset local desde las cuatro migraciones integradas), `test:rls` **119/119**, `npm test` **924/924** (49 archivos, antes de añadir la última fixture negativa), `test:boundaries` **67/67**, lint/typecheck/build correctos. Tras la última fixture, puente focal **26/26**. Build Next normal conserva `server-only`; no se modificaron alias productivos ni guardas Next/IA/HCS. Autorrevisión focal, sin revisor independiente: aceptación corresponde al coordinador.
+- Docker inspeccionado antes de arrancar: solo `entrenar-*` ajenos, intactos. Esta tarea arrancó únicamente Supabase `galcoa`, reseteó solo su DB local y lo detiene al terminar. Sin cloud, Gemini/Groq/Hedera ni email real. Pendiente de revisión/integración del nuevo PR; **MVP-120 sigue en_curso**, sin cierre de #32/#6/#8 ni archivado.
 
 ## 9. Referencias a completar y decisiones locales
 

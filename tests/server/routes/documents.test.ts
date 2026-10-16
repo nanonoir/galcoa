@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createDocumentHttpHandler } from "@/lib/documents/http";
+import { createDocumentStore } from "@/lib/documents/persistence/store";
 import type { DocumentStore } from "@/lib/documents/ports";
 import type { SessionCheck } from "@/lib/supabase/auth";
 
@@ -33,6 +34,41 @@ function post(body: unknown, origin: string | null = "https://galcoa.test") {
 }
 
 describe("HTTP documental real con store doble (no demuestra Postgres)", () => {
+  it.each([
+    ["42501", 401, "NO_SESSION", false],
+    ["22023", 400, "INVALID_INPUT", false],
+    ["08006", 503, "TECHNICAL_FAILURE", true],
+    ["unknown", 503, "TECHNICAL_FAILURE", true],
+  ] as const)("RPC %s: HTTP %s sin filtrar diagnóstico", async (sqlstate, status, code, retryable) => {
+    for (const action of ["list", "get", "messages", "create", "append"] as const) {
+      const raw = { code: sqlstate, message: "fake-secret-message", details: "fake-secret-details",
+        hint: "fake-secret-hint", stack: "fake-secret-stack" };
+      const store = createDocumentStore({ verifiedUserId: owner, session: {
+        rpc: async () => ({ data: null, error: raw }),
+      } });
+      const deps = { getContext: async () => ({ session: authenticated, storeForUser: () => store }),
+        trustedOrigins: () => ["https://galcoa.test"] };
+      const request = action === "create" ? post({ title: "Documento", idempotencyKey: "request_123" })
+        : action === "append" ? post({ content: "Original", declaredEventDate: { kind: "unknown" }, idempotencyKey: "request_123" })
+          : new Request("https://galcoa.test");
+      const response = await createDocumentHttpHandler(deps, action)(request, doc);
+      expect(response.status).toBe(status);
+      const body = await response.json();
+      expect(body).toEqual({ error: { code, retryable, correlationId: expect.any(String),
+        stage: code === "NO_SESSION" ? "autenticacion" : code === "INVALID_INPUT" ? "validacion" : "persistencia" } });
+      expect(JSON.stringify(body)).not.toContain("fake-secret");
+    }
+  });
+  it("no confía en códigos de excepciones arbitrarias del SDK", async () => {
+    const store = createDocumentStore({ verifiedUserId: owner, session: {
+      rpc: async () => { throw { code: "NO_SESSION", message: "fake-secret" }; },
+    } });
+    const response = await createDocumentHttpHandler({
+      getContext: async () => ({ session: authenticated, storeForUser: () => store }), trustedOrigins: () => [],
+    }, "list")(new Request("https://galcoa.test"));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ error: { code: "TECHNICAL_FAILURE", retryable: true } });
+  });
   it.each([null, "null", "https://evil.test", "https://galcoa.test.evil.test"])("rechaza Origin %s antes de auth", async (origin) => {
     const { deps, getContext } = setup();
     expect((await createDocumentHttpHandler(deps, "create")(post({}, origin))).status).toBe(403);

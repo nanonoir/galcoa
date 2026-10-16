@@ -20,7 +20,9 @@ export const ALLOWED_RUNTIME_EXTERNALS: readonly (string | RegExp)[] = [
   "ai",
   "ai/test",
   "zod",
+  // Solo runtime de Auth/RPC local real; no habilita composición Next ni SDK IA/HCS.
   "@supabase/supabase-js",
+  "@supabase/ssr",
 ];
 
 /** Paquetes que jamás deben entrar: marcador sin resolver, Next, adapters/SDK reales de IA/HCS/PDF. */

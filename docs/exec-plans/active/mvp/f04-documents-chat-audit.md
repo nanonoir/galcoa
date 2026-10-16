@@ -6,6 +6,30 @@ Tareas del maestro: `MVP-040`, `MVP-041`, `MVP-044`
 
 ## 1. Objetivo y estado de partida
 
+### Corrección posterior a review #74/#76 — 2026-10-16
+
+Base `origin/develop` `0d31876`, ambos PR ya integrados. Entrega separada
+`flow/persistence-errors`, `Refs #10`, sin merge automático ni cierre de
+`MVP-040/041/044`. Se preservan los servicios puros y sus contratos: HTTP captura
+solo la clase local segura del adaptador antes de su normalización por el servicio.
+Whitelist RPC: SQLSTATE `42501` → HTTP **401**, `NO_SESSION`, `retryable:false`
+(reautenticar antes de volver a intentar); `22023` → **400**, `INVALID_INPUT`,
+`retryable:false` (corregir entrada). Caídas y errores no reconocidos → **503**,
+`TECHNICAL_FAILURE`, `retryable:true`. No se serializan SQL message/details/hint/stack.
+Ajeno/inexistente sigue **404**; no se modifica ninguna validación de body ni
+contratos de otros handlers (incluido 422 donde ya exista).
+
+Validación focalizada: `npx.cmd vitest run --project server
+tests/server/persistence/documents.test.ts tests/server/routes/documents.test.ts`
+**36/36**, con store real y RPC doble verificando 400/401/503 en las cinco acciones
+HTTP, envelope exacto y ausencia de diagnósticos ficticios. ESLint focalizado y
+`npx.cmd tsc --noEmit`: exit 0. El test SQL de recurso de auditoría incorrecto ahora
+exige específicamente **22023** mediante `expectRejected`; **no ejecutado** aquí:
+base local reservada por Auth (#32), harness indisponible. Los anteriores 8/8 y
+2/2 son evidencia histórica, no una repetición de esta corrección. No se inicia,
+resetea ni detiene Docker. Transporte productivo `galcoa_executor` sigue pendiente;
+no se implementan roles, dependencias, migraciones ni configuración aquí.
+
 ### Conexión autorizada — 2026-10-16 (`flow/persistence-wiring`)
 
 Secuencia coordinada de #10/#11/#13/#14/#15 (sin duplicar planes): primero RPC,
