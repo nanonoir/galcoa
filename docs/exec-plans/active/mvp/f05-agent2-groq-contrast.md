@@ -2,7 +2,7 @@
 
 Tareas del maestro: `MVP-053`
 
-**Estado: planificado, no ejecutado.** Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3 paso 5, §4 REQ-06 y «Límites de actuación», INV-02, INV-07, INV-10), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-02`, `SH-03`, `SH-08`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md).
+**Estado: servicio implementado con dobles (2026-10-16, Issue #15).** Decisiones locales: JSON Schema en modo no estricto (la forma se garantiza con Zod); el resultado debe coincidir con los hallazgos (crítico → `contradiccion_critica`) o es error técnico; contexto excedido se rechaza sin truncar (MVP-013 §7.3: sin truncado), así que no hay omisiones. Pendiente: adaptador real del reporte, Route Handler (sesión MVP-030), auditoría y extracciones reales. Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3 paso 5, §4 REQ-06 y «Límites de actuación», INV-02, INV-07, INV-10), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-02`, `SH-03`, `SH-08`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md).
 
 ## 1. Objetivo y estado de partida
 
