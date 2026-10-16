@@ -2,7 +2,7 @@
 
 Tareas del maestro: `MVP-054`
 
-**Estado: planificado, no ejecutado.** Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §10, REQ-02/03/04/05), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-02`, `SH-03`, `SH-07`, `SH-09`), [arquitectura](../../../architecture.md) (dependencias y contratos), [desarrollo](../../../development.md).
+**Estado: en curso (checkpoint de presentación; container bloqueado por Route Handlers ausentes).** Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §10, REQ-02/03/04/05), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-02`, `SH-03`, `SH-07`, `SH-09`), [arquitectura](../../../architecture.md) (dependencias y contratos), [desarrollo](../../../development.md).
 
 ## 1. Objetivo y estado de partida
 
@@ -40,9 +40,9 @@ Los callbacks ordinarios nacen en el container cliente; no se pasan funciones de
 
 ## 5. Pasos
 
-- [ ] Verificar `MVP-040`, `MVP-042`, `MVP-052` y `MVP-053` integradas; leer los endpoints reales resultantes.
-- [ ] Contrato de props de chat en `src/features/chat/contracts/` y escenarios ficticios (historial, vacío, streaming, error de proveedor, adjunto rechazado, carga en curso) validados con Zod.
-- [ ] Componentes de presentación: lista de mensajes, composer, adjunto con estado, mensajes de error técnico con acción de reintentar; región viva accesible para el streaming, foco predecible, teclado completo, responsive.
+- [ ] Verificar `MVP-040`, `MVP-042`, `MVP-052` y `MVP-053` integradas; leer los endpoints reales resultantes. *(2026-10-16: los servicios están integrados —`src/lib/documents/{messages,turns,evidence,contrast}`—, pero `src/app/api/` no existe: ningún Route Handler. Pendiente.)*
+- [x] Contrato de props de chat en `src/features/chat/contracts/` y escenarios ficticios (historial, vacío, streaming, error de proveedor, adjunto rechazado, carga en curso) validados con Zod.
+- [x] Componentes de presentación: lista de mensajes, composer, adjunto con estado, mensajes de error técnico con acción de reintentar; región viva accesible para el streaming, foco predecible, teclado completo, responsive.
 - [ ] Container: historial inicial recibido como DTO del servidor; envío con `clientMessageId` (idempotencia de `MVP-052`); cancelar con `AbortController`; reintentar el mismo turno sin crear otro mensaje; carga de adjuntos con la clave de idempotencia de `MVP-042` y manejo de motivos de rechazo estables.
 - [ ] Pipeline completo en el consumer: tras una carga exitosa invocar la extracción de `MVP-042/043`; tras la redacción/stream de `MVP-052` y tras la extracción, invocar el contraste persistido de `MVP-053` (Groq) automáticamente. Si una etapa falla, el adjunto o el contraste quedan en estado de error técnico visible («cargado sin extracción», «contraste no disponible») sin afirmar lo contrario ni bloquear el chat.
 - [ ] Estados de error visibles que distinguen impedimento técnico (red, proveedor, almacenamiento, permisos) de advertencias de contenido; nunca mensajes de éxito si el servidor no confirmó.
@@ -61,9 +61,15 @@ Los callbacks ordinarios nacen en el container cliente; no se pasan funciones de
 | Accesibilidad | Región viva, foco tras enviar/cancelar, navegación por teclado (jsdom) y revisión manual en móvil/escritorio |
 | Flujo real conectado | Pendiente para `MVP-121`/`MVP-134`: requiere Supabase local y dobles de servidor; se declara no ejecutado hasta entonces |
 
+## 6.1 Avance del checkpoint (2026-10-16, rama `flow/16-chat`)
+
+Entregado sin tocar red ni rutas: `src/features/chat/contracts/chat-view.ts` (esquemas Zod del estado y props), `components/chat-reference.tsx` (presentación pura), `fixtures/chat-scenarios.ts` (6 escenarios ficticios) y pruebas `components/chat-reference.test.tsx` + `tests/contracts/chat-view.test.ts`. Pasos 2 y 3 de §5 cumplidos; **no** se implementó el container (pasos 1, 4, 5, 6 y 7 de §5 y los casos «chat sobre servicios reales» y «contraste conectado» de §6).
+
+**Bloqueo para el container:** existen `createChatTurnHandler` (`src/lib/documents/turns/http.ts`, NDJSON con `TurnEvent`) y los servicios de mensajes, evidencias y contraste, pero no hay Route Handlers que los expongan ni rutas definidas para historial, carga/extracción y contraste. Se necesita de los productores: ruta del turno (`MVP-052`), ruta de carga y extracción (`MVP-042/043`), ruta del contraste (`MVP-053`) y lectura del historial (`MVP-040/041`), con sus errores estables. No se inventaron rutas.
+
 ## 7. Validación, evidencia y rollback
 
-`lint`, `typecheck`, `npm test`, `test:boundaries`, `build` y `npm run test:e2e` (si se agregan rutas navegables). **Evidencia actual: no ejecutado.** Playwright contra servicios reales no corre aquí sin autorización; no hay fallback mock en rutas de producto. Rollback: revertir `src/features/chat/` en la rama (este plan no modifica la página).
+`lint`, `typecheck`, `npm test`, `test:boundaries`, `build` y `npm run test:e2e` (si se agregan rutas navegables). **Evidencia del checkpoint (presentación, sin integración real):** `eslint` limpio, `typecheck` sin errores, `npm test` 704/704, `test:boundaries` 67/67; `build` no ejecutado (sin rutas nuevas). Container, streaming real, adjuntos y contraste: no ejecutado. Playwright contra servicios reales no corre aquí sin autorización; no hay fallback mock en rutas de producto. Rollback: revertir `src/features/chat/` en la rama (este plan no modifica la página).
 
 ## 8. Cierre
 
