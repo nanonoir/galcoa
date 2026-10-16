@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { authFormScenarios } from "@/mocks/auth";
-import { snapshotScenarios } from "@/mocks/documents";
+import { snapshotScenarios, versionHistoryScenarios } from "@/mocks/documents";
 
 import { PreviewApp } from "./preview-app";
 import { previewEntries, type LocalHandlers } from "./registry";
@@ -110,6 +110,40 @@ describe("entrada auth-forms (MVP-115)", () => {
   });
 });
 
+describe("entrada version-history (MVP-113)", () => {
+  it("monta la presentación real con los seis escenarios, no el placeholder", () => {
+    const entry = previewEntries.find((e) => e.id === "version-history");
+    expect(entry?.scenarios.map((s) => s.id)).toEqual(versionHistoryScenarios.map((s) => s.id));
+    expect(entry?.scenarios).toHaveLength(6);
+    for (const scenario of versionHistoryScenarios) {
+      const { unmount } = render(<div>{entry?.render(scenario.id, handlers)}</div>);
+      expect(screen.queryByTestId("scenario-json")).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Historial de versiones" })).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("seleccionar registra solo el evento con el ID y marca la versión; reintentar usa onRetry", async () => {
+    const user = userEvent.setup();
+    const log = vi.fn();
+    const onRetry = vi.fn();
+    const entry = previewEntries.find((e) => e.id === "version-history");
+    const { unmount } = render(<div>{entry?.render("v1-registered-v2-pending", { ...handlers, log, onRetry })}</div>);
+    const v1 = screen.getByRole("button", { name: "Versión 1" });
+    expect(v1).not.toHaveAttribute("aria-current");
+    await user.click(v1);
+    expect(log.mock.calls).toEqual([['onSelect("ver-soja-001-1")']]);
+    expect(v1).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("button", { name: "Versión 2" })).not.toHaveAttribute("aria-current");
+    unmount();
+
+    render(<div>{entry?.render("error", { ...handlers, log, onRetry })}</div>);
+    await user.click(screen.getByRole("button", { name: "Reintentar carga" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("PreviewApp con varias entradas", () => {
   it("ofrece selector de componente y cambia de escenarios al elegir una entrada", async () => {
     const user = userEvent.setup();
@@ -120,7 +154,7 @@ describe("PreviewApp con varias entradas", () => {
     expect(within(scenarios).getByRole("button", { name: "Cargando" })).toHaveAttribute("aria-pressed", "true");
 
     await user.click(within(scenarios).getByRole("button", { name: "v1 registrada y v2 con sello pendiente" }));
-    await user.click(screen.getByRole("button", { name: 'onSelect("ver-soja-001-2")' }));
-    expect(within(screen.getByRole("complementary")).getAllByRole("listitem").map((li) => li.textContent)).toEqual(['onSelect("ver-soja-001-2")']);
+    await user.click(within(screen.getByTestId("preview-stage")).getByRole("button", { name: "Versión 1" }));
+    expect(within(screen.getByRole("complementary")).getAllByRole("listitem").map((li) => li.textContent)).toEqual(['onSelect("ver-soja-001-1")']);
   });
 });
