@@ -37,6 +37,8 @@ const source = (over: Partial<FreezeSource> = {}): FreezeSource => ({
   draft: draft(),
   warnings: [critical],
   sourceDescriptions: { m1: "chat: 10 cajas", e1: "remito aportado: 12 cajas" },
+  sourceRefs: { m1: { kind: "mensaje", id: "msg-1" }, e1: { kind: "evidencia", id: "evi-1" } },
+  controlStatus: "contradiccion_critica",
   ...over,
 });
 
