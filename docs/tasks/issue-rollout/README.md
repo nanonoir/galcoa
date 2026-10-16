@@ -43,7 +43,7 @@ Asignaciones confirmadas al publicar: Nahuel 24 Issues, Facu 5; Gastón tiene 6 
 
 | Issue | IDs | Responsable | Plan |
 | --- | --- | --- | --- |
-| [#3 — Confirmar acceso de colaboradores y registrar MVP-007](https://github.com/nanonoir/galcoa/issues/3) | `MVP-007` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/active/mvp/f00-acceso-colaborador.md) |
+| [#3 — Confirmar acceso de colaboradores y registrar MVP-007](https://github.com/nanonoir/galcoa/issues/3) | `MVP-007` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/completed/f00-acceso-colaborador.md) |
 | [#4 — Obtener dictamen jurídico externo sobre confirmación y privacidad](https://github.com/nanonoir/galcoa/issues/4) | `MVP-014` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/active/mvp/f01-revision-juridica.md) |
 | [#5 — Implementar esquema SQL, migraciones y aislamiento RLS/Storage local](https://github.com/nanonoir/galcoa/issues/5) | `MVP-022`, `MVP-023`, `MVP-024` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/completed/f02-esquema-migraciones-rls.md) |
 | [#6 — Implementar clientes Supabase server-only y configuración perezosa](https://github.com/nanonoir/galcoa/issues/6) | `MVP-025` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/active/mvp/f02-clientes-supabase.md) |

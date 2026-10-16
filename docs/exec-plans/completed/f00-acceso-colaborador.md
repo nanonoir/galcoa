@@ -1,12 +1,12 @@
 # ExecPlan F0 — Acceso del colaborador al repositorio (acción externa)
 
-**Estado: en curso.** Checkpoint de Facu verificado; aceptación de Gastón pendiente. Procedimiento de acceso **fuera del repositorio**, sin código de producto ni automatización de permisos. El [maestro](../mvp-master-plan.md) conserva el progreso.
+**Estado: completado (2026-10-16).** Acceso verificado para Facu y Gastón. Procedimiento de acceso **fuera del repositorio**, sin código de producto ni automatización de permisos. El [maestro](../active/mvp-master-plan.md) conserva el progreso.
 
 Tareas del maestro: `MVP-007`
 
-Requisitos PRD: [§13](../../GALCOA-PRD-v1.4.md) (rama corta por ticket, PR, el líder revisa y hace merge; «no se bloquea artificialmente el aporte»). Sin REQ funcional.
+Requisitos PRD: [§13](../GALCOA-PRD-v1.4.md) (rama corta por ticket, PR, el líder revisa y hace merge; «no se bloquea artificialmente el aporte»). Sin REQ funcional.
 
-Referencias: [arquitectura: delegación y CODEOWNERS](../../../architecture.md) · [desarrollo: entrega del colaborador](../../../development.md) · [fundaciones SH-07](../../../design/mvp-shared-foundations.md) (propiedad de superficies).
+Referencias: [arquitectura: delegación y CODEOWNERS](../../architecture.md) · [desarrollo: entrega del colaborador](../../development.md) · [fundaciones SH-07](../../design/mvp-shared-foundations.md) (propiedad de superficies).
 
 ## Precondiciones y checkpoints
 
@@ -26,7 +26,7 @@ Referencias: [arquitectura: delegación y CODEOWNERS](../../../architecture.md) 
 2. El líder elige la modalidad mínima: invitación como colaborador con permiso suficiente para ramas y PR, o fork + PR. Debe ser un permiso sin administración. La elección es del líder; el PRD no la fija.
 3. El líder envía la invitación desde la configuración del repositorio en GitHub y el colaborador la acepta.
 4. Confirmación manual: el colaborador puede clonar/leer el repositorio y el líder ve el permiso en la lista de colaboradores. No se abre un PR de prueba (sería una acción remota sin necesidad).
-5. Onboarding sin secretos: indicar `README.md`, `AGENTS.md`, [desarrollo](../../../development.md) (inicio desde clon limpio) y la plantilla de Issue. La presentación no necesita `.env`.
+5. Onboarding sin secretos: indicar `README.md`, `AGENTS.md`, [desarrollo](../../development.md) (inicio desde clon limpio) y la plantilla de Issue. La presentación no necesita `.env`.
 6. Registrar la evidencia en la fila (ver Cierre).
 
 ## Alcance no automatizable
@@ -54,17 +54,19 @@ Ninguna.
 
 ## Checklist
 
-- [ ] Identificador del colaborador obtenido por el líder.
-- [ ] Modalidad mínima elegida.
-- [ ] Invitación enviada y aceptada.
-- [ ] Acceso confirmado manualmente.
-- [ ] Onboarding sin secretos entregado.
-- [ ] Fila de `MVP-007` actualizada.
+- [x] Identificador del colaborador obtenido por el líder.
+- [x] Modalidad mínima elegida (colaborador directo con permiso `write`, sin administración).
+- [x] Invitación enviada y aceptada (Facu y Gastón; sin invitaciones pendientes).
+- [x] Acceso confirmado (GitHub API y PRs integrados de ambos).
+- [x] Onboarding sin secretos entregado (README, AGENTS, desarrollo y Issues con allowlist).
+- [x] Fila de `MVP-007` actualizada.
 
 ## Progreso y evidencia
 
 2026-10-16: el usuario confirmó a Facu como colaborador y envió la invitación a Gastón. Verificación del orquestador: `gh api repos/nanonoir/galcoa/collaborators/jfacundoayala/permission` devuelve `permission: write`; la invitación de `grancobud` figura con `permissions: write`, sin expirar. No se enviaron nuevas invitaciones ni se alteraron permisos. Se conserva abierto el procedimiento hasta comprobar el acceso de Gastón; el checkpoint de Facu está cumplido.
 
+2026-10-16 (cierre): verificación de solo lectura con `gh api repos/nanonoir/galcoa/collaborators` (sin mostrar credenciales ni modificar permisos): `grancobud`, `jfacundoayala` y `thomasskarp` con `push: true` y `admin: false`; `nanonoir` con `admin: true`. `gh api repos/nanonoir/galcoa/invitations` devuelve 0 invitaciones pendientes, es decir, la de Gastón fue aceptada. Efectividad del acceso comprobada además por PRs ya mergeados: Gastón (`grancobud`) con #39 (Gemini), #49 (clientes Supabase) y #57 (verificador, 17:03 UTC) y Facu (`jfacundoayala`) #52 (`MVP-111`) y #58 (`MVP-115`, 17:09 UTC). No se enviaron invitaciones, no se cambiaron permisos ni se abrieron PRs de prueba.
+
 ## Cierre
 
-Actualizar **solo** la fila `MVP-007` (estado `completada`, evidencia: `AAAA-MM-DD · confirmación del líder · modalidad`) y recontar §3 tras integrar. Archivar este plan en [`completed/`](../../completed/). No se marca nada por tener el plan escrito. **Al archivar:** mover el plan a `docs/exec-plans/completed/`, conservar su enlace en la fila actualizándolo a la nueva ubicación y corregir los relativos del propio plan (pierden un nivel: `../../../x` → `../../x`, `../../GALCOA-PRD-v1.4.md` → `../GALCOA-PRD-v1.4.md`; el maestro pasa a `../active/mvp-master-plan.md` y los planes hermanos aún activos a `../active/mvp/<plan>.md`). Se archiva únicamente al completar; ningún plan se archiva ahora.
+Cerrado el 2026-10-16 con la evidencia de «Progreso y evidencia». La fila `MVP-007` del maestro quedó actualizada (`completada`) y este plan está archivado.
