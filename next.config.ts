@@ -3,8 +3,17 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   logging: {
     incomingRequests: {
-      ignore: [/^\/api\/auth\/callback/],
+      // El token de invitación viaja en la ruta: no se registra en el log del framework.
+      ignore: [/^\/api\/auth\/callback/, /^\/confirm\//, /^\/api\/confirm\//],
     },
+  },
+  async headers() {
+    const privatePage = [
+      { key: "Cache-Control", value: "no-store, max-age=0" },
+      { key: "Referrer-Policy", value: "no-referrer" },
+      { key: "X-Robots-Tag", value: "noindex, nofollow" },
+    ];
+    return [{ source: "/confirm/:path*", headers: privatePage }];
   },
   reactCompiler: true,
   turbopack: {

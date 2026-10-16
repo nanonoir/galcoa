@@ -38,6 +38,8 @@ export type FreezeInput = {
 export type FrozenSnapshot = {
   content: FrozenOperation;
   snapshotHash: string;
+  /** Bytes JCS del contenido en hexadecimal: la base los vuelve a hashear y los compara. */
+  canonicalHex: string;
   /** Alias → ref privada: solo para el propietario, nunca en el DTO. */
   aliasTable: { alias: string; ref: string }[];
 };
@@ -49,5 +51,6 @@ export function buildFrozenSnapshot(input: FreezeInput): FrozenSnapshot {
     warnings: shared,
     selection: input.selection,
   });
-  return { content, snapshotHash: snapshotHash(content).hash, aliasTable };
+  const canonical = snapshotHash(content);
+  return { content, snapshotHash: canonical.hash, canonicalHex: Buffer.from(canonical.bytes).toString("hex"), aliasTable };
 }

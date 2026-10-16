@@ -49,8 +49,8 @@ type Service = ReturnType<typeof createInvitationService>;
 
 /** Propietario: emite (o reemite) el enlace de un tercero. El token en claro vuelve una sola vez. */
 export function createIssueInvitationHandler(getService: () => Promise<Service>) {
-  return async (request: Request): Promise<Response> => {
-    const result = await (await getService()).issue(await readBody(request));
+  return async (request: Request, revisionId?: string): Promise<Response> => {
+    const result = await (await getService()).issue({ ...(await readBody(request)), ...(revisionId ? { revisionId } : {}) });
     return result.ok ? Response.json(result.value, { status: 201, headers: PUBLIC_HEADERS }) : errorResponse(result.error);
   };
 }

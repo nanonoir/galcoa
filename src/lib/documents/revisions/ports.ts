@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Draft } from "@/lib/contracts/core";
+import type { ControlStatus } from "@/lib/contracts/document";
 import type { ParticipantRole, ParticipantSelection, Revision, Snapshot, FrozenOperation } from "@/lib/contracts/review";
 import type { ConsolidatedWarning } from "@/lib/rules/consolidate";
 
@@ -21,6 +22,10 @@ export type FreezeSource = {
   warnings: ConsolidatedWarning[];
   /** Descripciones compartibles por ref privada. */
   sourceDescriptions: Record<string, string>;
+  /** Fuente real de cada ref privada (mensaje o evidencia del mismo documento). */
+  sourceRefs: Record<string, { kind: "mensaje" | "evidencia"; id: string }>;
+  /** Control documental de esta revisión del borrador (`sin_evaluar` sin reporte vigente). */
+  controlStatus: ControlStatus;
 };
 
 export type FreezeReader = {
@@ -35,6 +40,11 @@ export type FreezeInput = {
   expectedDraftRevision: number;
   content: FrozenOperation;
   snapshotHash: string;
+  /** Bytes JCS del contenido (hex): la base recalcula el hash y exige que concuerde. */
+  canonicalHex: string;
+  controlStatus: ControlStatus;
+  /** Mapeo privado alias → fuente real, para `snapshot_sources`. */
+  sources: { alias: string; kind: "mensaje" | "evidencia"; id: string }[];
   idempotency: IdempotencyInput;
   audit: AuditContext;
 };
