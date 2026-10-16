@@ -394,3 +394,107 @@ test.describe("historial de versiones MVP-113 (datos ficticios)", () => {
     await expect(page.getByRole("complementary").getByRole("listitem")).toHaveText(["onRetry()"]);
   });
 });
+
+test.describe("landing MVP-114 (datos ficticios)", () => {
+  const openLanding = async (page: Page, label: string) => {
+    await page.goto("/");
+    await page.getByRole("group", { name: "Componente" }).getByRole("button", { name: "Landing (MVP-114)" }).click();
+    await scenarioButton(page, label).click();
+    await expect(scenarioButton(page, label)).toHaveAttribute("aria-pressed", "true");
+  };
+  const nav = (page: Page) => stage(page).getByRole("navigation", { name: "Principal" });
+  const overflowOf = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+  const landingCases = [
+    { id: "public", label: "Visitante", action: "Crear cuenta", link: "Ingresar" },
+    { id: "signed-in", label: "Con sesión", action: "Ir a mis documentos", link: "Mis documentos" },
+  ];
+
+  for (const scenario of landingCases) {
+    test(`360px · «${scenario.label}» menú cerrado y abierto, sin desbordamiento`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: 360, height: 900 });
+      await openLanding(page, scenario.label);
+      await expect(stage(page).getByTestId("scenario-json")).toHaveCount(0);
+      await expect(stage(page).getByRole("link", { name: scenario.action })).toBeVisible();
+      const toggle = nav(page).getByRole("button", { name: "Menú" });
+      await expect(toggle).toBeVisible();
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await expect(nav(page).getByRole("link", { name: scenario.link })).toBeHidden();
+      expect(await overflowOf(page), "desbordamiento horizontal").toBeLessThanOrEqual(0);
+      const closed = testInfo.outputPath(`landing-${scenario.id}-360-menu-cerrado.png`);
+      await stage(page).screenshot({ path: closed });
+      await testInfo.attach(`landing-${scenario.id}-360-menu-cerrado`, { path: closed, contentType: "image/png" });
+
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-expanded", "true");
+      const menu = nav(page).getByRole("list", { name: "Menú" });
+      await expect(menu.getByRole("link", { name: scenario.link })).toBeVisible();
+      expect(await overflowOf(page), "desbordamiento horizontal con menú abierto").toBeLessThanOrEqual(0);
+      const opened = testInfo.outputPath(`landing-${scenario.id}-360-menu-abierto.png`);
+      await stage(page).screenshot({ path: opened });
+      await testInfo.attach(`landing-${scenario.id}-360-menu-abierto`, { path: opened, contentType: "image/png" });
+    });
+
+    test(`1280px · «${scenario.label}» enlaces en línea, sin botón de menú ni desbordamiento`, async ({ page }, testInfo) => {
+      // En escritorio no hay menú desplegable: la barra en línea muestra siempre todos los enlaces.
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await openLanding(page, scenario.label);
+      await expect(nav(page).getByRole("button", { name: "Menú" })).toBeHidden();
+      await expect(nav(page).getByRole("list", { name: "Menú" })).toHaveCount(0);
+      await expect(nav(page).getByRole("link", { name: scenario.link })).toBeVisible();
+      await expect(stage(page).getByRole("region", { name: "Cómo funciona" }).getByRole("heading", { level: 3 })).toHaveCount(3);
+      expect(await overflowOf(page), "desbordamiento horizontal").toBeLessThanOrEqual(0);
+      const path = testInfo.outputPath(`landing-${scenario.id}-1280.png`);
+      await stage(page).screenshot({ path });
+      await testInfo.attach(`landing-${scenario.id}-1280`, { path, contentType: "image/png" });
+    });
+  }
+
+  test("teclado: Enter abre el menú, Tab recorre enlaces con foco visible, Escape cierra y devuelve el foco", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 900 });
+    await openLanding(page, "Visitante");
+    const toggle = nav(page).getByRole("button", { name: "Menú" });
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+    const menu = nav(page).getByRole("list", { name: "Menú" });
+    await page.keyboard.press("Tab");
+    const first = menu.getByRole("link", { name: "Cómo funciona" });
+    await expect(first).toBeFocused();
+    const ring = await first.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { outline: s.outlineStyle, shadow: s.boxShadow };
+    });
+    expect(ring.outline !== "none" || ring.shadow !== "none", "foco visible").toBe(true);
+    await page.keyboard.press("Tab");
+    await expect(menu.getByRole("link", { name: "Alcance" })).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0);
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(toggle).toBeFocused();
+
+    // Abrir y cerrar con el botón también deja el foco en «Menú».
+    await page.keyboard.press("Space");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Space");
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(toggle).toBeFocused();
+  });
+
+  test("ancla del menú: lleva a la sección, cierra el menú y no hace pedidos de red", async ({ page }) => {
+    const requests: string[] = [];
+    page.on("request", (request) => {
+      if (["fetch", "xhr"].includes(request.resourceType())) requests.push(request.url());
+    });
+    await page.setViewportSize({ width: 360, height: 900 });
+    await openLanding(page, "Visitante");
+    await nav(page).getByRole("button", { name: "Menú" }).click();
+    await nav(page).getByRole("list", { name: "Menú" }).getByRole("link", { name: "Alcance" }).click();
+    await expect(page).toHaveURL(/#alcance$/);
+    await expect(nav(page).getByRole("list", { name: "Menú" })).toHaveCount(0);
+    await expect(stage(page).getByRole("region", { name: "Alcance" })).toBeInViewport();
+    expect(requests, "peticiones fetch/xhr").toEqual([]);
+  });
+});

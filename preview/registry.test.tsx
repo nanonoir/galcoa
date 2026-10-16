@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { authFormScenarios } from "@/mocks/auth";
 import { snapshotScenarios, versionHistoryScenarios } from "@/mocks/documents";
+import { landingScenarios } from "@/mocks/marketing";
 
 import { PreviewApp } from "./preview-app";
 import { previewEntries, type LocalHandlers } from "./registry";
@@ -107,6 +108,22 @@ describe("entrada auth-forms (MVP-115)", () => {
     await user.type(screen.getByLabelText("Contraseña"), "Clave-Ficticia-1");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
     expect(log.mock.calls).toEqual([["onSubmit(login)"]]);
+  });
+});
+
+describe("entrada landing (MVP-114)", () => {
+  it("monta la landing real en sus dos escenarios, no el placeholder", () => {
+    const entry = previewEntries.find((e) => e.id === "landing");
+    expect(entry?.scenarios.map((s) => s.id)).toEqual(landingScenarios.map((s) => s.id));
+    expect(entry?.scenarios.map((s) => s.id)).toEqual(["public", "signed-in"]);
+    for (const scenario of landingScenarios) {
+      const { unmount } = render(<div>{entry?.render(scenario.id, handlers)}</div>);
+      expect(screen.queryByTestId("scenario-json")).not.toBeInTheDocument();
+      expect(screen.getByRole("navigation", { name: "Principal" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1, name: scenario.content.heading })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: scenario.content.primaryAction.label })).toHaveAttribute("href", scenario.content.primaryAction.href);
+      unmount();
+    }
   });
 });
 

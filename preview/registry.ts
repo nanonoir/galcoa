@@ -17,13 +17,12 @@ import { SnapshotView } from "@/features/documents/components/snapshot-view";
 import type { SnapshotViewProps } from "@/features/documents/contracts/snapshot-view";
 import { VersionHistory } from "@/features/documents/components/version-history";
 import type { VersionHistoryViewProps } from "@/features/documents/contracts/version-history-view";
+import { LandingPage } from "@/features/marketing/components/landing-page";
 import type { LandingViewProps } from "@/features/marketing/contracts/landing-view";
 import { authFormScenarios } from "@/mocks/auth";
 import { dashboardScenarios } from "@/mocks/dashboard";
 import { snapshotScenarios, versionHistoryScenarios } from "@/mocks/documents";
 import { landingScenarios } from "@/mocks/marketing";
-
-import { ScenarioPlaceholder } from "./scenario-placeholder";
 
 /**
  * Registro del preview: lo mantiene el líder. Cada entrada se conecta a mano
@@ -105,20 +104,15 @@ const versionHistory: PreviewEntry = {
   },
 };
 
-/**
- * Entradas con `ScenarioPlaceholder`: preparan los escenarios para los
- * consumidores (MVP-114). Al implementarse cada presentación, su entrada
- * pasa a renderizarla; mientras tanto no cuentan como UI de producto.
- */
+/** Landing (MVP-114): monta la presentación real con el contenido del escenario; los enlaces llegan como datos del escenario. */
 const landing: PreviewEntry = {
-  id: "landing-placeholder",
-  label: "Landing (placeholder, MVP-114)",
+  id: "landing",
+  label: "Landing (MVP-114)",
   scenarios: landingScenarios.map(({ id, label }) => ({ id, label })),
   render(scenarioId) {
     const scenario = landingScenarios.find((s) => s.id === scenarioId);
     if (!scenario) return null;
-    const props: LandingViewProps = { content: scenario.content };
-    return createElement(ScenarioPlaceholder, { title: "Landing y navegación", data: props });
+    return createElement(LandingPage, { content: scenario.content } satisfies LandingViewProps);
   },
 };
 
