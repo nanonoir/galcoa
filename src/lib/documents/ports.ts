@@ -19,7 +19,7 @@ export type AuditContext = {
  * interfaces, no de Supabase: el helper de sesión es de MVP-030 y el
  * adaptador de persistencia (RPC `create_document` / `append_message` de
  * docs/design/data-transactions.md, migración aditiva de F4) depende de
- * MVP-025. Hasta entonces solo existen dobles en `tests/server/documents/`;
+ * MVP-025. Hasta entonces solo existen dobles en la suite de servidor de F4;
  * no hay fallback productivo.
  */
 

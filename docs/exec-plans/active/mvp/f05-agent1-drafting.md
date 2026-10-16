@@ -2,7 +2,7 @@
 
 Tareas del maestro: `MVP-051`
 
-**Estado: planificado, no ejecutado.** Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §4 REQ-05, §6 INV-02/07/10, §7), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-08`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md).
+**Estado: servicio implementado con dobles (2026-10-16, Issue #13).** Pendiente: adaptador real de `save_draft`, extracciones reales (MVP-043) y cierre de MVP-041. Criterio de procedencia aplicado (propuesto, a confirmar con el líder): ref desconocida o corrección que cambia números o cuyo original no está en la fuente = error técnico `AI_INVALID_PROVENANCE`; cita ausente o números no citados = advertencia «sin respaldo textual». Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §4 REQ-05, §6 INV-02/07/10, §7), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-08`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md).
 
 ## 1. Objetivo y estado de partida
 

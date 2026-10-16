@@ -284,7 +284,9 @@ describe("Solo servidor (F4)", () => {
   const dir = path.resolve(import.meta.dirname, "../../../src/lib/documents");
 
   it("cada archivo de src/lib/documents importa server-only y ninguno importa dobles", () => {
-    const files = readdirSync(dir).map((f) => path.join(dir, f));
+    const files = readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isFile())
+      .map((e) => path.join(dir, e.name));
     expect(files.length).toBeGreaterThan(0);
     for (const file of files) {
       const source = readFileSync(file, "utf8");
