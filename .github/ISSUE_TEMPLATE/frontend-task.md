@@ -42,4 +42,4 @@ Contratos, containers, mocks compartidos, rutas, servicios, configuración globa
 
 Ejecutar `npm run lint`, `npm run typecheck`, `npm test` y `npm run test:boundaries`; incluir `npm run build` y `npm run test:e2e` cuando corresponda a los archivos/interacciones cambiados. Informar resultados reales y limitaciones.
 
-Rama corta desde `main`, PR vinculado a este Issue y revisión/merge del líder. No hacer push directo a `main` ni ampliar alcance sin autorización.
+Rama corta desde un `origin/develop` actualizado; el Issue asignado autoriza commits, push, PR y merge dentro de su alcance (AGENTS.md, «Equipo y colaboración»). Sin push directo a `develop` ni force-push, y sin ampliar alcance sin autorización. No hay aprobaciones ni checks obligatorios: un test fallido no sensible se informa con advertencia visible en el PR y aviso a quien ejecuta; si hay riesgo de secretos, permisos, datos o finalizar sin confirmaciones, no se mergea y se escala al líder.

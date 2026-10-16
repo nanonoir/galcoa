@@ -128,6 +128,15 @@ describe("ESLint: contratos, producto y preview", () => {
     expect((await lint({ ...base, [file]: 'import { client } from "@/lib/supabase/client";\nexport const n = client;\n' }, file)).length).toBeGreaterThan(0);
   });
 
+  it("mocks: no importan contratos de feature ni presentación", async () => {
+    const file = "src/mocks/n.ts";
+    const files = { ...base, "src/features/dash/contracts/view.ts": "export type V = string;\n" };
+    for (const line of ['import type { V } from "@/features/dash/contracts/view";', 'import { S } from "@/features/dash/components/sibling";']) {
+      const messages = await lint({ ...files, [file]: `${line}\nexport const n = 1;\n` }, file);
+      expect(messages.length, line).toBeGreaterThan(0);
+    }
+  });
+
   it("preview: acepta presentación y mocks; rechaza app, containers y servicios", async () => {
     const file = "preview/main.tsx";
     expect(await lint({ ...base, [file]: 'import { m } from "@/mocks/m";\nimport { S } from "@/features/dash/components/sibling";\nexport const M = [m, S];\n' }, file)).toEqual([]);

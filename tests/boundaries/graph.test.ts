@@ -122,6 +122,35 @@ describe("presentación: casos rechazados", () => {
   });
 });
 
+describe.each(["documents", "marketing", "auth"])("dominio %s", (domain) => {
+  const server = { "src/lib/supabase/client.ts": 'import "server-only";\nexport const client = {};\n' };
+
+  it("acepta contrato de feature, presentación y preview con mocks", () => {
+    const v = check({
+      ...contract,
+      [`src/features/${domain}/contracts/view.ts`]: 'import type { D } from "@/lib/contracts/doc";\nexport type V = typeof D;\n',
+      [`src/features/${domain}/components/a.tsx`]: `import type { V } from "@/features/${domain}/contracts/view";\nexport const A = (p: { v?: V }) => <i>{String(p.v)}</i>;\n`,
+      "src/mocks/m.ts": 'import { D } from "@/lib/contracts/doc";\nexport const m = D;\n',
+      "preview/main.tsx": `import { A } from "@/features/${domain}/components/a";\nimport { m } from "@/mocks/m";\nexport const M = [A, m];\n`,
+    });
+    expect(v).toEqual([]);
+  });
+
+  it("rechaza servidor, Next, red y mocks en la presentación del dominio", () => {
+    const v = check({
+      ...server,
+      "src/mocks/m.ts": "export const m = 1;\n",
+      [`src/features/${domain}/components/a.tsx`]:
+        'import { client } from "@/lib/supabase/client";\nimport Link from "next/link";\nimport { m } from "@/mocks/m";\nexport const A = () => { void fetch("/x"); return <Link href="/">{String(client)}{m}</Link>; };\n',
+    });
+    const details = v.map((x) => x.detail).join("\n");
+    expect(details).toContain("src/lib/supabase/client.ts");
+    expect(details).toContain("next/link");
+    expect(details).toContain("src/mocks/m.ts");
+    expect(details).toContain("«fetch»");
+  });
+});
+
 describe("contratos", () => {
   it("rechaza React, Next, entorno y archivos fuera de contratos (también transitivos)", () => {
     const v = check({

@@ -37,10 +37,12 @@ Nombres propuestos; el ticket fija los definitivos. Cada entrega incluye compone
 | ID | Archivos permitidos | Contrato (lo entrega el líder en `MVP-110`) |
 | --- | --- | --- |
 | `MVP-111` | [`dashboard-reference.tsx`](../../../../src/features/dashboard/components/dashboard-reference.tsx) y [`dashboard-reference.test.tsx`](../../../../src/features/dashboard/components/dashboard-reference.test.tsx) | [`DashboardViewProps`](../../../../src/features/dashboard/contracts/dashboard-view.ts); base de la [ficha existente](../../../tasks/dashboard-presentation.md) |
-| `MVP-112` | `src/features/documents/components/` — archivos del snapshot y su test | Contrato de vista del snapshot (propuesto) |
-| `MVP-113` | `src/features/documents/components/` — archivos del historial y su test, **distintos** de los de 112 | Contrato de vista del historial (propuesto) |
-| `MVP-114` | `src/features/marketing/components/` — landing y navegación y sus tests (carpeta propuesta) | Contrato de landing/navegación con enlaces como datos |
-| `MVP-115` | `src/features/auth/components/` — formularios y sus tests (carpeta propuesta) | Contrato de formularios con callbacks y errores provistos |
+| `MVP-112` | `snapshot-view.tsx` y `snapshot-view.test.tsx` en `src/features/documents/components/` ([ficha](../../../tasks/snapshot-presentation.md)) | Contrato de vista del snapshot (propuesto) |
+| `MVP-113` | `version-history.tsx` y `version-history.test.tsx` en `src/features/documents/components/`, **distintos** de los de 112 ([ficha](../../../tasks/version-history-presentation.md)) | Contrato de vista del historial (propuesto) |
+| `MVP-114` | `landing-page.tsx`, `site-navigation.tsx` y un `.test.tsx` por cada uno en `src/features/marketing/components/` (carpeta propuesta; [ficha](../../../tasks/landing-navigation-presentation.md)) | Contrato de landing/navegación con enlaces como datos |
+| `MVP-115` | `login-form`, `register-form`, `recovery-request-form` y `new-password-form` (`.tsx` + `.test.tsx` cada uno) en `src/features/auth/components/` (carpeta propuesta; [ficha](../../../tasks/access-forms-presentation.md)) | Contrato de formularios con callbacks y errores provistos |
+
+Nombres de archivo propuestos; el Issue los confirma. Índice, asignación propuesta y huecos del lado del líder: [`docs/tasks/README.md`](../../../tasks/README.md).
 
 **Prohibido para el colaborador en todas** (solo con ampliación expresa del líder): `src/lib/contracts/`, `src/mocks/`, `preview/`, `src/components/ui/`, `src/hooks/`, `src/app/`, `containers/`, CSS global, `package.json`/lockfile, configuración, CI, `.github/`, migraciones, `.env*`. Se mantiene la barrera: la presentación no importa `next/*`, SDK, Node ni red (por eso `MVP-114` usa `href` como dato y `MVP-115` no usa `fetch` ni Supabase).
 

@@ -16,6 +16,7 @@ export function PreviewApp() {
     onCreate: () => log("onCreate()"),
     onOpen: (documentId) => log(`onOpen("${documentId}")`),
     onRetry: () => log("onRetry()"),
+    log,
   };
 
   const selectEntry = (id: string) => {

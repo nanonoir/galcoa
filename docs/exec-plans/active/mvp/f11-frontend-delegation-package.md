@@ -88,6 +88,8 @@ Documento objetivo **disponible** (justificado por las cinco entregas delegables
 - **RQ-D2** → [frontend-delivery](../../../specs/frontend-delivery.md): contrato común observable, escenarios mínimos por entrega (§2), referencia visual y accesibilidad (§3), paquete y límites de responsabilidad (§4) y aceptación F-01…F-07 (§5). D3/D4 lo consumen para las fichas de `MVP-112…115` junto con la ficha reutilizable del dashboard. Su registro operativo (§6: acabado de 112…115, props y nombres concretos) sigue siendo **propuesta no aprobada** que el líder cierra en `MVP-110`; la spec no completa `MVP-110`.
 - **RQ-D1** → no aplica a este plan.
 
+Borradores de ficha preparados (no son Issues): [índice y huecos](../../../tasks/README.md) con las fichas de `MVP-112…115`. Contratos de vista (`src/lib/contracts/{snapshot-view,version-history-view,landing,auth-forms}.ts` y `src/features/{documents,marketing,auth}/contracts/`), escenarios (`src/mocks/{documents,marketing,auth}.ts`) y entradas placeholder del preview existen y están probados (Vitest, tsc y ESLint); pendiente la aprobación humana de la referencia visual, la publicación de Issues y el cierre formal de `MVP-110`.
+
 Decisiones locales abiertas (del líder, no de producto): nombres de dominios de feature y rutas de contratos de vista (§4); acabado visual de 112–115.
 
 ## 10. Rollback y límites
