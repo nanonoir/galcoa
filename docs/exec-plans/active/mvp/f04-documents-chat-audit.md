@@ -83,6 +83,17 @@ Incluye dos propietarios/anon, idempotencia concurrente, auditoría atómica ant
 fallo forzado, grants, canal de agente y rechazo de UPDATE/DELETE. No cubre aún
 cuotas de evidencias ni claims de turnos: pertenecen a los checkpoints pendientes.
 
+**Evidencia del checkpoint completo (2026-10-16, base `dc2ccb2` con Auth #70):**
+`npx.cmd vitest run --project server --project boundaries` **612/612**;
+31 son tests nuevos de adapter/HTTP con dobles. ESLint focalizado en los archivos
+del checkpoint: exit 0. `next typegen` + `tsc --noEmit`: exit 0 antes de actualizar
+la base; `npm.cmd run build` repetido sobre la base actual: exit 0, incluidas las
+tres rutas documentales. `env:check` del prebuild pasó sin leer archivos de
+entorno. **No ejecutado:** suite Postgres real, smoke HTTP con sesión real ni
+llamadas de IA/Storage. Autorrevisión de grants, separación de canales, origen
+confiable y diff; revisión independiente aún pendiente. `npm ci` reportó nueve
+vulnerabilidades altas preexistentes; no se cambiaron dependencias ni lockfile.
+
 ## 2. Criterios del PRD y requisitos cubiertos
 
 | Tarea | REQ / INV / PRD | Aceptación del maestro (resumen) |
