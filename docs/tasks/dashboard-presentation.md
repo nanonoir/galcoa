@@ -1,6 +1,6 @@
 # Ficha de delegación: presentación del dashboard
 
-**Estado: borrador local para convertir en Issue; no asignado ni publicado.** Requiere completar y validar la [preparación del equipo](../exec-plans/completed/team-workspace-readiness.md). No autoriza por sí mismo comenzar una tarea ni modificar archivos fuera de su alcance.
+**Estado: presentación completada por Facu e integrada en PR [#52](https://github.com/nanonoir/galcoa/pull/52), Issue #26 cerrada.** Aceptación verificada con las otras cuatro vistas; evidencia y límites en el [plan cerrado](../exec-plans/completed/f11-frontend-presentation-tickets.md#resultado-de-implementación). La lista siguiente conserva los criterios del ticket, no trabajo pendiente. No acredita integración de producto.
 
 ## Objetivo
 
@@ -20,7 +20,7 @@ Referencias: [PRD REQ-02 y estados §5](../exec-plans/GALCOA-PRD-v1.4.md), [arqu
 1. `src/features/dashboard/components/dashboard-reference.tsx`.
 2. `src/features/dashboard/components/dashboard-reference.test.tsx`.
 
-Conservar nombre/exportación y props usados por el preview. No modificar contratos, mocks compartidos, preview/config, componentes UI compartidos, CSS global, rutas, manifests o lockfile. Si se necesita otro archivo, solicitar ampliación al líder antes de editarlo.
+Conservar nombre/exportación y props usados por el preview. No modificar contratos, mocks compartidos, preview/config, componentes UI compartidos, CSS global, rutas, manifests o lockfile. Excepción expresamente autorizada en el Issue: import/entrada propia en `preview/registry.ts`, su prueba en `preview/registry.test.tsx` y casos propios en `tests/e2e/preview.spec.ts`, con un único escritor. Cualquier otra ampliación requiere autorización.
 
 ## Aceptación
 

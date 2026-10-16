@@ -8,7 +8,7 @@ Producto: [PRD v1.5](../GALCOA-PRD-v1.4.md) (REQ-01, REQ-02, REQ-03; PRD §10). 
 
 ## 1. Objetivo y alcance
 
-Dejar listo, **para el líder**, todo lo que la puerta de delegación exige antes de que el colaborador frontend tome `MVP-111…115` (plan hermano [`f11-frontend-presentation-tickets`](../active/mvp/f11-frontend-presentation-tickets.md)): contratos de props, escenarios validados con Zod, entrypoints de preview, allowlist por archivo, borradores de ficha/Issue y capturas esperadas.
+Dejar listo, **para el líder**, todo lo que la puerta de delegación exige antes de que el colaborador frontend tome `MVP-111…115` (plan hermano [`f11-frontend-presentation-tickets`](f11-frontend-presentation-tickets.md)): contratos de props, escenarios validados con Zod, entrypoints de preview, allowlist por archivo, borradores de ficha/Issue y capturas esperadas.
 
 Entra: contratos y escenarios nuevos de presentación (snapshot, historial, landing/navegación, formularios de acceso), registro en el preview, fichas de ticket y checklist de la puerta. No entra: implementar la presentación (`MVP-111…115`), rutas, containers, endpoints, Auth real, ni crear Issues (no se crean hasta que el usuario autorice la delegación; este plan no inventa handles).
 

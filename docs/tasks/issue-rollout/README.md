@@ -66,11 +66,11 @@ Asignaciones confirmadas al publicar: Nahuel 24 Issues, Facu 5; Gastón tiene 6 
 | [#23 — Manifiesto privado, publicación inmutable y v2 — MVP-082, MVP-083, MVP-084](https://github.com/nanonoir/galcoa/issues/23) | `MVP-082`, `MVP-083`, `MVP-084` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/active/mvp/f08-02-manifiesto-version-inmutable-y-nueva-version.md) |
 | [#24 — HCS exclusivamente Testnet y reconciliación — MVP-090, MVP-091, MVP-092, MVP-093](https://github.com/nanonoir/galcoa/issues/24) | `MVP-090`, `MVP-091`, `MVP-092`, `MVP-093` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/active/mvp/f09-01-hedera-hcs-testnet.md) |
 | [#25 — Verificador público de integridad — MVP-100, MVP-101](https://github.com/nanonoir/galcoa/issues/25) | `MVP-100`, `MVP-101` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/active/mvp/f10-01-verificador-publico.md) |
-| [#26 — MVP-111 · Presentación completa del dashboard](https://github.com/nanonoir/galcoa/issues/26) | `MVP-111` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/active/mvp/f11-frontend-presentation-tickets.md) |
-| [#27 — MVP-112 · Snapshot completo y advertencias](https://github.com/nanonoir/galcoa/issues/27) | `MVP-112` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/active/mvp/f11-frontend-presentation-tickets.md) |
-| [#28 — MVP-113 · Historial de versiones de solo lectura](https://github.com/nanonoir/galcoa/issues/28) | `MVP-113` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/active/mvp/f11-frontend-presentation-tickets.md) |
-| [#29 — MVP-114 · Landing y navegación responsive](https://github.com/nanonoir/galcoa/issues/29) | `MVP-114` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/active/mvp/f11-frontend-presentation-tickets.md) |
-| [#30 — MVP-115 · Cuatro formularios de acceso como presentación](https://github.com/nanonoir/galcoa/issues/30) | `MVP-115` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/active/mvp/f11-frontend-presentation-tickets.md) |
+| [#26 — MVP-111 · Presentación completa del dashboard](https://github.com/nanonoir/galcoa/issues/26) | `MVP-111` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/completed/f11-frontend-presentation-tickets.md) |
+| [#27 — MVP-112 · Snapshot completo y advertencias](https://github.com/nanonoir/galcoa/issues/27) | `MVP-112` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/completed/f11-frontend-presentation-tickets.md) |
+| [#28 — MVP-113 · Historial de versiones de solo lectura](https://github.com/nanonoir/galcoa/issues/28) | `MVP-113` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/completed/f11-frontend-presentation-tickets.md) |
+| [#29 — MVP-114 · Landing y navegación responsive](https://github.com/nanonoir/galcoa/issues/29) | `MVP-114` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/completed/f11-frontend-presentation-tickets.md) |
+| [#30 — MVP-115 · Cuatro formularios de acceso como presentación](https://github.com/nanonoir/galcoa/issues/30) | `MVP-115` | Facu (@jfacundoayala) | [ExecPlan](../../exec-plans/completed/f11-frontend-presentation-tickets.md) |
 | [#31 — MVP-116 / MVP-118 · Integración del producto y revisión transversal](https://github.com/nanonoir/galcoa/issues/31) | `MVP-116`, `MVP-118` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/active/mvp/f11-product-ui-integration-and-review.md) |
 | [#32 — MVP-120 · Harness local de servidor y puente de tests](https://github.com/nanonoir/galcoa/issues/32) | `MVP-120` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/completed/f12-server-test-harness.md) |
 | [#33 — MVP-121 · Matriz de 15 casos y E2E compuesto de cuatro selecciones](https://github.com/nanonoir/galcoa/issues/33) | `MVP-121` | Nahuel (@nanonoir) | [ExecPlan](../../exec-plans/active/mvp/f12-critical-flow-matrix-and-e2e.md) |
@@ -82,3 +82,7 @@ Asignaciones confirmadas al publicar: Nahuel 24 Issues, Facu 5; Gastón tiene 6 
 [Orden por persona](../../execution/team-ticket-order.md) · [Protocolo común](execution-protocol.md) · [Inventario JSON](published.json). Los cuerpos incluyen el protocolo completo; no dependen de herramientas del orquestador. No se crearon relaciones nativas de bloqueo por Issue completa que impidan consumir checkpoints parciales.
 
 <!-- ISSUE-INDEX:END -->
+
+## Checkpoint integrado de #35
+
+El 2026-10-16 se aceptó únicamente MVP-131: PR [#83](https://github.com/nanonoir/galcoa/pull/83) integrado en `560edf7`, [run Linux 38954022116](https://github.com/nanonoir/galcoa/actions/runs/38954022116) SUCCESS en ambos jobs y revisión independiente sin bloqueantes. La evidencia canónica está en el [plan activo compartido](../../exec-plans/active/mvp/f13-release-security-and-ci.md#resultado-de-implementación--checkpoint-mvp-131) y el maestro. #35 permanece abierta por MVP-130; no se archiva el plan ni se declara cubierta MVP-121. Protección de ramas opcional no ejecutada.

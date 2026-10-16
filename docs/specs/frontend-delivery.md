@@ -1,6 +1,6 @@
 # Presentación verificable para cinco entregas frontend
 
-**Estado objetivo; entregas MVP-110…118 pendientes.** Autoridad: [PRD v1.5](../exec-plans/GALCOA-PRD-v1.4.md), REQ-01/02/08, §5, §10–14; [SH-02/03/07/09](../design/mvp-shared-foundations.md), [arquitectura](../architecture.md) y [maestro](../exec-plans/active/mvp-master-plan.md).
+**Presentación MVP-110…115 integrada; integración de producto MVP-116 y revisión MVP-118 pendientes.** Evidencia y límites en el [plan cerrado](../exec-plans/completed/f11-frontend-presentation-tickets.md). Autoridad: [PRD v1.5](../exec-plans/GALCOA-PRD-v1.4.md), REQ-01/02/08, §5, §10–14; [SH-02/03/07/09](../design/mvp-shared-foundations.md), [arquitectura](../architecture.md) y [maestro](../exec-plans/active/mvp-master-plan.md).
 
 Esta spec cubre las diferencias entre snapshot, historial, landing y acceso que no resuelve la [ficha del dashboard](../tasks/dashboard-presentation.md). No duplica sus props ni crea otro catálogo de estados. La semántica de revisión vive en [review-confirmation](review-confirmation.md), y la evidencia en [release-validation](release-validation.md).
 
@@ -68,7 +68,7 @@ Los fixtures compartidos de `src/mocks/` son DTO de contratos para tests/preview
 
 No duplicar implementación de chat en MVP-116 ni trasladar su página a MVP-054. La referencia canónica de dependencias es el maestro, no tablas anteriores de planes aún por reconciliar.
 
-## 5. Aceptación trazable — a implementar
+## 5. Aceptación trazable
 
 | Caso | Resultado positivo / negativo esperado | Consumidor |
 | --- | --- | --- |
@@ -89,4 +89,4 @@ Cada entrega aporta tests de escenarios/callbacks y capturas identificadas a los
 | Acabado de 112…115 | Wireframes y layout técnico local del líder aceptados para primeras entregas | Definido por el líder técnico orquestador como base técnica interna directa para el arranque. Sin aprobación humana obligatoria (regla AGENTS.md); la referencia visual sirve de guía operativa sin constituir requisito externo bloqueante |
 | Props/nombres concretos | Cerrado e integrado en `develop` local (MVP-020, MVP-021, MVP-110) | Los contratos, DTOs de vista, fixtures y esquemas Zod ya existen y están exportados en `src/lib/contracts/` y `src/features/<dominio>/contracts/`. La presentación no define API por su cuenta |
 
-El archivo `preview/registry.ts` sigue el principio estricto de un único escritor (el líder); el paquete `MVP-110` aporta placeholders JSON validados sin implementar los componentes de UI finales ni el runtime de Auth, los cuales quedan reservados a las entregas de presentación delegadas (`MVP-111…115`) y a Auth real (`MVP-031`). La publicación posterior de Issues en GitHub es un paso operativo de seguimiento que no bloquea el cierre técnico del paquete `MVP-110`.
+El archivo `preview/registry.ts` mantiene un único escritor por ticket: el líder autorizó a Facu a editar exclusivamente la entrada, import y pruebas de su presentación, una entrega a la vez. El paquete `MVP-110` entregó placeholders JSON; las Issues #26…30 los sustituyeron por las cinco presentaciones reales con fixtures y callbacks locales. No implementan runtime Auth ni integración de producto. La evidencia de presentación no sustituye la aceptación de `MVP-031`, `MVP-116` o `MVP-118`.

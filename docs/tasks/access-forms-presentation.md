@@ -1,6 +1,6 @@
 # Ficha de delegación: formularios de acceso (MVP-115)
 
-**Estado: contrato y escenarios disponibles (probados con Vitest); borrador local sin Issue ni asignación.** Pendientes: referencia visual y publicación del Issue. Reglas comunes: [dashboard-presentation](dashboard-presentation.md), [frontend-delivery](../specs/frontend-delivery.md) (§2–§5, F-05, F-06) y [plan de tickets](../exec-plans/active/mvp/f11-frontend-presentation-tickets.md).
+**Estado: presentación completada por Facu e integrada por PR [#58](https://github.com/nanonoir/galcoa/pull/58), Issue #30 cerrada.** Aceptación verificada; evidencia y límites en el [plan cerrado](../exec-plans/completed/f11-frontend-presentation-tickets.md#resultado-de-implementación). La lista conserva criterios del ticket, no trabajo pendiente. Reglas: [dashboard-presentation](dashboard-presentation.md), [frontend-delivery](../specs/frontend-delivery.md) (§2–§5, F-05, F-06).
 
 ## Objetivo
 
@@ -11,7 +11,7 @@ Referencias: PRD REQ-01, §11; [SH-07](../design/mvp-shared-foundations.md).
 ## Contrato y alcance
 
 - Props (existen) en `src/features/auth/contracts/auth-forms.ts`: `LoginFormProps`, `RegisterFormProps`, `RecoveryRequestFormProps`, `NewPasswordFormProps` (= `AuthFormProps<TValues> { state: AuthFormState; onSubmit(values) }`). Estado y valores en `src/lib/contracts/auth-forms.ts`: `AuthFormState` = `idle` · `submitting` · `error{message|null, fieldErrors[]}` · `success{message}`; `LoginValues`, `RegisterValues`, `RecoveryRequestValues`, `NewPasswordValues`. Las reglas de contraseña **no** están en el contrato (son de `MVP-031`): el componente no las inventa.
-- Escenarios (existen): `authFormScenarios` en `src/mocks/auth.ts`, con `form` y `id` (`login-idle`, `login-field-errors`, `login-submitting`, `login-error`, `register-*`, `recovery-*`, `new-password-*`). Preview: «Acceso (placeholder, MVP-115)».
+- Escenarios: `authFormScenarios` en `src/mocks/auth.ts`, con `form` y `id` (`login-idle`, `login-field-errors`, `login-submitting`, `login-error`, `register-*`, `recovery-*`, `new-password-*`). Preview real: «Acceso (MVP-115)».
 
 **Allowlist propuesta (a confirmar en el Issue):**
 
@@ -35,13 +35,9 @@ Un único responsable para los cuatro (misma carpeta, archivos disjuntos). **Pro
 - [ ] Tests por formulario y negativos (error sin existencia de cuenta, doble clic).
 - [ ] Capturas a 360 y 1280 px de los cuatro formularios en reposo y con error.
 
-## Huecos
+## Resolución de preparación
 
-1. Contrato y escenarios ya existen (ver arriba).
-2. El líder conectará la entrada del preview a tus formularios al integrarlos.
-3. Parámetros de contraseña y mensajes de error: dependen de `MVP-031`/decisiones F1; la presentación usa los textos que el contrato provea.
-4. Referencia visual no fijada.
-5. Asignación: ver [índice](README.md).
+Wireframe técnico aceptado, ticket asignado a Facu y cuatro formularios conectados al preview. Excepción autorizada: solo import/entrada propia del registro, su prueba y casos E2E, con un único escritor. Contraseñas y errores provienen del contrato/Auth; no se inventaron reglas. Esta evidencia no prueba runtime Auth: MVP-031 tiene cierre independiente y no se modifica aquí.
 
 ## Validación y entrega
 
