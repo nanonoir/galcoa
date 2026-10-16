@@ -36,12 +36,26 @@ export type BridgeBuildOptions = {
   entry: string;
   /** Permite ampliar la lista de externos runtime para un caso concreto (p. ej. tests de guards). */
   allowedExternals?: readonly (string | RegExp)[];
+  /**
+   * Espacio de nombres propio del llamador (p. ej. un test) para aislar sus ejecuciones.
+   * Debe ser `BRIDGE_CACHE_ROOT` o un descendiente suyo; por defecto, `BRIDGE_CACHE_ROOT`.
+   */
+  cacheRoot?: string;
 };
 
-export function removeOwnDir(dir: string): void {
-  const resolved = path.resolve(dir);
+function assertInsideBridgeCache(root: string): string {
+  const resolved = path.resolve(root);
   const relative = path.relative(BRIDGE_CACHE_ROOT, resolved);
-  // Solo directorios hijos directos del caché de esta herramienta.
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`cacheRoot rechazado: ${resolved} queda fuera del caché del puente`);
+  }
+  return resolved;
+}
+
+export function removeOwnDir(dir: string, cacheRoot: string = BRIDGE_CACHE_ROOT): void {
+  const resolved = path.resolve(dir);
+  const relative = path.relative(assertInsideBridgeCache(cacheRoot), resolved);
+  // Solo directorios hijos directos del espacio de nombres de esta ejecución.
   if (!relative || relative.startsWith("..") || path.isAbsolute(relative) || relative.includes(path.sep)) {
     throw new Error(`Teardown rechazado: ${resolved} no es un directorio de ejecución del puente`);
   }
@@ -63,9 +77,10 @@ function toChunks(output: readonly (Rolldown.OutputChunk | Rolldown.OutputAsset)
 /** Genera el bundle, aplica los guards y devuelve el módulo; ante cualquier fallo limpia y lanza. */
 export async function buildTestBridge(options: BridgeBuildOptions): Promise<BridgeBuild> {
   const runId = `${Date.now()}-${process.pid}-${randomUUID().slice(0, 8)}`;
-  const dir = path.join(BRIDGE_CACHE_ROOT, runId);
+  const cacheRoot = assertInsideBridgeCache(options.cacheRoot ?? BRIDGE_CACHE_ROOT);
+  const dir = path.join(cacheRoot, runId);
   const file = path.join(dir, OUTPUT_NAME);
-  const cleanup = () => removeOwnDir(dir);
+  const cleanup = () => removeOwnDir(dir, cacheRoot);
 
   try {
     const result = await build({
