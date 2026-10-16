@@ -1,6 +1,6 @@
 # ExecPlan F3 — Registro, login, logout y recuperación reales
 
-**Estado: planificado; no implementado.** No cambia estados del [maestro](../mvp-master-plan.md).
+**Estado: implementado con dobles y verificado en unidad/build; la prueba real local (Playwright + Supabase local) NO se ha ejecutado, así que `MVP-031` sigue pendiente.** No cambia estados del [maestro](../mvp-master-plan.md).
 
 Tareas del maestro: `MVP-031`
 
@@ -70,18 +70,22 @@ Ninguna: SH-07 y SH-09 bastan. Si el equipo quiere una nota breve de Auth/correo
 
 ## Checklist
 
-- [ ] `MVP-030` y `MVP-115` completadas.
-- [ ] Pantalla de callback y formulario de nueva contraseña (parte de la recuperación) verificados en la presentación de `MVP-115`.
-- [ ] Adaptadores de servidor y callback con redirecciones seguras (checkpoint A).
-- [ ] Container conectado a la presentación; flujo local completo (checkpoint B).
-- [ ] Mensajes sin filtrar existencia de cuentas verificados.
-- [ ] Límites del emisor de correo documentados.
-- [ ] Barreras actualizadas si se usó entrada de navegador aislada.
+- [x] `MVP-030` (PR #50) y `MVP-115` (PR #58) integradas en `develop`.
+- [x] Formulario de nueva contraseña verificado en `MVP-115` (`NewPasswordForm`). No hay pantalla de callback en la presentación: el callback es un Route Handler que redirige (aviso de enlace inválido en `/acceso`).
+- [x] Adaptadores de servidor y callback con redirecciones seguras (checkpoint A, con dobles).
+- [ ] Container conectado a la presentación (hecho); flujo local completo: suite Playwright escrita, **no ejecutada** (falta instancia local con confirmación activa).
+- [ ] Mensajes sin filtrar existencia de cuentas: verificados con dobles (vitest); contra Supabase real, pendiente en la suite local.
+- [x] Límites del emisor de correo documentados en [`auth-local.md`](../../../auth-local.md).
+- [x] No aplica: se eligió adaptador de servidor, sin cliente de navegador ni cambios de barreras.
 - [ ] Fila de `MVP-031` actualizada.
 
 ## Progreso y evidencia
 
-No ejecutado.
+Rama `flow/9-auth`. Decisión: adaptadores de servidor (Route Handlers `POST /api/auth/{register,login,logout,recovery,password}` y `GET /api/auth/callback`), sin cliente de navegador. CSRF: `Origin` debe coincidir con el host de la petición y el cuerpo ser JSON. Destinos del callback de lista cerrada (`flow=signup|recovery`).
+
+Comprobado en worktree aislado: `npm run lint`, `npm run typecheck`, `npm test` (746 pasan; incluye `tests/server/auth-flow/` y los containers), `npm run test:boundaries`, `npm run build`; humo con `next start` sin credenciales (503 neutral, 403 por origen, 422 por campo, redirección interna del callback).
+
+**No comprobado:** Playwright real (`tests/e2e/auth.config.ts`, omitido sin instancia), correo real/remoto y ruta privada (`MVP-116`). Requisito del líder: `enable_confirmations = true` y URLs de redirección en `supabase/config.toml` ([`auth-local.md`](../../../auth-local.md)).
 
 ## Cierre
 

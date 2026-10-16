@@ -1,0 +1,3 @@
+import { handleRecoveryRequest } from "@/lib/supabase/auth-http";
+
+export const POST = (request: Request) => handleRecoveryRequest(request);
