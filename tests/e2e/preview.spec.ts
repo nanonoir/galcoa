@@ -244,3 +244,71 @@ test.describe("acceso MVP-115 (datos ficticios)", () => {
     await expect(stage(page).getByRole("button")).toHaveCount(0);
   });
 });
+
+test.describe("snapshot MVP-112 (datos ficticios)", () => {
+  const openSnapshot = async (page: Page, label: string) => {
+    await page.goto("/");
+    await page.getByRole("group", { name: "Componente" }).getByRole("button", { name: "Snapshot (MVP-112)" }).click();
+    await scenarioButton(page, label).click();
+    await expect(scenarioButton(page, label)).toHaveAttribute("aria-pressed", "true");
+  };
+
+  const captures: Array<{ id: string; label: string; visible: RegExp | string }> = [
+    { id: "critical-two-sources", label: "Contradicción crítica con dos fuentes (10 vs 12)", visible: "Fuente B: remito aportado: 12 toneladas" },
+    { id: "no-warnings", label: "Sin advertencias", visible: "Este snapshot no tiene advertencias registradas." },
+    { id: "unit-missing", label: "Medición sin unidad", visible: "Se registró una medición de 7 sin unidad indicada." },
+    { id: "long-content", label: "Contenido extenso", visible: "Cláusula 8:" },
+    { id: "empty", label: "Sin revisión congelada", visible: "Todavía no hay una revisión congelada." },
+    { id: "loading", label: "Cargando", visible: "Cargando snapshot" },
+    { id: "error", label: "Error técnico recuperable", visible: "No se pudo cargar la revisión. Intenta nuevamente." },
+  ];
+
+  for (const width of [360, 1280]) {
+    for (const capture of captures) {
+      test(`${width}px · «${capture.label}» real y sin desbordamiento`, async ({ page }, testInfo) => {
+        await page.setViewportSize({ width, height: 900 });
+        await openSnapshot(page, capture.label);
+        await expect(stage(page).getByRole("region", { name: "Snapshot congelado" })).toBeVisible();
+        await expect(stage(page).getByText(capture.visible).first()).toBeVisible();
+        await expect(stage(page).getByTestId("scenario-json")).toHaveCount(0);
+
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(overflow, "desbordamiento horizontal").toBeLessThanOrEqual(0);
+
+        const path = testInfo.outputPath(`snapshot-${capture.id}-${width}.png`);
+        await stage(page).screenshot({ path });
+        await testInfo.attach(`snapshot-${capture.id}-${width}`, { path, contentType: "image/png" });
+      });
+    }
+  }
+
+  test("crítica: ambas fuentes visibles y ninguna acción de confirmar, rechazar, congelar ni finalizar", async ({ page }) => {
+    await openSnapshot(page, "Contradicción crítica con dos fuentes (10 vs 12)");
+    await expect(stage(page).getByText("Crítica:")).toBeVisible();
+    await expect(stage(page).getByText("Fuente A: mensaje del autor: 10 toneladas")).toBeVisible();
+    await expect(stage(page).getByText("Fuente B: remito aportado: 12 toneladas")).toBeVisible();
+    await expect(stage(page).getByRole("button")).toHaveCount(0);
+    await expect(stage(page)).not.toContainText("rev-comercial-001-1");
+    await expect(stage(page)).not.toContainText("snap-comercial-001-1");
+  });
+
+  test("teclado: «Reintentar» recibe foco visible y Enter emite solo onRetry, sin red", async ({ page }) => {
+    const requests: string[] = [];
+    page.on("request", (request) => {
+      if (["fetch", "xhr"].includes(request.resourceType())) requests.push(request.url());
+    });
+    await openSnapshot(page, "Error técnico recuperable");
+    const retry = stage(page).getByRole("button", { name: "Reintentar" });
+    await scenarioButton(page, "Error técnico recuperable").focus();
+    for (let i = 0; i < 30 && !(await retry.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
+    await expect(retry).toBeFocused();
+    const ring = await retry.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { outline: s.outlineStyle, shadow: s.boxShadow };
+    });
+    expect(ring.outline !== "none" || ring.shadow !== "none", "foco visible").toBe(true);
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("complementary").getByRole("listitem")).toHaveText(["onRetry()"]);
+    expect(requests, "peticiones fetch/xhr").toEqual([]);
+  });
+});
