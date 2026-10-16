@@ -82,7 +82,17 @@ Preparación de solo lectura, 2026-10-16 (no es aceptación ni validación remot
 - Límite: no se ejecutaron consultas autenticadas ni cambios remotos. Esta nota no acredita acceso privado.
 - Migraciones locales a aplicar (ya verificadas en local por `MVP-024`, sin DDL nuevo): `20261016000100_c1_core`, `20261016000200_c2_revision`, `20261016000300_c3_version_seal`, `20261016000400_rls_storage`.
 
-### Bloqueo exacto
+### Ejecución remota, 2026-10-16
+
+Autorización del usuario: usar `galcoa-dev` como base de prueba y crear tablas y reglas de seguridad versionadas, probadas en local, **sin borrar datos**. Sin reset, sin borrados, sin usuarios ni correos, sin llamadas a IA/Hedera.
+
+- Estado previo (solo lectura): 0 tablas en `public`, historial de migraciones vacío, 0 usuarios; existían la función `public.rls_auto_enable` (propia de Supabase) y el bucket privado `documents`. Sin conflictos con las 4 migraciones (aditivas; solo agregan objetos, un rol `nologin` y defaults de privilegios de `postgres`).
+- Aplicadas con `apply_migration` del conector (SQL idéntico al del repo, una por una, sin error): `c1_core`, `c2_revision`, `c3_version_seal`, `rls_storage`. Versiones asignadas por el conector: `20261016173321`, `…173346`, `…173417`, `…173429` (los nombres coinciden con el repo; los timestamps difieren porque el conector los asigna). Un futuro `db push` con la CLI deberá reconciliar ese historial.
+- Verificación de solo lectura: 24/24 tablas de `public` con RLS activo; 0 grants para `anon`/`service_role`/`PUBLIC` en `public`; `authenticated` solo `SELECT` (18 tablas); 22 políticas de lectura propietaria y de Storage; buckets `evidences-private` y `versions-private` con `public = false`; `galcoa_executor` sin login ni bypass.
+- Advisors de seguridad: 6 INFO `rls_enabled_no_policy` (tablas solo de servidor, intencional) y 2 WARN sobre `public.rls_auto_enable`, función preexistente de Supabase que no crea este repo (no se modificó).
+- **Auth no verificado**: el conector no expone la configuración de Auth (confirmación de email, redirecciones, límite del emisor). Queda pendiente de revisión humana en la consola (paso 5). Por eso `MVP-026` **no** se marca aceptada.
+
+### Bloqueo exacto (resuelto en parte: autorización y objetivo; resta Auth)
 
 Falta (1) confirmación expresa de que `galcoa-dev` es el proyecto objetivo y (2) autorización para esta acción remota concreta (checkpoints A y B). Pregunta única: ¿`galcoa-dev` es el proyecto de desarrollo/demo y autorizas aplicar las 4 migraciones y consultar su catálogo en solo lectura?
 
