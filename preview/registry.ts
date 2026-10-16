@@ -15,6 +15,7 @@ import { DashboardReference } from "@/features/dashboard/components/dashboard-re
 import type { DashboardViewProps } from "@/features/dashboard/contracts/dashboard-view";
 import type { SnapshotViewProps } from "@/features/documents/contracts/snapshot-view";
 import type { VersionHistoryViewProps } from "@/features/documents/contracts/version-history-view";
+import { LandingPage } from "@/features/marketing/components/landing-page";
 import type { LandingViewProps } from "@/features/marketing/contracts/landing-view";
 import { authFormScenarios } from "@/mocks/auth";
 import { dashboardScenarios } from "@/mocks/dashboard";
@@ -105,15 +106,15 @@ const versionHistory: PreviewEntry = {
   },
 };
 
+/** Landing (MVP-114): monta la presentación real con el contenido del escenario; los enlaces llegan como datos del escenario. */
 const landing: PreviewEntry = {
-  id: "landing-placeholder",
-  label: "Landing (placeholder, MVP-114)",
+  id: "landing",
+  label: "Landing (MVP-114)",
   scenarios: landingScenarios.map(({ id, label }) => ({ id, label })),
   render(scenarioId) {
     const scenario = landingScenarios.find((s) => s.id === scenarioId);
     if (!scenario) return null;
-    const props: LandingViewProps = { content: scenario.content };
-    return createElement(ScenarioPlaceholder, { title: "Landing y navegación", data: props });
+    return createElement(LandingPage, { content: scenario.content } satisfies LandingViewProps);
   },
 };
 
