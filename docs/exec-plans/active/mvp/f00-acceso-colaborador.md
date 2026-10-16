@@ -1,6 +1,6 @@
 # ExecPlan F0 — Acceso del colaborador al repositorio (acción externa)
 
-**Estado: planificado; no ejecutado.** Procedimiento de una acción **fuera del repositorio**; no hay código ni automatización. No cambia estados del [maestro](../mvp-master-plan.md).
+**Estado: en curso.** Checkpoint de Facu verificado; aceptación de Gastón pendiente. Procedimiento de acceso **fuera del repositorio**, sin código de producto ni automatización de permisos. El [maestro](../mvp-master-plan.md) conserva el progreso.
 
 Tareas del maestro: `MVP-007`
 
@@ -11,8 +11,8 @@ Referencias: [arquitectura: delegación y CODEOWNERS](../../../architecture.md) 
 ## Precondiciones y checkpoints
 
 - Ninguna dependencia en el maestro. Owner: **Externo** (quien administra el repositorio en GitHub; hoy el líder).
-- Checkpoint único: permisos confirmados por una persona con autoridad sobre el repositorio.
-- Impacto de no cumplirse: se frena asignar y ejecutar `MVP-111…115` (dependen de `MVP-007`). **No bloquea `MVP-110`**: preparar contratos, allowlists y previews no requiere este acceso.
+- Checkpoints por persona: permisos confirmados por el administrador del repositorio. Facu (`jfacundoayala`) tiene permiso `write` comprobado por GitHub API; Gastón (`grancobud`) tiene invitación `write` pendiente de aceptación. No se inventan accesos.
+- La dependencia `MVP-007` se satisface para cada ejecutor individual: Facu puede ejecutar `MVP-111…115` sin esperar a Gastón. El pendiente de Gastón impide que él ejecute sus módulos, no el trabajo de otros ni la creación de sus Issues. **No bloquea `MVP-110`**.
 
 ## Objetivo y aceptación
 
@@ -35,7 +35,7 @@ Invitación, aceptación, permisos de GitHub y su verificación son acciones hum
 
 ## Seguridad, permisos y rollback
 
-- Hasta que exista protección de ramas verificada (`MVP-131`), la regla «el líder hace los merges» es de **proceso, no técnica**. Con acceso de escritura el colaborador podría subir a la rama base: el líder debe elegir conscientemente fork + PR o aceptar ese riesgo y documentarlo.
+- El usuario eligió colaboradores con escritura, ramas y PRs con merge autónomo según `AGENTS.md`, sin protección de ramas ni checks obligatorios para la hackathon. El permiso de escritura permite técnicamente subir a la rama base; el equipo acepta ese riesgo y mantiene la regla de no hacerlo salvo pedido explícito.
 - Rollback: retirar la invitación o el permiso desde GitHub; no afecta al código.
 
 ## Riesgos
@@ -63,7 +63,7 @@ Ninguna.
 
 ## Progreso y evidencia
 
-No ejecutado.
+2026-10-16: el usuario confirmó a Facu como colaborador y envió la invitación a Gastón. Verificación del orquestador: `gh api repos/nanonoir/galcoa/collaborators/jfacundoayala/permission` devuelve `permission: write`; la invitación de `grancobud` figura con `permissions: write`, sin expirar. No se enviaron nuevas invitaciones ni se alteraron permisos. Se conserva abierto el procedimiento hasta comprobar el acceso de Gastón; el checkpoint de Facu está cumplido.
 
 ## Cierre
 

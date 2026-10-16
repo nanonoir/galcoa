@@ -5,18 +5,19 @@ Borradores locales; **no son Issues** y no hay números asignados. Cada ficha es
 | ID | Ficha | Contrato / escenarios (verificados con Vitest) | Asignación propuesta (la decide el líder) |
 | --- | --- | --- | --- |
 | MVP-111 | [dashboard](dashboard-presentation.md) | `DashboardViewProps`, `dashboardScenarios` (8) | Facu (`@jfacundoayala`) |
-| MVP-112 | [snapshot](snapshot-presentation.md) | `SnapshotViewProps`, `snapshotScenarios` (7) | Gastón o Facu, según carril libre |
-| MVP-113 | [historial](version-history-presentation.md) | `VersionHistoryViewProps`, `versionHistoryScenarios` (6) | Gastón o Facu, según carril libre |
+| MVP-112 | [snapshot](snapshot-presentation.md) | `SnapshotViewProps`, `snapshotScenarios` (7) | Facu (`@jfacundoayala`) |
+| MVP-113 | [historial](version-history-presentation.md) | `VersionHistoryViewProps`, `versionHistoryScenarios` (6) | Facu (`@jfacundoayala`) |
 | MVP-114 | [landing](landing-navigation-presentation.md) | `LandingViewProps`, `landingScenarios` (2) | Facu |
 | MVP-115 | [acceso](access-forms-presentation.md) | `AuthFormProps<T>`, `authFormScenarios` (18) | Facu |
 
-Gastón: handle de GitHub pendiente de confirmar (no se inventa). Tomás no tiene agente: revisa textos y prueba a mano. Facu es aprendiz con Claude: preferir fichas con aceptación comprobable por tests.
+Gastón es `@grancobud`, con invitación pendiente de aceptación al preparar esta tanda. Su carril es de módulos funcionales, no estas cinco presentaciones. Tomás no tiene agente: revisa textos y prueba a mano. Facu es aprendiz con Claude: preferir fichas con aceptación comprobable por tests.
 
 ## Cómo arrancar una ficha (Facu / Gastón)
 
 1. `npm run preview:ui` y elegir el componente en el preview. Hoy las entradas de 112–115 son **placeholders que vuelcan el JSON del escenario**; no son UI de producto.
 2. Implementar solo los archivos de la allowlist de la ficha; importar contratos de `src/lib/contracts/*` y `src/features/<dominio>/contracts/*`. Para tests, los escenarios de `src/mocks/*` (permitido en tests de presentación).
-3. Pedir al líder que cambie la entrada del preview para renderizar el componente (el registro es del líder).
+3. La Issue autoriza una excepción acotada: sustituir únicamente la entrada de su componente en `preview/registry.ts`, con su import y wiring de callbacks, y agregar sus pruebas de preview/navegador. No alterar otras entradas, configuración ni mocks. Así puede ver y capturar el componente real sin esperar una intervención manual del líder.
+4. Solo una presentación está activa a la vez. Facu es el único escritor delegado del registro durante su ticket; el líder no lo modifica simultáneamente. La excepción se declara en cada Issue y no habilita cambios de contratos, rutas ni servicios.
 
 ## Referencia visual (wireframe textual, propuesta técnica local)
 
@@ -33,6 +34,6 @@ Copy definitivo: el de los escenarios (`src/mocks/*`); lenguaje conforme a PRD �
 
 1. **Contratos y exports disponibles:** Los contratos, DTOs de vista y fixtures ya existen y están exportados en el repositorio (`src/lib/contracts/*` y `src/features/*/contracts/*`). Las referencias visuales y wireframes del líder quedan aceptados operativamente para el arranque de entregas.
 2. **Issues en GitHub:** La publicación o posting posterior de Issues autorizados es una acción de seguimiento que no bloquea el cierre del paquete de delegación `MVP-110` (según se especifica en su plan).
-3. **Control del Preview (`preview/registry.ts`):** Principio de un único escritor; el registro permanece bajo control exclusivo del líder, quien actualizará los entrypoints conforme se integren las entregas. `MVP-110` integra placeholders JSON y fixtures sin implementar los componentes de UI finales.
-4. **Identidades y roles:** Facu confirmado como `@jfacundoayala`; handle de GitHub de Gastón pendiente de confirmación externa; Tomás participa en pruebas y revisión sin cuenta de agente.
+3. **Control del Preview (`preview/registry.ts`):** El líder conserva la propiedad por defecto. En la segunda tanda autoriza por Issue la edición exclusiva de la entrada del componente de Facu y sus tests, un ticket a la vez. `MVP-110` integra placeholders JSON y fixtures sin implementar los componentes de UI finales.
+4. **Identidades y roles:** Facu confirmado como `@jfacundoayala`; Gastón `@grancobud` espera aceptar la invitación; Tomás participa en pruebas y revisión sin cuenta de agente.
 5. **No implementación de UI final:** Ningún componente final de `MVP-111…115` ni runtime de Auth fue implementado en `MVP-110`, preservando la delimitación estricta de responsabilidades.

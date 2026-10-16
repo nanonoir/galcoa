@@ -42,7 +42,7 @@ Los nombres son los mismos en Vercel (Project Settings → Environment Variables
 
 ## Stack
 
-Objetivo del PRD: Next.js 16 + React + TypeScript, Tailwind v4 + shadcn/ui, Supabase (Auth, Postgres, Storage), Gemini 3.5 Flash-Lite (generación) y GPT-OSS 120B en Groq (verificación), Zod, Hedera HCS con `@hiero-ledger/sdk`, `@react-pdf/renderer`, Vercel. La base usa Next, React, Tailwind, shadcn, Zod, Vite, Vitest y Playwright. Algunos SDK están instalados sin integración; `ai`, `@ai-sdk/react` y `groq-sdk` se incorporarán con sus consumidores reales.
+Objetivo del PRD: Next.js 16 + React + TypeScript, Tailwind v4 + shadcn/ui, Supabase (Auth, Postgres, Storage), Gemini 3.5 Flash-Lite (generación) y GPT-OSS 120B en Groq (verificación), Zod, Hedera HCS con `@hiero-ledger/sdk`, `@react-pdf/renderer`, Vercel. La base usa Next, React, Tailwind, shadcn, Zod, Vite, Vitest y Playwright. Los SDK previstos, incluidos `ai`, `@ai-sdk/react` y `groq-sdk`, ya están instalados; eso no implica que sus integraciones estén implementadas.
 
 ## Trabajo delegado
 
@@ -61,6 +61,8 @@ El líder prepara contrato, escenarios y entrypoint del preview. Cada Issue auto
 - [PRD de producto](docs/exec-plans/GALCOA-PRD-v1.4.md)
 - [Plan maestro del MVP](docs/exec-plans/active/mvp-master-plan.md)
 - [Orden de ejecución y compatibilidad](docs/execution/mvp-execution-guide.md)
+- [Qué Issue ejecutar: Nahuel, Gastón y Facu](docs/execution/team-ticket-order.md)
+- [Inventario de Issues publicadas](docs/tasks/issue-rollout/README.md#issues-publicadas)
 - [Arquitectura: objetivo vs. actual](docs/architecture.md)
 - [Desarrollo, validación y seguridad](docs/development.md)
 - [Deuda técnica](docs/exec-plans/tech-debt-tracker.md)

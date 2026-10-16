@@ -6,7 +6,7 @@
 
 Convertir la referencia mínima del preview en una presentación clara y responsive del historial de documentos. Reutilizar el tema y shadcn existentes; no crear sesión, CRUD, servicios, endpoints ni reglas de negocio.
 
-Referencias: [PRD REQ-02 y estados §5](../exec-plans/GALCOA-PRD-v1.4.md), [arquitectura](../architecture.md), [desarrollo](../development.md). No requiere un diseño técnico adicional: respeta los contratos existentes. El líder debe adjuntar una referencia visual o acordar el acabado antes de publicar la tarea.
+Referencias: [PRD REQ-02 y estados §5](../exec-plans/GALCOA-PRD-v1.4.md), [arquitectura](../architecture.md), [desarrollo](../development.md). No requiere un diseño técnico adicional: respeta los contratos existentes. La referencia mínima existente y las pautas visuales del [paquete](README.md#referencia-visual-wireframe-textual-propuesta-técnica-local) son la base de acabado.
 
 ## Contrato y alcance
 
@@ -37,4 +37,4 @@ Conservar nombre/exportación y props usados por el preview. No modificar contra
 
 `npm ci`, `npm run preview:ui`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:boundaries`, `npm run build` y `npm run test:e2e`. No requiere `.env` ni acceso a proveedores.
 
-Usar rama corta, PR vinculado al Issue cuando se cree, resumen de cambios y evidencia real. El líder integra. Las capturas del preview no acreditan integración con el backend ni permisos sobre documentos reales.
+Usar rama desde `origin/develop` actualizado, PR vinculado al Issue cuando se cree, resumen de cambios y evidencia real. Claude hace commit, push, PR y merge con la autonomía y las reglas de fallos de `AGENTS.md`; no necesita una aprobación humana obligatoria. Las capturas del preview no acreditan integración con el backend ni permisos sobre documentos reales.

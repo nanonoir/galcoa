@@ -1,12 +1,12 @@
 # Cómo ejecutar el MVP por planes sin pisarse
 
-**Guía de ejecución futura; no se crearon ramas, worktrees ni PRs.** El [maestro](../exec-plans/active/mvp-master-plan.md) decide dependencias y progreso. Cada plan tiene su alcance; esta guía permite elegir la siguiente pareja, no saltarse sus precondiciones.
+**Guía operativa del equipo.** Las [Issues publicadas](../tasks/issue-rollout/README.md#issues-publicadas) cubren todos los planes abiertos y el [orden por persona](team-ticket-order.md) indica por dónde empezar. El [maestro](../exec-plans/active/mvp-master-plan.md) decide dependencias y progreso. Cada plan tiene su alcance; esta guía permite combinar carriles, no saltarse sus precondiciones.
 
 ## Camino simple
 
 1. **Preparar la base de integración (hecho).** La base técnica y documental quedó publicada e integrada en `develop` mediante MVP-006 con CI remoto verificado en Linux. `main` se conserva estable.
 2. **Resolver F1 (hecho).** Las decisiones documentales de ingesta/modelos (MVP-010, MVP-013) y de confirmación/sello (MVP-011, MVP-012) quedaron resueltas formalmente y archivadas en `completed/`. Solo MVP-014 (revisión jurídica) permanece pendiente de dictamen externo fuera del repo.
-3. **Integrar contratos F2 y paquete F11 (hecho).** Contratos de dominio (MVP-020, MVP-021) y paquete de delegación frontend (MVP-110) completados e integrados en `develop` local con 224 tests Vitest y 15 Playwright pasando.
+3. **Integrar contratos F2 y paquete F11 (hecho).** Contratos de dominio (MVP-020, MVP-021) y paquete de delegación frontend (MVP-110) completados y publicados en `origin/develop`, con validación registrada en sus planes archivados.
 4. **Abrir carriles (hasta tres, condicionales).** Núcleo (Nahuel), un módulo (Gastón) y UI (Facu), solo cuando sus archivos son disjuntos y tienen sus entradas. No son cuatro ni hace falta usar siempre dos. Orden por persona: [`team-ticket-order.md`](team-ticket-order.md).
 5. **Integrar cada entrega.** PR a `develop`, merge autónomo dentro del alcance del Issue y tests relevantes sobre el resultado; los fallos se reportan, no se ocultan. Recién entonces actualizar sus IDs como completados.
 6. **Cerrar conjuntos funcionales y producto.** Probar documentos/chat; después confirmaciones/versiones/HCS; finalmente verificador, seguridad, despliegue y smoke real autorizado.

@@ -30,7 +30,7 @@ Equipo de la hackathon (nadie necesita un harness, MCP ni skills concretos; pued
 | Persona | Rol | Notas |
 | --- | --- | --- |
 | Nahuel | Líder: núcleo (contratos, backend, integración, configuración, migraciones) | Único dueño por defecto de paquetes/dependencias, configuración, migraciones y contratos compartidos |
-| Gastón | Un módulo funcional completo | Experiencia con Claude (plan 20); handle de GitHub pendiente de confirmar (no inventarlo) |
+| Gastón | Un módulo funcional completo | GitHub `@grancobud`; experiencia con Claude (plan 20); ejecución pendiente de aceptar la invitación al repositorio |
 | Facu | Interfaz de usuario (presentación) | GitHub `@jfacundoayala`; aprendiz con Claude (plan 20) |
 | Tomás | Sin cuenta de herramienta de agente | Participa sin agente |
 

@@ -2,7 +2,7 @@
 
 Índice por plan de los ExecPlans preparados por adelantado, derivados del [plan maestro](../mvp-master-plan.md). **No es un ExecPlan** ni cuenta como tal. No guarda estados: el estado, las dependencias y la evidencia de cada tarea viven solo en el maestro. Que un plan exista no autoriza ejecutarlo; antes deben cumplirse sus dependencias y autorizaciones.
 
-Cobertura: **36 planes** preparados (31 activos bajo este directorio que cubren **60 IDs** pendientes + 5 completados y archivados en [`completed/`](../../completed/) que cubren `MVP-006`, `MVP-010`, `MVP-011`, `MVP-012`, `MVP-013`, `MVP-020`, `MVP-021` y `MVP-110`; los índices y este catálogo no son ExecPlans). Cada plan declara sus IDs en la línea `Tareas del maestro:`.
+Cobertura: **36 planes** preparados (31 activos bajo este directorio que cubren **60 IDs abiertos** + 5 completados y archivados en [`completed/`](../../completed/) que cubren `MVP-006`, `MVP-010`, `MVP-011`, `MVP-012`, `MVP-013`, `MVP-020`, `MVP-021` y `MVP-110`; los índices y este catálogo no son ExecPlans). Cada plan declara sus IDs en la línea `Tareas del maestro:`. El desglose entre pendiente y en curso vive únicamente en el maestro.
 
 Grupos: A = F0–F3 (7 activos + 4 archivados), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (8 activos + 1 archivado).
 

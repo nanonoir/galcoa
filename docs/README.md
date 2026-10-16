@@ -16,6 +16,7 @@ Punto de entrada a `docs/`. El producto vive en el PRD; las demás guías explic
 | [Desarrollo y validación](development.md) | Comandos, qué validar según el cambio, secretos y seguridad |
 | [Ficha de primera delegación](tasks/dashboard-presentation.md) | Borrador local del ticket de dashboard; no es un Issue publicado |
 | [Paquetes de presentación](tasks/README.md) | Contratos, escenarios y fichas para las cinco entregas frontend; no son Issues publicados |
+| [Issues publicadas](tasks/issue-rollout/README.md#issues-publicadas) | Inventario y copias de los 35 tickets, con dependencias por checkpoint y responsables; el progreso sigue en el maestro |
 | [Referencias de proveedores IA (`generated/`)](generated/gemini/README.md) · [Groq](generated/groq/README.md) | Copias de documentación pública (Gemini, Groq) aportadas por el usuario como consulta; no son fuente de verdad y pueden desactualizarse. Los ejemplos con `@ai-sdk/groq` no aplican: D-05 usa `groq-sdk` |
 | [Deuda técnica](exec-plans/tech-debt-tracker.md) | Riesgos y desviaciones abiertas |
 | [Plan maestro del MVP](exec-plans/active/mvp-master-plan.md) | Seguimiento de todas las tareas P0 (`MVP-NNN`), dependencias, estado y evidencia hasta el MVP desplegado; se actualiza por ID al completar cada tarea |

@@ -14,6 +14,8 @@ Fuera de alcance: rutas, containers, endpoints, Auth real, chat interactivo, con
 
 **Ejecución delegada:** requiere un ticket posterior (Issue con la plantilla de `.github/`) y autorización del usuario; este plan **no crea Issues ni asigna a nadie** y no inventa handles. Si el líder implementa una entrega por su cuenta, aplican las mismas allowlist y barreras.
 
+**Autorización de la segunda tanda:** las cinco entregas se asignan a Facu (`@jfacundoayala`), una a la vez. Su checkpoint personal de acceso está comprobado y no espera a Gastón. Las Issues autorizan a Claude a crear rama desde `origin/develop`, trabajar, publicar PR y mergear con las reglas de `AGENTS.md`, sin aprobación humana obligatoria. Las menciones históricas a revisión/merge exclusivos del líder no son un gate adicional.
+
 ## 2. Trazabilidad
 
 | ID | REQ / INV / SH | Idea de aceptación (detalle en la fila del maestro) |
@@ -45,6 +47,8 @@ Nombres propuestos; el ticket fija los definitivos. Cada entrega incluye compone
 Nombres de archivo propuestos; el Issue los confirma. Índice, asignación propuesta y huecos del lado del líder: [`docs/tasks/README.md`](../../../tasks/README.md).
 
 **Prohibido para el colaborador en todas** (solo con ampliación expresa del líder): `src/lib/contracts/`, `src/mocks/`, `preview/`, `src/components/ui/`, `src/hooks/`, `src/app/`, `containers/`, CSS global, `package.json`/lockfile, configuración, CI, `.github/`, migraciones, `.env*`. Se mantiene la barrera: la presentación no importa `next/*`, SDK, Node ni red (por eso `MVP-114` usa `href` como dato y `MVP-115` no usa `fetch` ni Supabase).
+
+**Ampliación expresa y acotada para estas Issues:** Facu puede editar el import y únicamente la entrada de su componente en `preview/registry.ts`, su prueba en `preview/registry.test.tsx` y sus casos en `tests/e2e/preview.spec.ts`. No modifica configuración ni otras entradas/pruebas. Es el único escritor delegado durante su ticket, por lo que el líder no toca esos archivos simultáneamente. Se mantiene una presentación activa por vez. Esto permite capturar la UI real, no el placeholder JSON, sin otro ticket o intervención manual.
 
 ## 5. Insumos y salidas
 
