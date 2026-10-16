@@ -15,7 +15,7 @@ Identidades: Facu es `@jfacundoayala` en GitHub; el handle de Gastón está pend
 Dueño de contratos compartidos, configuración, migraciones y dependencias.
 
 1. [Decisiones de ingesta y modelos](../exec-plans/completed/f01-decisiones-ingesta-y-modelos.md) y [de confirmación y sello](../exec-plans/completed/f01-decisiones-confirmacion-y-sello.md): completadas y archivadas (MVP-010…013 decididas documentalmente).
-2. [Contratos de dominio](../exec-plans/completed/f02-contratos-dominio.md): completado y archivado (MVP-020 y MVP-021 integrados en `develop` local, commit `fd3502c`; pending push conjunto autorizado).
+2. [Contratos de dominio](../exec-plans/completed/f02-contratos-dominio.md): completado y archivado (MVP-020 y MVP-021 integrados en `develop` y entregados en `origin/develop`, commits `fd3502c`, `dad1e32`, lote `ba7af83`).
 3. [Esquema, migraciones y RLS](../exec-plans/active/mvp/f02-esquema-migraciones-rls.md) → [clientes Supabase](../exec-plans/active/mvp/f02-clientes-supabase.md) → [sesiones y guardas](../exec-plans/active/mvp/f03-sesiones-y-guardas.md).
 4. [Revisión congelada y confirmación del autor](../exec-plans/active/mvp/f07-01-revision-congelada-y-confirmacion-autor.md) → [invitaciones y respuesta atómica](../exec-plans/active/mvp/f07-02-invitaciones-y-respuesta-atomica.md) → [estado agregado](../exec-plans/active/mvp/f07-03-estado-agregado-y-pantalla-publica.md).
 5. [Finalización y PDF](../exec-plans/active/mvp/f08-01-finalizacion-durable-y-pdf-canonico.md) → [manifiesto y versiones](../exec-plans/active/mvp/f08-02-manifiesto-version-inmutable-y-nueva-version.md).
@@ -37,7 +37,7 @@ Entra cuando los contratos y la configuración de F2 ya estén publicados por el
 
 Solo presentación, con ticket y allowlist; no toca contratos, rutas, primitivas ni estilos globales. Puede empezar sin esperar al backend.
 
-1. [Paquete de delegación frontend](../exec-plans/completed/f11-frontend-delegation-package.md): completado y archivado (MVP-110 integrado en `develop` local, commit `37a915f`; pending push conjunto autorizado).
+1. [Paquete de delegación frontend](../exec-plans/completed/f11-frontend-delegation-package.md): completado y archivado (MVP-110 integrado en `develop` y entregado en `origin/develop`, commit `37a915f`, lote `ba7af83`).
 2. [Presentaciones: dashboard, snapshot, historial, landing y formularios de acceso](../exec-plans/active/mvp/f11-frontend-presentation-tickets.md) (MVP-111…115; un único responsable por entrega, futuras, según Gastón o Facu).
 3. [UI del autor: selección y compartir](../exec-plans/active/mvp/f07-04-ui-autor-seleccion-y-compartir.md).
 4. Entregar al líder las presentaciones de acceso para que **Nahuel** implemente [auth real](../exec-plans/active/mvp/f03-auth-flujos-reales.md). Facu no implementa sesiones, recuperación ni permisos.
@@ -51,5 +51,5 @@ Sin cuenta de agente: apoya con pruebas manuales, revisión de textos y decision
 
 - Los números de Issue y las asignaciones definitivas no existen aún; el handle de GitHub de Gastón tampoco.
 - Matriz crítica/E2E ([MVP-121](../exec-plans/active/mvp/f12-critical-flow-matrix-and-e2e.md)): propietario por decidir al llegar a validación final.
-- Los contratos de dominio (MVP-020, MVP-021) y el paquete de delegación frontend (MVP-110) ya están completados e integrados por el líder en `develop` local; los carriles de Gastón y Facu avanzan sobre esas bases una vez publicados los contratos y autorizados los tickets.
+- Los contratos de dominio (MVP-020, MVP-021) y el paquete de delegación frontend (MVP-110) ya están completados y entregados en `origin/develop` (`ba7af83`); los carriles de Gastón y Facu avanzan sobre esas bases una vez autorizados los tickets.
 - La validación real con 12 casos ficticios se ejecuta **una sola vez al final**, sobre `develop` integrado; no ahora ni duplicada en local.

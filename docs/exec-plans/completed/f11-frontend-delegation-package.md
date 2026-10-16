@@ -77,7 +77,7 @@ Insumo externo: `MVP-021` para los dominios de revisión/versión. Si sus campos
 
 ## 8. Evidencia
 
-Completado e integrado en `develop` local (commit `37a915f`, con env en `7db19b8`; publicación remota / push conjunto autorizado por el usuario pendiente). Contratos reales + fixtures + JSON placeholders en preview; wireframes técnicos aceptados por el líder para primeras entregas; sin UI final ni runtime Auth (deliberadamente fuera de `MVP-110`). Checks completos en `sh_144a6cbea001J7f5tg0v8eGv5W`: exit 0 (lint, types, 222 Vitest incl. 66 tests de límites/boundaries, build de Next.js, 15 Playwright tests). Revisión independiente frontend en sesión `ses_ebb5912acffeQaj7pkuSwfDolg`: PASS.
+Completado, integrado en `develop` y entregado en `origin/develop` (commit `37a915f`, con env en `7db19b8`, push verificado en lote `ba7af83`; rama limpia en `fab2213..ba7af83`). Contratos reales + fixtures + JSON placeholders en preview; wireframes técnicos aceptados por el líder para primeras entregas; sin UI final ni runtime Auth (deliberadamente fuera de `MVP-110`). Checks completos en `sh_144a6cbea001J7f5tg0v8eGv5W`: exit 0 (lint, types, 222 Vitest incl. 66 tests de límites/boundaries, build de Next.js, 15 Playwright tests). Revisión independiente frontend en sesión `ses_ebb5912acffeQaj7pkuSwfDolg`: PASS.
 
 ## 9. Referencias a completar
 
@@ -124,5 +124,5 @@ None. Los principios de delimitación arquitectónica se preservaron estrictamen
 
 ### Follow-up
 
-- Código integrado en la rama local `develop` (commit `37a915f`, env en `7db19b8`). Publicación remota / push conjunto autorizado por el usuario (pendiente de envío conjunto; no se afirma push remoto sin SHA remoto).
+- Código entregado en `develop` y publicado en `origin/develop` (commit `37a915f`, env `7db19b8`; lote `ba7af83`).
 - La ejecución de las entregas de presentación delegadas (`MVP-111…115`) aguardará la confirmación externa de acceso del colaborador (`MVP-007`) y la publicación/asignación de sus respectivos tickets.

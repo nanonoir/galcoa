@@ -12,9 +12,9 @@ Registrar las decisiones aprobadas de F1, preparar contratos y entregas delegabl
 - [x] Preparar contratos compartidos y tests compatibles con sus consumidores (completado: contratos del núcleo documental, revisión, confirmación, versión y DTOs públicos integrados en `develop` local; `MVP-020`, `MVP-021`).
 - [x] Preparar instrucciones autónomas de colaboración y orden por persona (completado: `AGENTS.md`, orden por persona y guía de ejecución actualizados a tres carriles disjuntos en paralelo).
 - [x] Preparar runbook de jurados y alcances de presentación (completado: runbook de jurados, spec de presentación verificable y paquete de delegación `MVP-110`).
-- [x] Integrar y revisar independientemente; ejecutar validación proporcional sin servicios reales (completado: revisiones independientes de dominio, frontend y documental aprobadas con PASS; 224 Vitest incl. 66 barreras, build y 15 Playwright con exit 0).
+- [x] Integrar y revisar independientemente; ejecutar validación proporcional sin servicios reales (completado: revisiones independientes de dominio, frontend y documental aprobadas con PASS; validación con exit 0: `sh_144a6cbea001J7f5tg0v8eGv5W` con lint, types, 222 Vitest incl. 66 barreras, build y 15 Playwright; `npm test` con 224 Vitest en `sh_144ad1456001oRrn5vunfZFhsT`).
 - [x] Reconciliar maestro y planes solo según aceptación realmente comprobada; archivar planes terminados (completado: archivados `f01-decisiones-ingesta-y-modelos`, `f01-decisiones-confirmacion-y-sello`, `f02-contratos-dominio` y `f11-frontend-delegation-package`; maestro actualizado a 13 completadas y 60 pendientes).
-- [x] Commit integrado en rama local `develop` (commits `7db19b8`, `fd3502c`, `37a915f`, `5c0a521`, `dad1e32`); push conjunto a `develop` pendiente y autorizado directamente por el usuario (sin inventar SHA remoto). Sin creación de Issues en esta tanda.
+- [x] Entrega completada a `develop` y publicada exitosamente en `origin/develop` (seis commits: `7db19b8`, `fd3502c`, `37a915f`, `5c0a521`, `dad1e32`, `ba7af83`; rango `fab2213..ba7af83`; git status limpio). Sin creación de Issues en esta tanda.
 
 ## Coordinación
 
@@ -22,12 +22,12 @@ Cuatro agentes con archivos separados. Decisiones: specs y diseño de manifiesto
 
 ## Validación y evidencia consolidada
 
-- **Checks automáticos:** 224 tests en Vitest (incluyendo 66 tests de barreras de arquitectura), TypeScript (`tsc --noEmit`), ESLint, `npm run build` y 15 pruebas de Playwright sobre Chromium con exit 0 (último run completo `sh_144ad1456001oRrn5vunfZFhsT`).
+- **Checks automáticos:** Runner local `sh_144a6cbea001J7f5tg0v8eGv5W` completó lint, types, 222 tests en Vitest (incluyendo 66 de barreras), build Next.js y 15 tests Playwright E2E sobre Chromium con exit 0. Tras el fix del esquema de nombre y selección (`5c0a521`, `dad1e32`), el agente de fix verificó lint, types y 141 tests de contratos en verde, y la corrida posterior `sh_144ad1456001oRrn5vunfZFhsT` ejecutó exclusivamente `npm test` con 224 tests Vitest pasando con exit 0.
 - **Revisiones independientes:**
   - Dominio (`MVP-020`, `MVP-021`): sesión `ses_ebb5ebd15ffeV3cQsqGqt67xE9` PASS.
   - Paquete frontend (`MVP-110`): sesión `ses_ebb5912acffeQaj7pkuSwfDolg` PASS.
-  - Documental F1 y consistencia: sesión `ses_ebb75aaffffeE699hyaAHS529X` y corrección `ses_ebb5483caffe8E4TPOOuvjh1Wf` PASS (3 observaciones resueltas: compuertas circulares, protección de ramas opcional y autorización de demo).
-- **Control de versiones:** commits `7db19b8`, `fd3502c`, `37a915f`, `5c0a521`, `dad1e32` integrados en la rama local `develop`. Push conjunto pendiente de publicación autorizado explícitamente por el usuario (sin afirmar push sin SHA remoto).
+  - Documental F1 y consistencia: revisión independiente en sesión `ses_ebb5c32e5ffeIBd8L3HMZSVhjl` PASS (3 observaciones resueltas: compuertas circulares, protección de ramas opcional y autorización de demo). El agente implementador de F1 fue `ses_ebb75aaffffeE699hyaAHS529X` con fix `ses_ebb5483caffe8E4TPOOuvjh1Wf`.
+- **Control de versiones:** Seis commits integrados y entregados en `origin/develop`: `7db19b8`, `fd3502c`, `37a915f`, `5c0a521`, `dad1e32`, `ba7af83` (rango `fab2213..ba7af83` limpio y sincronizado).
 
 ## Cierre
 
@@ -45,14 +45,14 @@ Se completó en su totalidad el alcance de la primera tanda de la hackathon:
 
 ### Deviations from Design
 
-None. La consolidación preservó la política de no inventar SHA remoto para el push pendiente autorizado y no crear Issues remotos hasta la autorización de asignación de entregas.
+None. Se preservó la evidencia histórica de checkpoints y se registró la entrega efectiva en `origin/develop` (`ba7af83`) sin crear Issues remotos hasta la autorización de asignación.
 
 ### Validation
 
-- Validación estática y de pruebas completa en runner local `sh_144ad1456001oRrn5vunfZFhsT` con exit 0: ESLint, TypeScript, 224 tests en Vitest (incluyendo 66 de límites arquitectónicos), build Next.js y 15 tests Playwright E2E.
-- Revisiones técnicas independientes aprobadas en todas las áreas (dominio, frontend y documental).
+- Validación estática y de pruebas completa: run `sh_144a6cbea001J7f5tg0v8eGv5W` (lint, types, 222 Vitest incl. 66 barreras, build Next.js y 15 Playwright) y corrida de `npm test` `sh_144ad1456001oRrn5vunfZFhsT` (224 Vitest exit 0).
+- Revisiones técnicas independientes aprobadas: dominio (`ses_ebb5ebd15ffeV3cQsqGqt67xE9`), frontend (`ses_ebb5912acffeQaj7pkuSwfDolg`) y documental (`ses_ebb5c32e5ffeIBd8L3HMZSVhjl` con 3 hallazgos resueltos).
 
 ### Follow-up
 
-- Publicación remota mediante push conjunto a `origin/develop` de los commits integrados localmente (`7db19b8`, `fd3502c`, `37a915f`, `5c0a521`, `dad1e32`), autorizado directamente por el usuario.
+- Entrega remota completada en `origin/develop` (commits `7db19b8` a `ba7af83`).
 - Inicio de la siguiente etapa de implementación: esquema SQL y migraciones (`MVP-022…024`) y clientes Supabase (`MVP-025`) por el líder, y asignación de las entregas frontend (`MVP-111…115`) al confirmarse el acceso del colaborador (`MVP-007`).

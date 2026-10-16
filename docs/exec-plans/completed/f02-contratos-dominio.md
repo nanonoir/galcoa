@@ -78,7 +78,7 @@ Ninguna adicional. La estructura de snapshot/DTO público ya está en SH-01/02; 
 
 ## Progreso y evidencia
 
-Completado e integrado en `develop` local (commit `fd3502c`, con env en `7db19b8`; publicación remota / push conjunto autorizado por el usuario pendiente). Checks completos en `sh_144a6cbea001J7f5tg0v8eGv5W`: exit 0 (lint, types, 222 Vitest incl. 66 tests de límites/boundaries, build de Next.js, 15 Playwright tests). Revisión independiente de dominio en sesión `ses_ebb5ebd15ffeV3cQsqGqt67xE9`: PASS.
+Completado, integrado en `develop` y entregado en `origin/develop` (commits `fd3502c` y fix `dad1e32`, push verificado en lote `ba7af83`; rama limpia en `fab2213..ba7af83`). Checks completos en `sh_144a6cbea001J7f5tg0v8eGv5W`: exit 0 (lint, types, 222 Vitest incl. 66 tests de límites/boundaries, build de Next.js, 15 Playwright tests); corrida posterior de `npm test` con 224 Vitest exit 0 (`sh_144ad1456001oRrn5vunfZFhsT`). Revisión independiente de dominio en sesión `ses_ebb5ebd15ffeV3cQsqGqt67xE9`: PASS.
 
 ## Cierre
 
@@ -108,5 +108,5 @@ None. La implementación se ajusta con exactitud al PRD §5, §8, las invariante
 
 ### Follow-up
 
-- Código integrado en la rama local `develop` (commit `fd3502c`). Publicación remota / push conjunto autorizado directamente por el usuario (pendiente de envío conjunto; no se afirma push remoto sin SHA remoto).
+- Código entregado en `develop` y publicado en `origin/develop` (commits `fd3502c`, `dad1e32`; lote `ba7af83`).
 - Los contratos quedan listos para su consumo por el esquema SQL y migraciones (`MVP-022`), servicio de documentos (`MVP-040`) y motor de reglas determinista (`MVP-060`).
