@@ -36,6 +36,27 @@ describe("registro del preview", () => {
   });
 });
 
+describe("entrada dashboard (MVP-111)", () => {
+  it("monta la presentación real con los ocho escenarios, no el placeholder", () => {
+    const entry = previewEntries.find((e) => e.id === "dashboard-reference");
+    expect(entry?.scenarios.map((s) => s.id)).toEqual([
+      "loading",
+      "error",
+      "empty",
+      "commercial",
+      "measurement",
+      "confirmations",
+      "finalized-pending",
+      "finalized-registered",
+    ]);
+    const { unmount } = render(<div>{entry?.render("commercial", handlers)}</div>);
+    expect(screen.queryByTestId("scenario-json")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Documentos" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Abrir Entrega de maíz/ })).toBeInTheDocument();
+    unmount();
+  });
+});
+
 describe("PreviewApp con varias entradas", () => {
   it("ofrece selector de componente y cambia de escenarios al elegir una entrada", async () => {
     const user = userEvent.setup();

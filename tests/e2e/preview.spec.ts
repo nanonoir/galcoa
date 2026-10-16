@@ -93,3 +93,68 @@ test.describe("preview local (datos ficticios)", () => {
     await expect(stage(page).getByText("Todavía no hay documentos")).toBeVisible();
   });
 });
+
+test.describe("dashboard MVP-111 (datos ficticios)", () => {
+  const dashboardScenarios: Array<{ id: string; label: string; visible: RegExp | string }> = [
+    { id: "loading", label: "Cargando", visible: "Cargando documentos" },
+    { id: "error", label: "Error técnico recuperable", visible: "No se pudieron cargar los documentos" },
+    { id: "empty", label: "Lista vacía", visible: "Todavía no hay documentos" },
+    { id: "commercial", label: "Entrega comercial contradictoria (10 vs 12)", visible: "Fuentes: msg-0003, msg-0007" },
+    { id: "measurement", label: "Medición sin unidad", visible: "Fuentes: msg-0002" },
+    { id: "confirmations", label: "Confirmaciones pendientes", visible: "rev-confirmaciones-001-2" },
+    { id: "finalized-pending", label: "Finalizada con sello HCS pendiente", visible: "rev-finalizado-pendiente-001-1" },
+    { id: "finalized-registered", label: "Finalizada con sello HCS registrado", visible: "rev-finalizado-registrado-001-1" },
+  ];
+
+  for (const width of [360, 1280]) {
+    for (const scenario of dashboardScenarios) {
+      test(`${width}px · «${scenario.label}» legible y sin desbordamiento`, async ({ page }, testInfo) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto("/");
+        await scenarioButton(page, scenario.label).click();
+        await expect(scenarioButton(page, scenario.label)).toHaveAttribute("aria-pressed", "true");
+        await expect(stage(page).getByText(scenario.visible).first()).toBeVisible();
+        await expect(stage(page).getByRole("button", { name: "Crear documento" })).toBeVisible();
+
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(overflow, "desbordamiento horizontal").toBeLessThanOrEqual(0);
+
+        // Captura identificada por escenario y ancho (la revisión aparece en la tarjeta cuando existe).
+        const path = testInfo.outputPath(`dashboard-${scenario.id}-${width}.png`);
+        await stage(page).screenshot({ path });
+        await testInfo.attach(`dashboard-${scenario.id}-${width}`, { path, contentType: "image/png" });
+      });
+    }
+  }
+
+  test("teclado: foco visible en crear y abrir, cada uno emite solo su callback", async ({ page }) => {
+    await page.goto("/");
+    await scenarioButton(page, "Finalizada con sello HCS pendiente").click();
+    const create = stage(page).getByRole("button", { name: "Crear documento" });
+    const open = stage(page).getByRole("button", { name: /^Abrir Entrega de soja/ });
+
+    await create.focus();
+    await page.keyboard.press("Tab");
+    await expect(open).toBeFocused();
+    const ring = await open.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { outline: s.outlineStyle, shadow: s.boxShadow };
+    });
+    expect(ring.outline !== "none" || ring.shadow !== "none", "foco visible").toBe(true);
+    await page.keyboard.press("Enter");
+
+    await page.keyboard.press("Shift+Tab");
+    await expect(create).toBeFocused();
+    await page.keyboard.press("Enter");
+
+    await expect(page.getByRole("complementary").getByRole("listitem")).toHaveText(["onCreate()", 'onOpen("doc-finalizado-pendiente-001")']);
+  });
+
+  test("la advertencia crítica no bloquea abrir ni crear", async ({ page }) => {
+    await page.goto("/");
+    await scenarioButton(page, "Entrega comercial contradictoria (10 vs 12)").click();
+    await expect(stage(page).getByText("Advertencia crítica:")).toBeVisible();
+    await expect(stage(page).getByRole("button", { name: /^Abrir Entrega de maíz/ })).toBeEnabled();
+    await expect(stage(page).getByRole("button", { name: "Crear documento" })).toBeEnabled();
+  });
+});
