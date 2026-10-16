@@ -1,6 +1,16 @@
 import type { ReactNode } from "react";
 import { createElement } from "react";
 
+import { LoginForm } from "@/features/auth/components/login-form";
+import { NewPasswordForm } from "@/features/auth/components/new-password-form";
+import { RecoveryRequestForm } from "@/features/auth/components/recovery-request-form";
+import { RegisterForm } from "@/features/auth/components/register-form";
+import type {
+  LoginFormProps,
+  NewPasswordFormProps,
+  RecoveryRequestFormProps,
+  RegisterFormProps,
+} from "@/features/auth/contracts/auth-forms";
 import { DashboardReference } from "@/features/dashboard/components/dashboard-reference";
 import type { DashboardViewProps } from "@/features/dashboard/contracts/dashboard-view";
 import type { SnapshotViewProps } from "@/features/documents/contracts/snapshot-view";
@@ -107,18 +117,26 @@ const landing: PreviewEntry = {
   },
 };
 
+/** Acceso (MVP-115): elige el formulario por el discriminante `form`; el callback solo registra el nombre del evento, nunca valores. */
 const authForms: PreviewEntry = {
-  id: "auth-forms-placeholder",
-  label: "Acceso (placeholder, MVP-115)",
+  id: "auth-forms",
+  label: "Acceso (MVP-115)",
   scenarios: authFormScenarios.map(({ id, label }) => ({ id, label })),
   render(scenarioId, handlers) {
     const scenario = authFormScenarios.find((s) => s.id === scenarioId);
     if (!scenario) return null;
-    return createElement(ScenarioPlaceholder, {
-      title: `Formulario ${scenario.form}`,
-      data: { form: scenario.form, state: scenario.state },
-      callbacks: [{ name: "onSubmit(valores)", run: () => handlers.log(`onSubmit(${scenario.form})`) }],
-    });
+    const { state } = scenario;
+    const onSubmit = () => handlers.log(`onSubmit(${scenario.form})`);
+    switch (scenario.form) {
+      case "login":
+        return createElement(LoginForm, { state, onSubmit } satisfies LoginFormProps);
+      case "register":
+        return createElement(RegisterForm, { state, onSubmit } satisfies RegisterFormProps);
+      case "recovery_request":
+        return createElement(RecoveryRequestForm, { state, onSubmit } satisfies RecoveryRequestFormProps);
+      case "new_password":
+        return createElement(NewPasswordForm, { state, onSubmit } satisfies NewPasswordFormProps);
+    }
   },
 };
 

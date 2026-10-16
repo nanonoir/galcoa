@@ -158,3 +158,89 @@ test.describe("dashboard MVP-111 (datos ficticios)", () => {
     await expect(stage(page).getByRole("button", { name: "Crear documento" })).toBeEnabled();
   });
 });
+
+test.describe("acceso MVP-115 (datos ficticios)", () => {
+  const openAccess = async (page: Page, label: string) => {
+    await page.goto("/");
+    await page.getByRole("group", { name: "Componente" }).getByRole("button", { name: "Acceso (MVP-115)" }).click();
+    await scenarioButton(page, label).click();
+    await expect(scenarioButton(page, label)).toHaveAttribute("aria-pressed", "true");
+  };
+
+  const captures: Array<{ id: string; label: string; title: string; visible: string }> = [
+    { id: "login-idle", label: "Login: reposo", title: "Iniciar sesión", visible: "Ingresar" },
+    { id: "login-error", label: "Login: error seguro", title: "Iniciar sesión", visible: "Correo o contraseña incorrectos." },
+    { id: "register-idle", label: "Registro: reposo", title: "Crear cuenta", visible: "Confirmar contraseña" },
+    { id: "register-field-errors", label: "Registro: campos inválidos", title: "Crear cuenta", visible: "Las contraseñas no coinciden." },
+    { id: "recovery-idle", label: "Recuperación: reposo", title: "Recuperar acceso", visible: "Solicitar recuperación" },
+    { id: "recovery-field-errors", label: "Recuperación: campo inválido", title: "Recuperar acceso", visible: "Ingresa un correo válido." },
+    { id: "new-password-idle", label: "Nueva contraseña: reposo", title: "Nueva contraseña", visible: "Guardar contraseña" },
+    { id: "new-password-error", label: "Nueva contraseña: enlace vencido", title: "Nueva contraseña", visible: "El enlace venció. Solicita uno nuevo." },
+  ];
+
+  for (const width of [360, 1280]) {
+    for (const capture of captures) {
+      test(`${width}px · «${capture.label}» real y sin desbordamiento`, async ({ page }, testInfo) => {
+        await page.setViewportSize({ width, height: 900 });
+        await openAccess(page, capture.label);
+        await expect(stage(page).getByRole("form", { name: capture.title })).toBeVisible();
+        await expect(stage(page).getByText(capture.visible).first()).toBeVisible();
+        await expect(stage(page).getByTestId("scenario-json")).toHaveCount(0);
+
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(overflow, "desbordamiento horizontal").toBeLessThanOrEqual(0);
+
+        const path = testInfo.outputPath(`acceso-${capture.id}-${width}.png`);
+        await stage(page).screenshot({ path });
+        await testInfo.attach(`acceso-${capture.id}-${width}`, { path, contentType: "image/png" });
+      });
+    }
+  }
+
+  test("teclado: Tab recorre los campos con foco visible y Enter envía; solo se registra el evento", async ({ page }) => {
+    const requests: string[] = [];
+    page.on("request", (request) => {
+      if (["fetch", "xhr"].includes(request.resourceType())) requests.push(request.url());
+    });
+    await openAccess(page, "Login: reposo");
+    const email = stage(page).getByLabel("Correo electrónico");
+    const password = stage(page).getByLabel("Contraseña", { exact: true });
+
+    await email.focus();
+    await page.keyboard.type("ana@ejemplo.test");
+    await page.keyboard.press("Tab");
+    await expect(password).toBeFocused();
+    const ring = await password.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { outline: s.outlineStyle, shadow: s.boxShadow };
+    });
+    expect(ring.outline !== "none" || ring.shadow !== "none", "foco visible").toBe(true);
+    await expect(password).toHaveAttribute("type", "password");
+    await page.keyboard.type("Clave-Ficticia-1");
+    await page.keyboard.press("Tab");
+    await expect(stage(page).getByRole("button", { name: "Ingresar" })).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Enter");
+
+    const events = page.getByRole("complementary");
+    await expect(events.getByRole("listitem")).toHaveText(["onSubmit(login)"]);
+    expect(await page.content()).not.toContain("Clave-Ficticia-1");
+    expect(requests, "peticiones fetch/xhr").toEqual([]);
+  });
+
+  test("doble clic registra un solo envío y «enviando» deshabilita el botón", async ({ page }) => {
+    await openAccess(page, "Registro: reposo");
+    await stage(page).getByRole("button", { name: "Crear cuenta" }).dblclick();
+    await expect(page.getByRole("complementary").getByRole("listitem")).toHaveText(["onSubmit(register)"]);
+
+    await scenarioButton(page, "Registro: enviando").click();
+    await expect(stage(page).getByRole("button", { name: "Enviando…" })).toBeDisabled();
+    await expect(stage(page).getByRole("status")).toHaveText("Enviando…");
+  });
+
+  test("resultado informado: muestra el mensaje del contrato en lugar del botón", async ({ page }) => {
+    await openAccess(page, "Recuperación: resultado informado");
+    await expect(stage(page).getByRole("status")).toHaveText("Si el correo corresponde a una cuenta, te enviaremos instrucciones.");
+    await expect(stage(page).getByRole("button")).toHaveCount(0);
+  });
+});
