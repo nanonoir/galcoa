@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -17,6 +18,27 @@ function listSources(dir: string): string[] {
   });
 }
 
+/** Especificadores de import/export/require/import() reales; los comentarios y cadenas sueltas no cuentan. */
+function runtimeSpecifiers(text: string, file: string): string[] {
+  const kind = file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const found: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      found.push(node.moduleSpecifier.text);
+    } else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference) && ts.isStringLiteral(node.moduleReference.expression)) {
+      found.push(node.moduleReference.expression.text);
+    } else if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === "require"))) {
+      const arg = node.arguments[0];
+      if (arg && (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg))) found.push(arg.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kind));
+  return found;
+}
+
+const isTestOnlySpecifier = (specifier: string) => /tests\/server|server-only-sentinel|galcoa-tests|(?:^|\/)tests\//.test(specifier);
+
 describe("producto aislado del harness", () => {
   it("la configuración de Next no alias `server-only` ni referencia tests", () => {
     const next = readFileSync(path.join(root, "next.config.ts"), "utf8");
@@ -25,9 +47,18 @@ describe("producto aislado del harness", () => {
 
   it("ningún archivo de src/ importa tests/, el puente, el centinela ni el caché generado", () => {
     for (const file of listSources(path.join(root, "src"))) {
-      const source = readFileSync(file, "utf8");
-      expect(source, path.relative(root, file)).not.toMatch(/tests\/server|server-only-sentinel|galcoa-tests|from\s+["'](?:\.\.\/)+tests\//);
+      const offending = runtimeSpecifiers(readFileSync(file, "utf8"), file).filter(isTestOnlySpecifier);
+      expect(offending, path.relative(root, file)).toEqual([]);
     }
+  });
+
+  it("el detector ignora comentarios y cadenas, y rechaza imports reales", () => {
+    const detect = (source: string) => runtimeSpecifiers(source, "x.ts").filter(isTestOnlySpecifier);
+    expect(detect('// ver tests/server/documents\n/* tests/server-only-sentinel */\nconst a = "tests/server";')).toEqual([]);
+    expect(detect('import x from "../../../tests/server/support/x";')).toEqual(["../../../tests/server/support/x"]);
+    expect(detect('export * from "@/../tests/server/y";')).toEqual(["@/../tests/server/y"]);
+    expect(detect('const m = await import("./server-only-sentinel");')).toEqual(["./server-only-sentinel"]);
+    expect(detect('const r = require("galcoa-tests/x");')).toEqual(["galcoa-tests/x"]);
   });
 
   it("el producto conserva el import real de server-only (el centinela no lo reemplaza en src/)", () => {

@@ -75,6 +75,8 @@ describe("guards de grafo y artefacto", () => {
     [chunk({ dynamicImports: ["groq-sdk"] }), "groq-sdk"],
     [chunk({ imports: ["@hiero-ledger/sdk"] }), "@hiero-ledger/sdk"],
     [chunk({ imports: ["@ai-sdk/google"] }), "@ai-sdk/google"],
+    [chunk({ imports: ["@react-pdf/renderer"] }), "@react-pdf/renderer"],
+    [chunk({ moduleIds: ["/r/node_modules/@react-pdf/renderer/lib/index.js"] }), "SDK real de proveedor"],
     [chunk({ imports: ["lodash"] }), "lodash"],
     [chunk({ moduleIds: ["C:\\r\\src\\app\\page.tsx"] }), "src"],
     [chunk({ moduleIds: ["/r/node_modules/next/headers.js"] }), "Next empaquetado"],

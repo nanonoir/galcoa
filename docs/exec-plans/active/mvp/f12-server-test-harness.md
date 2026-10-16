@@ -81,7 +81,11 @@ Checkpoint parcial, 2026-10-16 · rama `issue/32-server-test-harness` (base `ori
 - `npm run test:server:local` (con `npx supabase start`; `db reset` desde cero): 3 tests pasan, dos ejecuciones. `npm run test:rls`: 119 pasan (sin regresión).
 - El bundle rechazó con error de prestep, por la razón esperada: adapter real de Gemini (`@ai-sdk/google`), `src/app`, `next/headers` y dependencia fuera de la lista; no queda directorio generado tras el fallo.
 
-Rama/PR/commit: se registran al integrar. No acredita `MVP-121`, el transporte HTTP de Next (`MVP-134`) ni cloud/proveedores.
+Integrado en `develop` vía PR #42 (merge 7f130e5). MVP-120 sigue **en_curso**: H2, H6 y H7 parciales; este PR no cierra el Issue #32.
+
+Revisión independiente posterior y fix acotado, 2026-10-16 · rama `fix/server-harness-review`: (1) el test de aislamiento escaneaba texto crudo y daba falso positivo con un comentario de `src/lib/documents/ports.ts` (CI de `develop`, run 38918967900); ahora analiza solo imports/exports/`require`/`import()` reales con el parser de TypeScript ya instalado, con regresión (comentario aceptado, import real rechazado); (2) el build del puente usa `envDir: false` en lugar de `envFile: false` (marcado `@deprecated` en los tipos de Vite 8.3.4 instalado); (3) `@react-pdf` se agrega a los módulos prohibidos, simétrico con los externos, con casos negativos. Checks: `vitest --project server` 97 pasan, `npm test` 342 pasan, `test:boundaries` 67, `lint`, `typecheck` y `build` sin errores. No se re-ejecutó `test:server:local` ni `test:rls` (sin DB local; el fix no toca fixtures ni SQL). Límite: la revisión fue verificación focal de los hallazgos, no una nueva revisión independiente.
+
+No acredita `MVP-121`, el transporte HTTP de Next (`MVP-134`) ni cloud/proveedores.
 
 ## 9. Referencias a completar y decisiones locales
 
