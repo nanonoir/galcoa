@@ -95,6 +95,35 @@ Autorización del usuario: usar `galcoa-dev` como base de prueba y crear tablas 
 - **Auth parcialmente confirmado**: el usuario confirmó en el panel (2026-10-16) que la confirmación de email está activa. La URL de Vercel (`https://galcoa-nea.vercel.app`) y las claves están configuradas en `main`. Las redirecciones de Auth y los límites de correo **no** están confirmados automáticamente; el conector no expone esa configuración y no se afirma su estado. Por eso `MVP-026` **no** se marca aceptada.
 - Proveedores de IA (solo modelos gratuitos, sin llamadas reales ni lectura de `.env`): Gemini y Groq; configurados `openai/gpt-oss-120b` y `gemini-3.5-flash-lite`. Hedera queda para más adelante; no se autorizan planes de pago.
 
+### Ampliación autorizada F4/LOGIN — 2026-10-16
+
+Después de integrar PR #80 y su revisión final PASS, el usuario autorizó crear
+en `galcoa-dev` el mismo acceso limitado probado localmente. Se aplicaron solo
+`20261016001000_f4_persistence.sql` y `20261016001100_executor_login.sql`,
+obtenidas intactas del commit `ca957b03ac7305f4ddaa08b7774915d5ab68e0e9`.
+Historial final: las cuatro bases anteriores más esas dos versiones, sin cambios
+de payload (SHA-256 fuente/SQL guardado coincidentes). Reconciliación acotada a
+los dos timestamps nuevos, sin borrar filas ni reaplicar SQL.
+
+Detalle reproducible de huellas, preflight, grants y límites en
+[F4: aplicación remota](f04-documents-chat-audit.md#aplicación-remota-autorizada--2026-10-16).
+RLS sigue 24/24, SELECT propietario en 18 tablas, sin grants de tabla para
+anon/service_role/PUBLIC; dos RPC internas exclusivas del executor y cinco de
+autor para authenticated. LOGIN sin contraseña provisionada; conexión remota,
+TLS/Supavisor y Vercel siguen sin comprobar/configurar en este paso.
+
+Advisors posteriores: cuatro INFO de tablas servidor sin políticas
+([0008](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy));
+cinco WARN esperados por las RPC de autor SECURITY DEFINER y el WARN preexistente
+de `rls_auto_enable` para authenticated
+([0029](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable));
+un WARN preexistente de esa misma función para anon
+([0028](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)).
+No se modificó la función del proveedor ni se hicieron correcciones ajenas.
+Sin reset, borrados, consultas de datos de usuarios, usuarios nuevos, contraseñas,
+claves, configuración remota, IA ni HCS. `MVP-026` no queda aceptada: conserva
+pendientes de Auth y despliegue; F4 conserva sus IDs parciales.
+
 ### Pendiente (checkpoint B cumplido salvo Auth)
 
 Autorización y proyecto objetivo resueltos. Resta verificar en la consola las redirecciones de Auth y los límites del emisor de correo (paso 5) antes de aceptar `MVP-026`.
