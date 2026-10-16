@@ -66,7 +66,7 @@ Todos pendientes.
 
 **Checkpoint B — `MVP-131`**
 
-- [ ] **C1 · Jobs ampliados, parte local** (← `MVP-120`). Añadir al workflow la ejecución de los tests de servidor (dobles) y de la base local Supabase (requisitos de entorno de H3 del [harness](f12-server-test-harness.md)); versiones de acciones y de Node fijadas igual que el resto; sin secretos de aplicación; sin llamadas a proveedores. Validar localmente que los mismos comandos pasan y que el YAML es válido.
+- [ ] **C1 · Jobs ampliados, parte local** (← `MVP-120`). Añadir al workflow la ejecución de los tests de servidor (dobles) y de la base local Supabase (requisitos de entorno de H3 del [harness](../../completed/f12-server-test-harness.md)); versiones de acciones y de Node fijadas igual que el resto; sin secretos de aplicación; sin llamadas a proveedores. Validar localmente que los mismos comandos pasan y que el YAML es válido.
 - [ ] **C2 · Equivalencia local/CI** (← C1). Documentar en `docs/development.md` (edición del líder, acotada) qué corre en CI y qué no (evaluación de IA y smoke real quedan fuera).
 - [ ] **C3 · Run remoto** (← C2, `MVP-006`; **requiere autorización de commit/push/PR**). Obtener un run en Linux; enlazarlo. Fallos se corrigen o se registran; no se declara verde sin run real.
 - [ ] **C4 · Protección de ramas** (opcional posthackathon; el usuario optó explícitamente por no exigirla durante la hackathon) (← C3; **requiere autorización y permisos de administración en GitHub**). Configurar checks requeridos y revisión; verificar que los nombres de los checks coinciden con los jobs reales y comprobar el resultado leyendo la configuración. Si faltan permisos, se registra el bloqueo en el §9 del maestro (edición del líder) y se bloquea **solo C3/C4**.
