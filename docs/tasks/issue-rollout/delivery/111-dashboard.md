@@ -10,7 +10,7 @@ Facu, **@jfacundoayala**, colaborador confirmado. Una tarea a la vez; hasta tres
 Dependencias integradas: **MVP-110, MVP-007**. El paquete 110 ya existe; el líder registra la confirmación de acceso de Facu en 007 sin esperar la invitación de Gastón. No depende de 112–115.
 
 ## 4. Lecturas obligatorias
-- [Plan §3–7](https://github.com/nanonoir/galcoa/blob/develop/docs/exec-plans/active/mvp/f11-frontend-presentation-tickets.md), [maestro, fila MVP-111](https://github.com/nanonoir/galcoa/blob/develop/docs/exec-plans/active/mvp-master-plan.md).
+- [Plan §3–7](https://github.com/nanonoir/galcoa/blob/develop/docs/exec-plans/completed/f11-frontend-presentation-tickets.md), [maestro, fila MVP-111](https://github.com/nanonoir/galcoa/blob/develop/docs/exec-plans/active/mvp-master-plan.md).
 - [Ficha dashboard, contrato y aceptación](https://github.com/nanonoir/galcoa/blob/develop/docs/tasks/dashboard-presentation.md), [frontend-delivery §1–5](https://github.com/nanonoir/galcoa/blob/develop/docs/specs/frontend-delivery.md).
 - [AGENTS](https://github.com/nanonoir/galcoa/blob/develop/AGENTS.md), [desarrollo: checks](https://github.com/nanonoir/galcoa/blob/develop/docs/development.md), [PRD §5, §10–11, REQ-02](https://github.com/nanonoir/galcoa/blob/develop/docs/exec-plans/GALCOA-PRD-v1.4.md).
 

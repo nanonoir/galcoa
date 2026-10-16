@@ -1,6 +1,6 @@
 # Ficha de delegación: presentación del snapshot y advertencias (MVP-112)
 
-**Estado: contrato y escenarios disponibles (probados con Vitest); borrador local sin Issue ni asignación.** Pendientes: referencia visual y publicación del Issue (ver «Huecos»). Formato y reglas comunes: [dashboard-presentation](dashboard-presentation.md), [frontend-delivery](../specs/frontend-delivery.md) (§2–§5, F-02, F-06, F-07) y [plan de tickets](../exec-plans/active/mvp/f11-frontend-presentation-tickets.md).
+**Estado: presentación completada por Facu e integrada por PR [#59](https://github.com/nanonoir/galcoa/pull/59), Issue #27 cerrada.** Aceptación verificada; evidencia y límites en el [plan cerrado](../exec-plans/completed/f11-frontend-presentation-tickets.md#resultado-de-implementación). La lista conserva los criterios del ticket, no trabajo pendiente. Reglas: [dashboard-presentation](dashboard-presentation.md), [frontend-delivery](../specs/frontend-delivery.md) (§2–§5, F-02, F-06, F-07).
 
 ## Objetivo
 
@@ -11,7 +11,7 @@ Referencias: PRD REQ-08, REQ-12/13 (contenido idéntico), INV-02, INV-11, INV-14
 ## Contrato y alcance
 
 - Props (existen): `SnapshotViewProps { state: SnapshotViewState; onRetry }` en `src/features/documents/contracts/snapshot-view.ts`. Estado: `SnapshotViewState` / `SnapshotViewStateSchema` en `src/lib/contracts/snapshot-view.ts` (`loading` · `error{message}` · `empty` · `ready{revisionId, snapshotId, content: FrozenOperation, documentStatus, controlStatus, confirmationStatus, hcsStatus}`). Advertencias con fuentes como **alias** (`SharedWarning`/`SourceAlias`, `src/lib/contracts/review.ts`). El colaborador no los edita.
-- Escenarios (existen): `snapshotScenarios` en `src/mocks/documents.ts` — `loading`, `error`, `empty`, `critical-two-sources`, `unit-missing`, `no-warnings`, `long-content`. Se abren en `npm run preview:ui` → componente «Snapshot (placeholder, MVP-112)» (hoy vuelca JSON; el líder cambiará la entrada para renderizar tu componente).
+- Escenarios: `snapshotScenarios` en `src/mocks/documents.ts` — `loading`, `error`, `empty`, `critical-two-sources`, `unit-missing`, `no-warnings`, `long-content`. Preview: «Snapshot (MVP-112)», conectado a la presentación real.
 
 **Allowlist propuesta (a confirmar en el Issue):**
 
@@ -35,12 +35,9 @@ Sin barrel `index`. Disjunto de `MVP-113`. Fixtures locales solo si el ticket lo
 - [ ] Tests de escenarios y casos negativos (crítica con acciones no deshabilitadas; fuente ausente).
 - [ ] Capturas a 360 y 1280 px: ready con crítica y dos fuentes, sin advertencias, unidad no informada, vacío, carga y error.
 
-## Huecos (qué impide delegar hoy)
+## Resolución de preparación
 
-1. Contrato y escenarios ya existen (ver arriba). Falta que el líder conecte la entrada del preview a tu componente al integrarlo.
-2. Cierre formal de `MVP-110` y del Issue: pendiente.
-3. Referencia visual / acabado para esta entrega: no fijada.
-4. Asignación y handle de quien ejecute: ver [índice](README.md).
+MVP-110 completada; wireframe técnico aceptado y ticket asignado a Facu. La excepción autorizada permitió editar exclusivamente el import/entrada propia de `preview/registry.ts`, su prueba de registro y sus casos E2E, con un único escritor. Preview real integrado; sin huecos de presentación pendientes. Integraciones posteriores conservan sus propios IDs.
 
 ## Validación y entrega
 
