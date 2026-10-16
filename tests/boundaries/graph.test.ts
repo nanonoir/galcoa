@@ -77,6 +77,7 @@ describe("presentación: casos rechazados", () => {
     ["@supabase/supabase-js", 'import { createClient } from "@supabase/supabase-js";\nexport const A = () => String(createClient);\n'],
     ["node:fs", 'import fs from "node:fs";\nexport const A = () => String(fs);\n'],
     ["server-only", 'import "server-only";\nexport const A = () => null;\n'],
+    ["pg", 'import { Pool } from "pg";\nexport const A = () => String(Pool);\n'],
   ])("rechaza el paquete %s", (pkg, source) => {
     const v = check({ "src/features/dash/components/a.tsx": source });
     expect(v.some((x) => x.detail.includes(pkg))).toBe(true);

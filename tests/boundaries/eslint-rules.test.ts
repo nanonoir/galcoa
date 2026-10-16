@@ -78,6 +78,7 @@ describe("ESLint: presentación", () => {
     ["app", 'import P from "@/app/page";'],
     ["next", 'import Link from "next/link";'],
     ["SDK", 'import { createClient } from "@supabase/supabase-js";'],
+    ["pg", 'import { Pool } from "pg";'],
     ["builtin de Node", 'import fs from "node:fs";'],
     ["import dinámico", 'const x = () => import("@/lib/supabase/client");'],
     ["require", 'const x = require("@/lib/supabase/client");'],

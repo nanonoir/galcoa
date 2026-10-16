@@ -227,6 +227,28 @@ La fila de cada ID se actualiza en el maestro solo tras integrar y repetir check
 
 ## 10. Pendientes y solicitudes
 
+### Checkpoint transporte interno #10 (en ejecución)
+
+Decisión técnica local en data-transactions §7: login mínimo aditivo y adapter
+pg server-only ligado al usuario verificado, solo agente/auditoría F4. Pasos:
+migración sin password, allowlist parametrizada, composición opcional, barreras
+y unitarios; después, con reserva explícita, LOGIN real y catálogo desde cero.
+Sin operaciones cloud, sin cambiar contratos HTTP ni store, sin cerrar
+MVP-040/041/044. Provisión remota y revisión independiente quedan pendientes.
+
+Evidencia de este checkpoint (2026-10-16): `npm ci` y altas acotadas de
+`pg`/`@types/pg`; unitarios de persistencia **32/32** (17 del transporte),
+barreras **69/69**, `npm run typecheck`, ESLint focalizado y build Next: exit 0.
+Sin Docker ni llamadas cloud. npm informa nueve vulnerabilidades altas también
+presentes antes del alta; no se ejecutó audit fix ni se actualizaron otros paquetes.
+Suite real preparada (NO ejecutada, espera reserva del flujo 32):
+`npx.cmd vitest run --config tests/server/persistence/executor/vitest.local.config.ts`.
+Reutiliza setup RLS y reset de las **seis** migraciones, contraseña aleatoria
+efímera en memoria, LOGIN sin SET ROLE, catálogo, replay y rollback forzado.
+Después de esa prueba: repetir catálogo RLS con `RLS_SKIP_RESET=1`, revisar
+independientemente rol/transporte y recién evaluar aceptación. No hay evidencia
+de LOGIN real ni provisión remota todavía; PR sin merge/cierre de IDs.
+
 **Referencias** (documentos objetivo ya disponibles; los parámetros operativos siguen pendientes de F1):
 
 - `RQ-B1` — [sources-and-ai](../../../specs/sources-and-ai.md): fuentes admitidas y límite de longitud de mensaje; el valor aprobado es de `MVP-013` (§7 de la spec, propuesto, no aprobado).

@@ -6,6 +6,7 @@ import { getSessionClient } from "@/lib/supabase/session";
 
 import type { DocumentHttpDeps } from "./http";
 import { createDocumentStore } from "./persistence/store";
+import { createExecutorRpc } from "./persistence/executor-rpc";
 
 /** Composición perezosa por request; no hay cliente compartido ni service_role. */
 export const documentHttpDeps: DocumentHttpDeps = {
@@ -17,7 +18,7 @@ export const documentHttpDeps: DocumentHttpDeps = {
       session,
       storeForUser(userId) {
         if (session.status !== "authenticated" || session.user.id !== userId) throw new Error("Sin sesión verificada");
-        return createDocumentStore({ verifiedUserId: userId, session: client });
+        return createDocumentStore({ verifiedUserId: userId, session: client, executor: createExecutorRpc(userId) });
       },
     };
   },
