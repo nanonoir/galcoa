@@ -137,7 +137,7 @@ La guía Next local `node_modules/next/dist/docs/01-app/03-api-reference/01-dire
 
 ## SH-08 — IA, extracción y procedencia sin autoridad delegada
 
-**Decisión:** modelos fijados por D-05: Gemini `gemini-3.5-flash-lite` mediante AI SDK/Google; contraste con Groq `openai/gpt-oss-120b` mediante `groq-sdk`. Ni métricas ni contratos permiten cambiar modelos por iniciativa local. `ai`, `@ai-sdk/react` y `groq-sdk` no están instalados en la base inspeccionada; se incorporan con sus consumidores, no se presume integración por dependencias existentes.
+**Decisión:** modelos fijados por D-05: Gemini `gemini-3.5-flash-lite` mediante AI SDK/Google; contraste con Groq `openai/gpt-oss-120b` mediante `groq-sdk`. Ni métricas ni contratos permiten cambiar modelos por iniciativa local. `ai`, `@ai-sdk/react`, `groq-sdk` y `server-only` se instalaron después (ver [`deps-ai-sdk-server-only`](../exec-plans/completed/deps-ai-sdk-server-only.md)); su presencia no implica integración: no hay consumidores hasta los planes F4/F5.
 
 Persistir entrada/referencias exactas, salida validada Zod, modelo, versión de prompt/reglas, tiempo del servidor y limitaciones. Original y extracción son registros diferentes; guardar proveedor/método/página o región cuando exista. Los reportes no se sobreescriben al reintentar ni se reconsultan para reconstruir versiones históricas. Un reporte nuevo o corrección de borrador no altera una revisión congelada.
 

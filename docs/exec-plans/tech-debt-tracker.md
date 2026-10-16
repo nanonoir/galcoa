@@ -27,10 +27,10 @@
 - **Discovered/Recorded**: 2026-10-16
 - **Originating Plan**: `docs/exec-plans/completed/docs-initialization.md` (actualizado en `team-workspace-readiness.md`)
 - **Severity**: Low (alineación de producto; sin impacto en runtime ni bloqueo de presentación)
-- **Description**: Frente al stack del PRD (§0, §13): se incorporó `zod@4.6.7` y se retiraron las dependencias no utilizadas en P0 (`@ai-sdk/groq`, `@hashgraph/hedera-agent-kit`, `@hashgraph/hedera-agent-kit-ai-sdk`, `mercadopago`, `stripe`). `.env.example` se versionó con los nombres canónicos de variables del PRD §13 (`HEDERA_ACCOUNT_ID`, `HEDERA_PRIVATE_KEY`, etc.), vacío salvo `HEDERA_NETWORK=testnet`. Quedan pendientes de incorporar `ai`, `@ai-sdk/react` y `groq-sdk`, las cuales se instalarán junto con sus consumidores reales al implementar el chat con IA; no son requeridas para la presentación del dashboard ni bloquean el trabajo delegado.
+- **Description**: Frente al stack del PRD (§0, §13): se incorporó `zod@4.6.7` y se retiraron las dependencias no utilizadas en P0 (`@ai-sdk/groq`, `@hashgraph/hedera-agent-kit`, `@hashgraph/hedera-agent-kit-ai-sdk`, `mercadopago`, `stripe`). `.env.example` se versionó con los nombres canónicos de variables del PRD §13 (`HEDERA_ACCOUNT_ID`, `HEDERA_PRIVATE_KEY`, etc.), vacío salvo `HEDERA_NETWORK=testnet`. Posteriormente, por decisión del líder en [`deps-ai-sdk-server-only`](completed/deps-ai-sdk-server-only.md), se instalaron `ai`, `@ai-sdk/react`, `groq-sdk` y `server-only` por ser requeridas por los planes `MVP-040…`/`05x`; siguen sin consumidores ni integración implementada.
 - **Impact**: Superficie de dependencias acotada para el desarrollo frontend; consumidores de IA pendientes de integración con sus dependencias reales en backend.
-- **Current State**: Parcialmente resuelto en `team-workspace-readiness.md`. Zod y `.env.example` alineados; SDKs de IA aplazados hasta la implementación del chat.
-- **Remediation**: Instalar `ai`, `@ai-sdk/react` y `groq-sdk` en el plan de implementación del chat con agentes.
+- **Current State**: Dependencias de IA alineadas con el PRD (`ai`, `@ai-sdk/react`, `groq-sdk`, `@ai-sdk/google`) y `server-only` instalados; sin consumidores todavía. `.env.example` y Zod alineados. Pendiente: librería de QR (PD-03 de `MVP-078`, decisión del líder, no instalada) y verificar `npm audit` al integrar cada consumidor.
+- **Remediation**: Cada plan consumidor (`MVP-050…`, `MVP-078`) valida su integración real y la auditoría; esta deuda no se cierra por instalar paquetes.
 
 ### 5. Cobertura de tests de negocio y suites completas de servidor/RLS (CI base Linux remoto verificado)
 

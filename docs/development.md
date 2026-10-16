@@ -53,6 +53,6 @@ La ejecución base de Linux en GitHub Actions fue comprobada verde en el PR de i
 
 Issue con objetivo, referencias, allowlist, props, escenarios y aceptación → rama corta → PR con checks y capturas → revisión/merge del líder. La [plantilla de Issue](../.github/ISSUE_TEMPLATE/frontend-task.md) y la [plantilla de PR](../.github/pull_request_template.md) ayudan a no depender de esta conversación.
 
-El líder puede preparar infraestructura desde un pedido/plan sin crear Issues para cada paso. Diferencias de dependencias se resuelven en ese alcance explícito, no como limpieza oportunista. Los SDK de IA faltantes se agregan con su consumidor, no para trabajar sobre componentes visuales.
+El líder puede preparar infraestructura desde un pedido/plan sin crear Issues para cada paso. Diferencias de dependencias se resuelven en ese alcance explícito, no como limpieza oportunista. Los SDK de IA (`ai`, `@ai-sdk/react`, `groq-sdk`) y `server-only` ya están instalados; otras dependencias nuevas (p. ej. QR) se agregan con su consumidor y decisión del líder.
 
 [Índice](README.md) · [Arquitectura](architecture.md) · [PRD](exec-plans/GALCOA-PRD-v1.4.md)
