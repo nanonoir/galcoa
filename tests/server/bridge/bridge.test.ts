@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildTestBridge, BRIDGE_CACHE_ROOT, removeOwnDir, smokeImportBridge, type BridgeBuild } from "./build";
+import type { createBridgeHandlers } from "./entry";
 import { findBridgeViolations, type BridgeChunk } from "./guards";
 
 const fixture = (name: string) => path.join(import.meta.dirname, "fixtures", name);
@@ -85,5 +86,49 @@ describe("guards de grafo y artefacto", () => {
     const violations = findBridgeViolations([c]);
     expect(violations.length).toBeGreaterThan(0);
     expect(violations.join("\n")).toContain(fragment);
+  });
+});
+
+/**
+ * Entry real del puente: se compila con los guards activos, se importa en un proceso Node
+ * limpio y luego se ejerce el artefacto generado (no el fuente) con dobles explícitos.
+ */
+describe("entry real del puente de test", () => {
+  const entry = path.join(import.meta.dirname, "entry.ts");
+  const noSession = { currentUserId: async () => null };
+  // Sin sesión ningún servicio llega a sus almacenes: los puertos no usados se declaran vacíos.
+  const unused = {} as never;
+
+  it("compila con los guards, se importa tal cual y expone las factories reales", async () => {
+    const bridge = await buildTestBridge({ entry });
+    built.push(bridge);
+    expect(smokeImportBridge(bridge)).toEqual(["BRIDGE_API_VERSION", "createBridgeHandlers", "createMirrorReader", "createTestComposition"]);
+  });
+
+  it("el artefacto compuesto responde sin sesión sin tocar almacenes ni proveedores", async () => {
+    const bridge = await buildTestBridge({ entry });
+    built.push(bridge);
+    const { createBridgeHandlers: create } = (await import(/* @vite-ignore */ bridge.fileUrl)) as { createBridgeHandlers: typeof createBridgeHandlers };
+
+    const handlers = create({
+      turn: { session: noSession, turns: unused, messages: unused, drafting: unused, currentDraftRevision: async () => 0 },
+      evidence: { session: noSession, store: unused, storage: unused },
+      contrast: { session: noSession, messages: unused, store: unused, groq: unused },
+      verification: { store: unused, mirror: unused },
+    });
+    expect(Object.isFrozen(handlers)).toBe(true);
+
+    const turn = await handlers.chatTurn(
+      new Request("http://test.invalid/turn", { method: "POST", body: JSON.stringify({ clientMessageId: "k-1", content: "hola" }) }),
+      "doc-1",
+    );
+    expect(turn.status).toBe(401);
+    expect(await turn.json()).toMatchObject({ error: { code: "NO_SESSION" } });
+
+    const upload = await handlers.evidence.requestUpload({});
+    expect(upload).toMatchObject({ ok: false, error: { code: "NO_SESSION" } });
+
+    const verified = await handlers.verification.verify("referencia-invalida");
+    expect(verified).toMatchObject({ registrationStatus: "no_iniciado", proof: null });
   });
 });
