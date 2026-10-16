@@ -10,7 +10,7 @@ Este plan **no repite** requisitos, invariantes ni decisiones: los referencia po
 
 **Hecho (base heredada, cerrada en [`team-workspace-readiness`](../completed/team-workspace-readiness.md)).** Contratos Zod y escenarios de dashboard, presentación de referencia, preview Vite aislado, Vitest, barreras de arquitectura, Playwright, workflow de CI definido y plantillas de Issue/PR. Los resultados numéricos de ese cierre (91 tests Vitest, 51 de barreras, 15 Playwright: 13 preview y 2 smoke Next, build, lint, tipos, 2026-10-16) son **evidencia histórica**: no se reutilizan como verificación actual. Cada tarea nueva ejecuta y registra sus propios checks.
 
-**No existe todavía** (verificado en el repositorio): Auth, base de datos y migraciones, Storage, IA (los paquetes `ai`, `@ai-sdk/react` y `groq-sdk` aún no están instalados), PDF, Hedera, rutas funcionales, `supabase/`. La base técnica y documental fue integrada en `develop` vía PR #1 y su CI base verificado en Linux (ver `MVP-006`). Las pruebas ampliadas de servidor/RLS corresponden a `MVP-131`; la protección de ramas es opcional posthackathon.
+**Existe** (F2, integrado en `develop` vía PR #38): esquema SQL con migraciones y RLS en `supabase/`, probado en base local real (`npm run test:rls`). **No existe todavía** (verificado en el repositorio): Auth en runtime, clientes Supabase, Storage en runtime, IA (los paquetes `ai`, `@ai-sdk/react` y `groq-sdk` aún no están instalados), PDF, Hedera, rutas funcionales. La base técnica y documental fue integrada en `develop` vía PR #1 y su CI base verificado en Linux (ver `MVP-006`). Las pruebas ampliadas de servidor/RLS corresponden a `MVP-131`; la protección de ramas es opcional posthackathon.
 
 **Equipo.** Un líder (backend, contratos, integración, rutas, configuración) y un colaborador frontend para tareas de presentación simples y delegables. No se inventan personas ni handles. Una herramienta de agente concreta no es requisito.
 
@@ -20,13 +20,13 @@ Este plan **no repite** requisitos, invariantes ni decisiones: los referencia po
 
 **IDs.** `MVP-NNN`, agrupados por fase (centena/decena); estables: no se reutilizan ni renumeran. Una tarea nueva toma un ID libre dentro de su fase.
 
-`MVP-117` está libre; el salto a `MVP-118` no representa una tarea omitida ni una dependencia completada.
+`MVP-117` está libre; el salto a `MVP-118` no representa una tarea omitida ni una dependencia pendiente.
 
 **Estados.**
 
 | Estado | Significado |
 | --- | --- |
-| `completada` | No iniciada o sin entrega integrable |
+| `pendiente` | No iniciada o sin entrega integrable |
 | `en_curso` | En trabajo, **o implementada y validada en su rama pero aún no integrada** en la base del equipo; la fila debe indicar la rama o PR en evidencia |
 | `bloqueada` | Un impedimento concreto la frena (permiso, credencial, decisión, dependencia fallida); se describe en §9 y se bloquea **solo esa tarea** y lo que dependa de ella |
 | `completada` | Aceptación validada **tras integrarse en la base del equipo** (hoy `develop`; `main` queda estable), con evidencia registrada en la fila |
@@ -39,7 +39,7 @@ Este plan **no repite** requisitos, invariantes ni decisiones: los referencia po
 
 **Owner.** Solo roles: `Líder`, `Colaborador frontend` (únicamente con ticket, allowlist y puerta de delegación según [arquitectura](../../architecture.md#condición-para-delegar-y-primeros-candidatos)), `Externo` (acción fuera del repositorio).
 
-**ExecPlan.** Cada fila completada enlaza el plan derivado que la cubre (catálogo en [`mvp/README.md`](mvp/README.md)); `MVP-001…005` conservan su enlace histórico a `completed/`. Los planes son documentación preparada por adelantado, no ejecución (ver §7). No se enlazan archivos inexistentes.
+**ExecPlan.** Cada fila pendiente enlaza el plan derivado que la cubre (catálogo en [`mvp/README.md`](mvp/README.md)); `MVP-001…005` conservan su enlace histórico a `completed/`. Los planes son documentación preparada por adelantado, no ejecución (ver §7). No se enlazan archivos inexistentes.
 
 ## 3. Progreso
 
@@ -53,19 +53,19 @@ node -e "const fs=require('node:fs');const counts={};for(const line of fs.readFi
 
 | Estado | Tareas |
 | --- | --- |
-| `completada` | 13 |
+| `completada` | 16 |
 | `en_curso` | 1 |
 | `bloqueada` | 0 |
-| `pendiente` | 59 |
+| `pendiente` | 56 |
 | **Total** | **73** |
 
-Avance: 13/73 (17,8 %), con F0=6/7, F1=4/5, F2=2/7 y F11=1/8 integradas en la base del equipo. Actualizar esta tabla en la misma edición que cambie un estado.
+Avance: 16/73 (21,9 %), con F0=6/7, F1=4/5, F2=5/7 y F11=1/8 integradas en la base del equipo. Actualizar esta tabla en la misma edición que cambie un estado.
 
 | Fase | Completadas / total |
 | --- | --- |
 | F0 Integración y proceso | 6/7 |
 | F1 Decisiones abiertas | 4/5 |
-| F2 Contratos y datos | 2/7 |
+| F2 Contratos y datos | 5/7 |
 | F3 Autenticación | 0/2 |
 | F4 Documentos, chat y evidencias | 0/5 |
 | F5 Agentes de IA | 0/5 |
@@ -112,9 +112,9 @@ Cada decisión se resuelve y documenta (en el ExecPlan consumidor o en un diseñ
 | --- | --- | --- | --- | --- | --- | --- |
 | MVP-020 | Contratos del núcleo documental | completada | MVP-003 | Líder | Zod + tipos para documento, mensaje, evidencia, borrador y las dimensiones de estado del PRD §5; fecha declarada y fecha de carga separadas (INV-09); sin React/SDK/env | [f02-contratos-dominio](../completed/f02-contratos-dominio.md) · 2026-10-16 · Integrado en develop y entregado en origin/develop (commit fd3502c, lote ba7af83) · Checks completos exit 0 (sh_144a6cbea001J7f5tg0v8eGv5W: lint, types, 222 Vitest incl. 66 boundaries, build, 15 Playwright; npm test 224 en sh_144ad1456001oRrn5vunfZFhsT) · Revisión independiente ses_ebb5ebd15ffeV3cQsqGqt67xE9 PASS |
 | MVP-021 | Contratos de revisión, confirmación, versión, sello HCS y DTO públicos | completada | MVP-020 | Líder | Esquemas de revisión/snapshot, selección (4 combinaciones), invitación pública y verificador con DTO mínimo propio (sin chat ni evidencias); fixtures inválidos rechazados | [f02-contratos-dominio](../completed/f02-contratos-dominio.md) · 2026-10-16 · Integrado en develop y entregado en origin/develop (commit fd3502c, fix dad1e32, lote ba7af83) · Checks completos exit 0 (sh_144a6cbea001J7f5tg0v8eGv5W: lint, types, 222 Vitest incl. 66 boundaries, build, 15 Playwright; npm test 224 en sh_144ad1456001oRrn5vunfZFhsT) · Revisión independiente ses_ebb5ebd15ffeV3cQsqGqt67xE9 PASS |
-| MVP-022 | Diseño del esquema SQL | completada | MVP-021, MVP-011, MVP-012 | Nahuel (@nanonoir) | Tablas del PRD §8 con revisiones separadas de versiones, inmutabilidad de versiones finalizadas, auditoría solo-agregar y claves de idempotencia. Diseño breve solo si elimina ambigüedad | [f02-esquema-migraciones-rls](../completed/f02-esquema-migraciones-rls.md) · 2026-10-16 · rama issue/5-esquema-rls · `npm run test:rls` 119 tests en base local real, lint/typecheck/224 tests/66 boundaries OK · autorrevisión, sin revisor independiente · Issue [#5](https://github.com/nanonoir/galcoa/issues/5) |
-| MVP-023 | Migraciones SQL versionadas | completada | MVP-022 | Nahuel (@nanonoir) | `supabase/migrations/` aplicable desde cero en base local; constraints/triggers de inmutabilidad y append-only probados con casos negativos | [f02-esquema-migraciones-rls](../completed/f02-esquema-migraciones-rls.md) · 2026-10-16 · rama issue/5-esquema-rls · `npm run test:rls` 119 tests en base local real, lint/typecheck/224 tests/66 boundaries OK · autorrevisión, sin revisor independiente · Issue [#5](https://github.com/nanonoir/galcoa/issues/5) |
-| MVP-024 | RLS y buckets privados con prueba de dos usuarios | completada | MVP-023 | Nahuel (@nanonoir) | RLS en tablas expuestas y políticas de Storage privado; el usuario A no ve documentos, archivos ni respuestas de B (PRD §12.1) en base real local | [f02-esquema-migraciones-rls](../completed/f02-esquema-migraciones-rls.md) · 2026-10-16 · rama issue/5-esquema-rls · `npm run test:rls` 119 tests en base local real, lint/typecheck/224 tests/66 boundaries OK · autorrevisión, sin revisor independiente · Issue [#5](https://github.com/nanonoir/galcoa/issues/5) |
+| MVP-022 | Diseño del esquema SQL | completada | MVP-021, MVP-011, MVP-012 | Nahuel (@nanonoir) | Tablas del PRD §8 con revisiones separadas de versiones, inmutabilidad de versiones finalizadas, auditoría solo-agregar y claves de idempotencia. Diseño breve solo si elimina ambigüedad | [f02-esquema-migraciones-rls](../completed/f02-esquema-migraciones-rls.md) · 2026-10-16 · PR #38 (`fbd4c75`) · `npm run test:rls` 119 tests en base local real, lint/typecheck/224 tests/66 boundaries OK · autorrevisión previa; revisión independiente posterior al merge PASS WITH FINDINGS sin re-ejecutar la suite con base (ver plan) · Issue [#5](https://github.com/nanonoir/galcoa/issues/5) |
+| MVP-023 | Migraciones SQL versionadas | completada | MVP-022 | Nahuel (@nanonoir) | `supabase/migrations/` aplicable desde cero en base local; constraints/triggers de inmutabilidad y append-only probados con casos negativos | [f02-esquema-migraciones-rls](../completed/f02-esquema-migraciones-rls.md) · 2026-10-16 · PR #38 (`fbd4c75`) · `npm run test:rls` 119 tests en base local real, lint/typecheck/224 tests/66 boundaries OK · autorrevisión previa; revisión independiente posterior al merge PASS WITH FINDINGS sin re-ejecutar la suite con base (ver plan) · Issue [#5](https://github.com/nanonoir/galcoa/issues/5) |
+| MVP-024 | RLS y buckets privados con prueba de dos usuarios | completada | MVP-023 | Nahuel (@nanonoir) | RLS en tablas expuestas y políticas de Storage privado; el usuario A no ve documentos, archivos ni respuestas de B (PRD §12.1) en base real local | [f02-esquema-migraciones-rls](../completed/f02-esquema-migraciones-rls.md) · 2026-10-16 · PR #38 (`fbd4c75`) · `npm run test:rls` 119 tests en base local real, lint/typecheck/224 tests/66 boundaries OK · autorrevisión previa; revisión independiente posterior al merge PASS WITH FINDINGS sin re-ejecutar la suite con base (ver plan) · Issue [#5](https://github.com/nanonoir/galcoa/issues/5) |
 | MVP-025 | Clientes Supabase de servidor y sesión | pendiente | MVP-023, MVP-002 | Nahuel (@nanonoir) | `src/lib/supabase/` con `server-only`, solo `NEXT_PUBLIC_*` hacia cliente, claves privilegiadas únicamente en servidor; barreras actualizadas | [f02-clientes-supabase](mvp/f02-clientes-supabase.md) · — · Issue [#6](https://github.com/nanonoir/galcoa/issues/6) (publicación no acredita implementación) |
 | MVP-026 | Entorno Supabase de desarrollo/demo y migraciones aplicadas | pendiente | MVP-024 | Nahuel (@nanonoir) | Proyecto configurado y migraciones aplicadas. Requiere autorización del usuario y credenciales fuera del repo; sin ellas se bloquea solo esta tarea | [f02-entorno-supabase-remoto](mvp/f02-entorno-supabase-remoto.md) · — · Issue [#7](https://github.com/nanonoir/galcoa/issues/7) (publicación no acredita implementación) |
 

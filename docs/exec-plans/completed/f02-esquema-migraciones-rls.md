@@ -89,7 +89,11 @@ Postgres/Supabase local real (SH-09): migración desde cero, RLS y Storage con d
 
 Evidencia: `npm run test:rls` 3 archivos, 119 tests (reset desde cero en cada ejecución); `npm run lint` y `npm run typecheck` OK; `npm test` 224; `npm run test:boundaries` 66.
 
-Límites: no hubo revisor independiente (autorrevisión); un superusuario puede deshabilitar triggers; `SET ROLE` no prueba escalada de roles (se verifica en catálogo); el CI de la suite RLS queda en MVP-131; `galcoa_executor` sin permisos hasta las RPC de cada tarea.
+Integración: PR #38 mergeado en `develop` (`fbd4c75`).
+
+Revisión independiente posterior (sesión `ses_ebaeed9a9ffeccyZyQQgy7716a`, tras el merge): PASS WITH FINDINGS. Ejecutó `npm run lint`, `npm run typecheck`, 224 tests, 66 de barreras y `npm run build` (PASS); inspeccionó el SQL (24 tablas con RLS y sus políticas) y los 119 tests de la base. **No volvió a ejecutar la suite RLS** (la base local estaba apagada). Único hallazgo: error documental en el maestro (`pendiente` sustituido por `completada` en tres textos), corregido en una rama posterior. Esta revisión no fue previa al merge.
+
+Límites: la revisión independiente fue posterior al merge y sin re-ejecución de la suite con base; un superusuario puede deshabilitar triggers; `SET ROLE` no prueba escalada de roles (se verifica en catálogo); el CI de la suite RLS queda en MVP-131; `galcoa_executor` sin permisos hasta las RPC de cada tarea.
 
 ## Cierre
 
