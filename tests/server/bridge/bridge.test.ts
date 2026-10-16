@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 
 import { buildTestBridge, BRIDGE_CACHE_ROOT, removeOwnDir, smokeImportBridge, type BridgeBuild } from "./build";
 import type { createBridgeHandlers } from "./entry";
@@ -9,27 +10,35 @@ import { findBridgeViolations, type BridgeChunk } from "./guards";
 
 const fixture = (name: string) => path.join(import.meta.dirname, "fixtures", name);
 const built: BridgeBuild[] = [];
+// Espacio de nombres propio de este archivo: otros procesos/tests no lo tocan ni lo ensucian.
+const CACHE = path.join(BRIDGE_CACHE_ROOT, `test-${process.pid}-${randomUUID().slice(0, 8)}`);
+const build = (entry: string, cacheRoot: string = CACHE) => buildTestBridge({ entry, cacheRoot });
+const listOwn = (root: string = CACHE) => (fs.existsSync(root) ? fs.readdirSync(root).sort() : []);
 
 afterEach(() => {
   for (const bridge of built.splice(0)) bridge.cleanup();
 });
 
+afterAll(() => {
+  fs.rmSync(CACHE, { recursive: true, force: true });
+});
+
 describe("puente de test: build programático y smoke ESM", () => {
   it("genera un ESM aislado por ejecución que Node importa tal cual, con server-only resuelto", async () => {
-    const first = await buildTestBridge({ entry: fixture("ok-entry.ts") });
-    const second = await buildTestBridge({ entry: fixture("ok-entry.ts") });
+    const first = await build(fixture("ok-entry.ts"));
+    const second = await build(fixture("ok-entry.ts"));
     built.push(first, second);
 
     expect(first.dir).not.toBe(second.dir);
-    expect(path.relative(BRIDGE_CACHE_ROOT, first.dir)).toBe(first.runId);
+    expect(path.relative(CACHE, first.dir)).toBe(first.runId);
     const code = fs.readFileSync(first.file, "utf8");
     expect(code).not.toMatch(/server-only/);
     expect(smokeImportBridge(first)).toEqual(["composition"]);
   });
 
   it("el teardown elimina solo el directorio de su ejecución", async () => {
-    const own = await buildTestBridge({ entry: fixture("ok-entry.ts") });
-    const other = await buildTestBridge({ entry: fixture("ok-entry.ts") });
+    const own = await build(fixture("ok-entry.ts"));
+    const other = await build(fixture("ok-entry.ts"));
     built.push(other);
 
     own.cleanup();
@@ -51,15 +60,36 @@ describe("puente de test: build programático y smoke ESM", () => {
     ["bad-next-headers.ts", /next/],
     ["bad-unlisted-dependency.ts", /date-fns/],
   ])("rechaza %s con un error explícito de prestep y no deja directorio", async (entry, pattern) => {
-    const before = fs.existsSync(BRIDGE_CACHE_ROOT) ? fs.readdirSync(BRIDGE_CACHE_ROOT) : [];
-    await expect(buildTestBridge({ entry: fixture(entry) })).rejects.toThrow(pattern);
-    await expect(buildTestBridge({ entry: fixture(entry) })).rejects.toThrow("Prestep del puente de test fallido");
-    const after = fs.existsSync(BRIDGE_CACHE_ROOT) ? fs.readdirSync(BRIDGE_CACHE_ROOT) : [];
-    expect(after.sort()).toEqual(before.sort());
+    const ns = path.join(CACHE, `fail-${randomUUID().slice(0, 8)}`);
+    await expect(build(fixture(entry), ns)).rejects.toThrow(pattern);
+    await expect(build(fixture(entry), ns)).rejects.toThrow("Prestep del puente de test fallido");
+    expect(listOwn(ns)).toEqual([]);
+  });
+
+  it("llamadas concurrentes independientes limpian sus directorios al fallar y no tocan los ajenos", async () => {
+    const ns = path.join(CACHE, `conc-${randomUUID().slice(0, 8)}`);
+    const foreign = path.join(ns, "foreign-run");
+    fs.mkdirSync(foreign, { recursive: true });
+    fs.writeFileSync(path.join(foreign, "keep.txt"), "x");
+    const ok = await build(fixture("ok-entry.ts"), ns);
+    built.push(ok);
+
+    const results = await Promise.allSettled([
+      build(fixture("bad-real-adapter.ts"), ns),
+      build(fixture("bad-app-route.ts"), ns),
+      build(fixture("no-existe.ts"), ns),
+    ]);
+    expect(results.every((r) => r.status === "rejected")).toBe(true);
+    expect(listOwn(ns)).toEqual([ok.runId, "foreign-run"].sort());
+    expect(fs.existsSync(path.join(foreign, "keep.txt"))).toBe(true);
+  });
+
+  it("rechaza un cacheRoot fuera del caché del puente", async () => {
+    await expect(buildTestBridge({ entry: fixture("ok-entry.ts"), cacheRoot: import.meta.dirname })).rejects.toThrow("cacheRoot rechazado");
   });
 
   it("falla de forma explícita si la entrada no existe", async () => {
-    await expect(buildTestBridge({ entry: fixture("no-existe.ts") })).rejects.toThrow("Prestep del puente de test fallido");
+    await expect(build(fixture("no-existe.ts"))).rejects.toThrow("Prestep del puente de test fallido");
   });
 });
 
@@ -100,13 +130,13 @@ describe("entry real del puente de test", () => {
   const unused = {} as never;
 
   it("compila con los guards, se importa tal cual y expone las factories reales", async () => {
-    const bridge = await buildTestBridge({ entry });
+    const bridge = await build(entry);
     built.push(bridge);
     expect(smokeImportBridge(bridge)).toEqual(["BRIDGE_API_VERSION", "createBridgeHandlers", "createMirrorReader", "createTestComposition"]);
   });
 
   it("el artefacto compuesto responde sin sesión sin tocar almacenes ni proveedores", async () => {
-    const bridge = await buildTestBridge({ entry });
+    const bridge = await build(entry);
     built.push(bridge);
     const { createBridgeHandlers: create } = (await import(/* @vite-ignore */ bridge.fileUrl)) as { createBridgeHandlers: typeof createBridgeHandlers };
 
