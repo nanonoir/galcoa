@@ -64,12 +64,12 @@ export async function waitForApi(stack: LocalStack, attempts = 60): Promise<void
 
 export type SqlResult = { ok: boolean; rows: string[][]; error: string };
 
-/** Ejecuta `sql` como superusuario en una conexión propia. El script puede traer su propia transacción. */
-export function psql(sql: string): Promise<SqlResult> {
+/** Conexión administrativa local independiente. `supabase_admin` permite probar roles sin otorgarlos a postgres. */
+export function psql(sql: string, databaseUser: "postgres" | "supabase_admin" = "postgres"): Promise<SqlResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(
       "docker",
-      ["exec", "-i", DB_CONTAINER, "psql", "-U", "postgres", "-d", "postgres", "-X", "-q", "-A", "-t", "-F", "|", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose"],
+      ["exec", "-i", DB_CONTAINER, "psql", "-U", databaseUser, "-d", "postgres", "-X", "-q", "-A", "-t", "-F", "|", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose"],
       { stdio: ["pipe", "pipe", "pipe"] },
     );
     let stdout = "";
@@ -106,8 +106,8 @@ export const SQLSTATE = {
 } as const;
 
 /** Exige que el script falle con el SQLSTATE indicado (la conexión hace rollback). */
-export async function expectRejected(sql: string, sqlstate: string): Promise<void> {
-  const result = await psql(sql);
+export async function expectRejected(sql: string, sqlstate: string, databaseUser: "postgres" | "supabase_admin" = "postgres"): Promise<void> {
+  const result = await psql(sql, databaseUser);
   expect(result.ok, `se esperaba rechazo ${sqlstate}`).toBe(false);
   expect(result.error).toContain(`ERROR:  ${sqlstate}:`);
 }
