@@ -47,7 +47,7 @@ Equipo de la hackathon (nadie necesita un harness, MCP ni skills concretos; pued
 ## Alcance y estado
 
 - Alcance: **P0** del PRD (§4, REQ-01…REQ-18). P1 (§4, §15), Mainnet, pagos (Mercado Pago/Stripe) y envío automático de invitaciones están **fuera de P0**.
-- Estado actual: plantilla Next + shadcn; contratos de dominio y paquete frontend integrados y verificados con tests de inputs/fixtures Zod (224 tests pasando), preview local y decisiones documentales F1 completadas. No hay auth, base de datos, IA, PDF ni Hedera implementados en runtime (integraciones reales: ninguna todavía). No confundas preview o tests con integraciones reales; ver [`docs/architecture.md`](docs/architecture.md).
+- Estado actual: base Next + shadcn, contratos y presentación integrados; migraciones/RLS locales, clientes/guardas Supabase y Auth real local disponibles. `MVP-031` integrada por PR #70 y probada con Supabase local + Mailpit; no acredita correo remoto ni demo en Vercel. Estado y evidencia por ID en el maestro; no confundas preview, SDK instalado o tests con integraciones reales. Ver [`docs/architecture.md`](docs/architecture.md).
 - El PRD no fija orden de trabajo (§13–14). La tarea asignada delimita el alcance.
 
 ## Reglas de producto que más afectan al código

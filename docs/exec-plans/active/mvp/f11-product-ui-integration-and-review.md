@@ -8,6 +8,8 @@ Producto: [PRD v1.5](../../GALCOA-PRD-v1.4.md) (REQ-01, REQ-02, REQ-03; PRD §10
 
 ## 1. Objetivo y alcance
 
+**Delegación expresa del usuario, 2026-10-16:** Facu (`@jfacundoayala`) ejecuta #31 y luego #21. Puede editar las páginas y containers de integración de este plan, con sus pruebas, consumiendo Auth, servicios y el container de chat integrados. No modifica Auth, servicios de persistencia, RPC, migraciones, contratos compartidos, configuración global ni dependencias: esas superficies siguen coordinadas por el líder. Las menciones de «Líder» en la tabla de propiedad indican responsabilidad de coordinación; las superficies de presentación y composición quedan delegadas por esta excepción. No se importan fixtures/mocks desde producto ni se inventan endpoints para destrabar un checkpoint.
+
 - **`MVP-116` (Líder):** conectar a datos reales las presentaciones entregadas (dashboard `MVP-111`, historial `MVP-113`) en rutas `(app)` con carga autorizada y DTO hacia containers; crear y reabrir documentos reales; integrar la navegación de la landing. Es además el **dueño final** de `src/app/(app)/documents/[id]/page.tsx`: monta el container de chat entregado por `MVP-054` sin duplicar su implementación.
 - **`MVP-118` (Líder):** revisar accesibilidad y responsive de **todas** las pantallas del producto, incluidas las públicas, en móvil y escritorio; corregir o registrar hallazgos.
 
@@ -39,7 +41,7 @@ Fuera de alcance: lógica de chat, adjuntos y streaming (`MVP-054`, que entrega 
 | `tests/e2e/`, `playwright.config.ts` | Líder | Nuevos specs de rutas integradas |
 | `src/mocks/`, `src/features/*/fixtures/` | — | **Prohibido** importarlos desde rutas/containers (barrera existente) |
 
-Propiedad de rutas (resuelta): `src/app/(app)/documents/[id]/page.tsx` pertenece **solo a `MVP-116`** (carga autorizada, envoltorio y montaje del container de chat). `MVP-054` ([`f04-connected-chat`](f04-connected-chat.md)) entrega containers, consumers de API/adapters y pruebas de contrato en `src/features/chat`, sin tocar esa página. Las rutas de auth de `MVP-031` ([`f03-auth-flujos-reales`](f03-auth-flujos-reales.md)) son de su propio plan, no hay conflicto con este.
+Propiedad de rutas (resuelta): `src/app/(app)/documents/[id]/page.tsx` pertenece **solo a `MVP-116`** (carga autorizada, envoltorio y montaje del container de chat). `MVP-054` ([`f04-connected-chat`](f04-connected-chat.md)) entrega containers, consumers de API/adapters y pruebas de contrato en `src/features/chat`, sin tocar esa página. Las rutas de auth de `MVP-031` ([`f03-auth-flujos-reales`](../../completed/f03-auth-flujos-reales.md)) son de su propio plan, no hay conflicto con este.
 
 ## 5. Insumos y salidas
 
