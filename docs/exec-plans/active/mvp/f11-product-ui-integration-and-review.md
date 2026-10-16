@@ -1,6 +1,6 @@
 # F11 · Integración de dashboard, historial y documento; revisión transversal de accesibilidad y responsive
 
-**Estado: planificado; implementación no iniciada.** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (filas de `MVP-116` y `MVP-118`). El maestro conserva IDs, estados y evidencia; este plan no los modifica.
+**Estado: en curso (rama `facu`): MVP-116 parcial, MVP-118 no iniciado (depende de MVP-116, 076 y 101).** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (filas de `MVP-116` y `MVP-118`). El maestro conserva IDs, estados y evidencia; este plan no los modifica.
 
 Tareas del maestro: `MVP-116`, `MVP-118`
 
@@ -58,22 +58,22 @@ Historial: hasta que existan versiones reales (`MVP-083/084`), el container mues
 
 ## 6. Pasos y checkpoints
 
-Todos pendientes.
+Checkpoint A en curso; B no iniciado. Las casillas marcadas tienen evidencia en §8.
 
 **Checkpoint A — `MVP-116`**
 
-- [ ] **I1 · Lectura autorizada del dashboard** (← `MVP-040`, `MVP-030`, `MVP-111`). Server Component llama al servicio de listado, proyecta a `DashboardViewState` validado y lo pasa al container. Sin sesión → guarda rechaza; documento ajeno → denegado (test con dos usuarios sobre la base local de `MVP-120` si ya existe; si no, con doble del servicio y se anota el hueco).
-- [ ] **I2 · Crear y reabrir** (← I1). El container `onCreate`/`onOpen`/`onRetry` llaman endpoints reales definidos por el servicio de `MVP-040`; error técnico visible como `error` del DTO, nunca éxito simulado ni fallback mock.
-- [ ] **I3 · Ruta de documento con historial y chat** (← I2, `MVP-113`, `MVP-054`). Carga autorizada del documento y de sus versiones persistidas; montar en la página el container de chat de `MVP-054` pasándole el DTO del documento, sin reimplementar su lógica; `onSelect` navega a la versión; mantener separados finalización y sello tal como los entrega el servidor.
-- [ ] **I4 · Landing integrada** (← `MVP-114`; requerida para cerrar `MVP-116`). Componer la presentación en `(marketing)` con enlaces a login/registro/panel como datos.
-- [ ] **I5 · Pruebas** (← I1–I4). Vitest para adaptadores DTO con casos inválidos rechazados; Playwright en ruta integrada: sin sesión redirige/rechaza, crear y reabrir. Ejecutar `npm run lint`, `typecheck`, `test`, `test:boundaries`, `build`, `test:e2e` con resultados reales. El E2E contra datos reales usa la base local efímera de `MVP-120`, no el proyecto cloud.
+- [x] **I1 · Lectura autorizada del dashboard** (← `MVP-040`, `MVP-030`, `MVP-111`). Server Component llama al servicio de listado, proyecta a `DashboardViewState` validado y lo pasa al container. Sin sesión → guarda rechaza; documento ajeno → denegado (test con dos usuarios sobre la base local de `MVP-120` si ya existe; si no, con doble del servicio y se anota el hueco).
+- [~] **I2 · Crear y reabrir** (← I1). El container `onCreate`/`onOpen`/`onRetry` llaman endpoints reales definidos por el servicio de `MVP-040`; error técnico visible como `error` del DTO, nunca éxito simulado ni fallback mock.
+- [~] **I3 · Ruta de documento con historial y chat** (← I2, `MVP-113`, `MVP-054`). Carga autorizada del documento y de sus versiones persistidas; montar en la página el container de chat de `MVP-054` pasándole el DTO del documento, sin reimplementar su lógica; `onSelect` navega a la versión; mantener separados finalización y sello tal como los entrega el servidor.
+- [x] **I4 · Landing integrada** (← `MVP-114`; requerida para cerrar `MVP-116`). Componer la presentación en `(marketing)` con enlaces a login/registro/panel como datos.
+- [~] **I5 · Pruebas** (← I1–I4). Vitest para adaptadores DTO con casos inválidos rechazados; Playwright en ruta integrada: sin sesión redirige/rechaza, crear y reabrir. Ejecutar `npm run lint`, `typecheck`, `test`, `test:boundaries`, `build`, `test:e2e` con resultados reales. El E2E contra datos reales usa la base local efímera de `MVP-120`, no el proyecto cloud.
 
 **Checkpoint B — `MVP-118`** (final; no bloquea a A)
 
-- [ ] **A1 · Inventario de pantallas** (← `MVP-116`). Lista de pantallas del PRD §10 realmente integradas y su ruta.
-- [ ] **A2 · Checks automáticos de navegador** (← `MVP-116`, `MVP-114`). Playwright en 360 px y 1280 px: sin desbordamiento horizontal, navegación por teclado y orden de foco, nombres accesibles por rol, foco visible. Decisión local abierta del líder: incorporar una herramienta de auditoría automática (dependencia nueva; requiere su aprobación) o limitarse a aserciones por rol/teclado sin dependencia nueva.
+- [x] **A1 · Inventario de pantallas** (← `MVP-116`). Lista de pantallas del PRD §10 realmente integradas y su ruta.
+- [~] **A2 · Checks automáticos de navegador** (← `MVP-116`, `MVP-114`). Playwright en 360 px y 1280 px: sin desbordamiento horizontal, navegación por teclado y orden de foco, nombres accesibles por rol, foco visible. Decisión local abierta del líder: incorporar una herramienta de auditoría automática (dependencia nueva; requiere su aprobación) o limitarse a aserciones por rol/teclado sin dependencia nueva.
 - [ ] **A3 · Pantallas públicas** (← `MVP-076`, `MVP-101`). Mismo conjunto sobre `confirm/[token]` (casilla vacía, «Confirmar» deshabilitado hasta marcar, «No coincide / Rechazar» visible y operable por teclado, modal con foco atrapado y devolución de foco, cancelar no responde) y `verify/[reference]`.
-- [ ] **A4 · Revisión manual** móvil y escritorio de todas las pantallas; contraste, lectura de lenguaje sin términos prohibidos (PRD §5, §11).
+- [~] **A4 · Revisión manual** móvil y escritorio de todas las pantallas; contraste, lectura de lenguaje sin términos prohibidos (PRD §5, §11).
 - [ ] **A5 · Hallazgos.** Cada uno se corrige o se registra (descripción, pantalla, severidad, decisión) en la evidencia de este plan; los no corregidos no se ocultan.
 
 ## 7. Validación
@@ -87,7 +87,24 @@ Todos pendientes.
 
 ## 8. Evidencia
 
-No ejecutada. Por checkpoint: fecha · comandos y resultado reales · rama/PR/commit · capturas y registro de hallazgos.
+**Checkpoint B (parcial, `MVP-118`) · 2026-10-16.**
+
+- **A1 `[x]` inventario (PRD §10) y estado:** `/` landing (integrada, probada) · `/acceso`, `/registro`, `/recuperar` (integradas, probadas) · `/nueva-contrasena` (requiere sesión; no probada aquí) · `/dashboard` y `/documents/[id]` (integradas; requieren Auth local, **no probadas en navegador**) · `confirm/[token]` (MVP-076) y `verify/[reference]` (MVP-101): **aún no existen**. Chat y snapshot no montados (MVP-054, MVP-077/112).
+- **A2 `[~]`** `tests/e2e/responsive-a11y.spec.ts` (proyecto `next`): landing, acceso, registro y recuperar a 360 y 1280 px — sin desbordamiento; estructura (`h1` + `main` + sin saltos) solo en landing (auth omitido por el hallazgo 2); controles con nombre accesible, primer Tab con foco visible; y menú móvil operable con teclado. Resultado: 125/125 con el proyecto `preview` incluido. Sin herramienta de auditoría automática (decisión del líder abierta, §6-A2).
+- **A4 `[~]`** Revisión manual con capturas (landing 360/1280, acceso 360, 404 360): estructura y tamaños táctiles correctos. No revisadas: pantallas privadas, contraste medido con herramienta, lector de pantalla.
+- **A5 hallazgos:** (1) **corregido** — la landing no tenía región `main`; (2) **registrado, pendiente de su propietario** — `acceso`, `registro`, `recuperar` y `nueva-contrasena` no tienen `h1` (título en `h2`; presentación de MVP-031, fuera de la allowlist de #31); (3) **registrado, pendiente del líder** — `globals.css` define `--font-sans: var(--font-sans)` (referencia circular) y el sitio cae a la fuente serif del navegador, no a Geist (propuesta: `var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif)`); (4) **registrado** — el 404 muestra «Ir a mis documentos» también a un visitante sin sesión (lo lleva al acceso; aceptable, a decidir).
+
+**Checkpoint A (parcial) · 2026-10-16 · rama `facu` (sin commit aún).** Leyenda: `[x]` hecho · `[~]` parcial.
+
+- **I1 `[x]`** `dashboard/page.tsx` (Server Component) llama al servicio de listado y proyecta con `toDashboardState` (DTO validado con `DashboardViewStateSchema`; fallo técnico → `error`, nunca lista vacía). Vitest: `tests/contracts/dashboard-state.test.ts`. Sin sesión: la guarda del layout `(app)` redirige a `/acceso`.
+- **I2 `[~]`** `DashboardContainer`: crear = `POST /api/documents` con clave de idempotencia estable entre reintentos; abrir = navegar; error visible, sin éxito simulado. Vitest de componente (4 casos). El título del documento nuevo es el fijo «Documento sin título»: la presentación no ofrece campo de título (decisión local a confirmar con el líder).
+- **I3 `[~]`** `documents/[id]/page.tsx`: carga autorizada (ajeno = inexistente = 404) con historial **vacío** (no hay servicio de versiones: MVP-083/084). **Pendiente: montar el chat**, porque el container de `MVP-054` aún no existe (`src/features/chat/containers/` ausente); no se inventó un sustituto.
+- **I4 `[x]`** `(marketing)/page.tsx` reemplaza la plantilla; enlaces según sesión (`/registro`, `/acceso`, `/dashboard`). Hallazgo corregido en la presentación MVP-114: `LandingPage` llamaba a `siteNavigationProps()` (módulo `"use client"`) desde un Server Component → 500 en `/`; ahora pasa `brand` y `links` directamente.
+- **I5 `[~]`** Comandos reales: `npm run lint` ✓ · `npm run typecheck` ✓ · `npm test` ✓ (57 archivos, 975 tests) · `npm run test:boundaries` ✓ (67) · `npm run build` ✓ · `playwright test --project=next` ✓ (5/5; con el Chromium preinstalado 1194 mediante configuración local fuera del repo). **No ejecutado:** `test:e2e:auth` (el nuevo caso de rutas privadas reales en `tests/e2e/auth-flow.spec.ts` está escrito pero sin correr: no hay daemon de Docker para la pila local de Supabase) y el aislamiento A/B con dos usuarios.
+- **Revisión de experiencia (2026-10-16):** contraste medido por script sobre `/`, `/acceso`, `/registro`, `/recuperar` y el 404, en claro y oscuro (texto normal ≥ 4,5:1; grande ≥ 3:1): **0 fallas**. Cambios: pila de reserva para `--font-sans` en `globals.css`; el 404 enlaza a «Ir al inicio» (antes ofrecía «mis documentos» a visitantes); copy de la landing alineado con control de calidad, respaldo y trazabilidad (producto, a confirmar con el líder); descripción del sitio sin jerga. **Propuesta, no aplicada:** la UI muestra «Sello HCS» y «snapshot», vocabulario del PRD §5 y del runbook del jurado; conviene decidir con el líder si la interfaz de demo usa «Sello público» y «revisión». `npm test` ✓ (1006) · `playwright` ✓ (125/125).
+- **Endurecimiento (2026-10-16):** la sesión se verifica una vez por petición (`React.cache`, `(app)/_lib/session.ts`) en vez de dos veces (layout + página); `error.tsx` (Next 16, `retry`; no muestra el mensaje original), `not-found.tsx` y `(app)/loading.tsx`; sesión vencida (`NO_SESSION` o 401 al crear) redirige a `/acceso` en vez de mostrar error genérico. **No verificado:** la deduplicación de `getUser()` (requiere Auth real; se razonó del código) y el E2E con datos reales.
+- Pendiente de decisión del líder: título del documento nuevo y destino posterior al login (hoy siempre `/`).
+- Otros cambios: layout `(app)` con cabecera y `LogoutButton`; metadatos y `lang="es"` del layout raíz; fixture `bad-app-route.ts` apunta a `@/app/layout` (la página raíz ya no existe).
 
 ## 9. Referencias a completar
 

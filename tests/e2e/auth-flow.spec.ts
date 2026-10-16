@@ -8,8 +8,8 @@ import { resolveAuthE2eEnv } from "./auth-env";
  * contraseña → acceso. Sin servicios remotos ni correo real. Si falta la
  * instancia local, la suite se omite explícitamente (ver `auth.config.ts`).
  *
- * Pendiente (MVP-116): navegación a una ruta privada real. Aquí la guarda de
- * sesión se comprueba con `/nueva-contrasena`, que exige sesión verificada.
+ * La guarda de sesión se comprueba con `/nueva-contrasena` y, desde MVP-116,
+ * con las rutas privadas reales (`/dashboard`, `/documents/[id]`).
  */
 
 // Lanza si AUTH_E2E=1 y falta algo; `null` solo si la suite no fue solicitada.
@@ -121,6 +121,31 @@ test.describe("Auth local real (MVP-031)", () => {
 
     expect(consoleText.join("\n")).not.toContain(PASSWORD);
     expect(consoleText.join("\n")).not.toContain(NEW_PASSWORD);
+  });
+
+  test("rutas privadas reales (MVP-116): sin sesión redirige; con sesión crea y reabre un documento", async ({ page }) => {
+    // Sin sesión: cada test de Playwright arranca con cookies nuevas.
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/acceso$/);
+
+    // Con sesión: el panel arranca vacío, crea un documento real y lo reabre.
+    await fill(page, { "Correo electrónico": EMAIL, "Contraseña": NEW_PASSWORD });
+    await page.getByRole("button", { name: "Ingresar" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { level: 1, name: "Mis documentos" })).toBeAttached();
+    await expect(page.getByText("Crea el primero con «Crear documento».")).toBeVisible();
+
+    await page.getByRole("button", { name: "Crear documento" }).click();
+    await expect(page).toHaveURL(/\/documents\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Documento sin título" })).toBeVisible();
+
+    await page.goto("/dashboard");
+    await page.getByRole("button", { name: "Abrir Documento sin título" }).click();
+    await expect(page).toHaveURL(/\/documents\/[0-9a-f-]{36}$/);
+
+    // Un identificador inexistente responde igual que uno ajeno.
+    expect((await page.goto("/documents/00000000-0000-4000-8000-000000000000"))?.status()).toBe(404);
   });
 
   test("mensajes uniformes: correo existente y desconocido reciben la misma respuesta", async ({ page, request, baseURL }) => {
