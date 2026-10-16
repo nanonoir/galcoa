@@ -2,7 +2,7 @@
 
 Tareas del maestro: `MVP-040`, `MVP-041`, `MVP-044`
 
-**Estado: planificado, no ejecutado.** Redactado de forma anticipada; no implica código, tests ni integración. Fuentes: [maestro](../mvp-master-plan.md) (IDs, dependencias y evidencia), [PRD v1.5](../../GALCOA-PRD-v1.4.md), [fundaciones compartidas](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-04`, `SH-07`), [arquitectura](../../../architecture.md) y [desarrollo](../../../development.md). Este plan no repite esos documentos: los referencia.
+**Estado: servicios implementados con dobles (2026-10-16, Gastón por delegación de Nahuel, Issue #10, opción B).** Hechos: puertos de sesión y persistencia, servicios de documentos, mensajes y auditoría y 23 tests con un doble en memoria (`tests/server/documents/`). **Pendientes:** adaptador Supabase con RPC atómicas `create_document`/`append_message` (migración aditiva F4, después de MVP-025), conexión del helper de sesión de MVP-030, Route Handlers y prueba en base local real (UPDATE/DELETE de eventos rechazados). Ninguna tarea se marca completada hasta entonces. Fuentes: [maestro](../mvp-master-plan.md) (IDs, dependencias y evidencia), [PRD v1.5](../../GALCOA-PRD-v1.4.md), [fundaciones compartidas](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-04`, `SH-07`), [arquitectura](../../../architecture.md) y [desarrollo](../../../development.md). Este plan no repite esos documentos: los referencia.
 
 ## 1. Objetivo y estado de partida
 
