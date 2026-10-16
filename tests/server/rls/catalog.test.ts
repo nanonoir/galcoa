@@ -10,18 +10,20 @@ const SERVER_ONLY_TABLES = [
   "finalization_operations",
   "hedera_attempts",
   "idempotency_records",
+  "rate_limit_counters",
 ];
 
 const column = async (sql: string) => (await psqlOk(sql)).map((row) => row[0]);
 
 describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
-  it("registra las migraciones base y la aditiva F4", async () => {
+  it("registra las migraciones base y las aditivas F4 y F7", async () => {
     expect(await column("select version from supabase_migrations.schema_migrations order by 1;")).toEqual([
       "20261016000100",
       "20261016000200",
       "20261016000300",
       "20261016000400",
       "20261016001000",
+      "20261016002000",
     ]);
   });
 
@@ -32,7 +34,7 @@ describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
         "artifact_reservations", "artifact_staging", "audit_events", "corroboration_requests",
         "corroboration_responses", "document_revisions", "document_versions", "documents", "drafts",
         "evidence_extractions", "evidences", "finalization_operations", "hedera_attempts",
-        "hedera_registrations", "idempotency_records", "message_events", "messages", "report_sources",
+        "hedera_registrations", "idempotency_records", "message_events", "messages", "rate_limit_counters", "report_sources",
         "revision_participants", "revision_snapshots", "snapshot_sources", "verification_reports",
         "version_artifacts", "version_receipts",
       ].sort(),
@@ -89,7 +91,11 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
       await column(
         `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' order by p.proname;`,
       ),
-    ).toEqual(["append_agent_message", "append_document_audit", "append_message", "create_document", "get_document", "list_documents", "list_messages"]);
+    ).toEqual([
+      "append_agent_message", "append_document_audit", "append_message", "confirm_as_author", "create_document", "freeze_revision",
+      "get_active_revision", "get_document", "get_freeze_source", "get_revision_state", "hit_rate_limit", "issue_invitation",
+      "list_documents", "list_messages", "read_invitation", "respond_invitation", "revoke_invitation",
+    ]);
   });
 
   it("toda función propia fija `search_path` y ninguna es ejecutable por PUBLIC ni anon", async () => {
@@ -106,7 +112,10 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
          where n.nspname in ('public','private') and a.grantee = 0 and a.privilege_type = 'EXECUTE' order by 1;`,
       ),
     ).toEqual([]);
-    expect(await column(`select p.proname ${own} and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1;`)).toEqual([]);
+    // Única superficie anónima (capacidad pública de MVP-073/074/075): lectura sin consumo, respuesta y contador de abuso.
+    expect(await column(`select p.proname ${own} and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1;`)).toEqual([
+      "hit_rate_limit", "read_invitation", "respond_invitation",
+    ]);
     expect(await column(`select has_schema_privilege('anon', 'private', 'USAGE');`)).toEqual(["f"]);
   });
 

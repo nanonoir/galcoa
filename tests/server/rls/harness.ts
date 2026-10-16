@@ -24,6 +24,9 @@ export function supabaseCli(args: string[], timeout = 240_000): string {
     encoding: "utf8",
     timeout,
     stdio: ["ignore", "pipe", "pipe"],
+    // Solo la CLI usa este endpoint (p. ej. un puente TCP a la tubería de Docker Desktop en Windows);
+    // `docker exec` de `psql` sigue con el Docker nativo.
+    env: process.env.GALCOA_SUPABASE_CLI_DOCKER_HOST ? { ...process.env, DOCKER_HOST: process.env.GALCOA_SUPABASE_CLI_DOCKER_HOST } : process.env,
   });
 }
 

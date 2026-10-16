@@ -34,6 +34,8 @@ export type IssueInvitationResult =
   | { status: "replayed"; invitationId: string }
   | { status: "role_not_selected" }
   | { status: "revision_not_active" }
+  /** El tercero ya respondió: un enlace nuevo no puede transferir ni repetir esa respuesta. */
+  | { status: "already_responded" }
   | { status: "idempotency_conflict" }
   | { status: "not_available" };
 
