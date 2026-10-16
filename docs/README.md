@@ -15,7 +15,7 @@ Punto de entrada a `docs/`. El producto vive en el PRD; las demás guías explic
 | [Ficha de primera delegación](tasks/dashboard-presentation.md) | Borrador local del ticket de dashboard; no es un Issue publicado |
 | [Deuda técnica](exec-plans/tech-debt-tracker.md) | Riesgos y desviaciones abiertas |
 | [Plan maestro del MVP](exec-plans/active/mvp-master-plan.md) | Seguimiento de todas las tareas P0 (`MVP-NNN`), dependencias, estado y evidencia hasta el MVP desplegado; se actualiza por ID al completar cada tarea |
-| [Catálogo de planes derivados del MVP](exec-plans/active/mvp/README.md) | Índice por plan de los 36 ExecPlans preparados por adelantado (cubren los 68 IDs pendientes); documentación, no ejecución |
+| [Catálogo de planes derivados del MVP](exec-plans/active/mvp/README.md) | Índice por plan de los 36 ExecPlans preparados (35 activos bajo `mvp/` que cubren 67 IDs pendientes y 1 archivado en `completed/`); documentación, no ejecución |
 | [`exec-plans/active/`](exec-plans/active/README.md) | ExecPlans en curso y regla de actualización del maestro |
 | [`exec-plans/completed/`](exec-plans/completed/team-workspace-readiness.md) | ExecPlans cerrados |
 

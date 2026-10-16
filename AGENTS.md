@@ -59,7 +59,7 @@ Estas reglas son obligatorias; detalle y justificación en PRD §3, §5 y §6. R
 
 ## Checks reales
 
-Scripts de validación en `package.json`: `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:boundaries`, `npm run build` y `npm run test:e2e`. Vitest cubre contratos/componentes; Playwright cubre navegador. `preview:ui` es solo desarrollo local sin credenciales. CI está definido en `.github/workflows/ci.yml`; no presupongas que corrió en GitHub ni que hay branch protection activa. Qué correr según el cambio: [`docs/development.md`](docs/development.md).
+Scripts de validación en `package.json`: `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:boundaries`, `npm run build` y `npm run test:e2e`. Vitest cubre contratos/componentes; Playwright cubre navegador. `preview:ui` es solo desarrollo local sin credenciales. CI está definido en `.github/workflows/ci.yml` y verificado en Linux para la base integrada (ver [`docs/exec-plans/completed/f00-integracion-base-ci.md`](docs/exec-plans/completed/f00-integracion-base-ci.md)); branch protection y suites ampliadas permanecen futuras (MVP-131). Qué correr según el cambio: [`docs/development.md`](docs/development.md).
 
 Comprueba `package.json` y el código al comenzar: este inventario puede cambiar. Para cambios riesgosos, se recomienda revisión independiente cuando esté disponible; si no, realiza una autorrevisión explícita y declara sus límites. No requiere un subagente ni un servicio concreto.
 

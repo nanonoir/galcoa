@@ -10,7 +10,7 @@ Este plan **no repite** requisitos, invariantes ni decisiones: los referencia po
 
 **Hecho (base heredada, cerrada en [`team-workspace-readiness`](../completed/team-workspace-readiness.md)).** Contratos Zod y escenarios de dashboard, presentación de referencia, preview Vite aislado, Vitest, barreras de arquitectura, Playwright, workflow de CI definido y plantillas de Issue/PR. Los resultados numéricos de ese cierre (91 tests Vitest, 51 de barreras, 15 Playwright: 13 preview y 2 smoke Next, build, lint, tipos, 2026-10-16) son **evidencia histórica**: no se reutilizan como verificación actual. Cada tarea nueva ejecuta y registra sus propios checks.
 
-**No existe todavía** (verificado en el repositorio): Auth, base de datos y migraciones, Storage, IA (los paquetes `ai`, `@ai-sdk/react` y `groq-sdk` aún no están instalados), PDF, Hedera, rutas funcionales, `supabase/`. El CI no corrió en GitHub y no hay protección de ramas comprobada. La base está en el árbol de trabajo sin commit (ver `MVP-006`).
+**No existe todavía** (verificado en el repositorio): Auth, base de datos y migraciones, Storage, IA (los paquetes `ai`, `@ai-sdk/react` y `groq-sdk` aún no están instalados), PDF, Hedera, rutas funcionales, `supabase/`. La base técnica y documental fue integrada en `develop` vía PR #1 y su CI base verificado en Linux (ver `MVP-006`). La protección de ramas y el CI ampliado con tests de servidor/RLS corresponden a `MVP-131`.
 
 **Equipo.** Un líder (backend, contratos, integración, rutas, configuración) y un colaborador frontend para tareas de presentación simples y delegables. No se inventan personas ni handles. Una herramienta de agente concreta no es requisito.
 
@@ -29,11 +29,11 @@ Este plan **no repite** requisitos, invariantes ni decisiones: los referencia po
 | `pendiente` | No iniciada o sin entrega integrable |
 | `en_curso` | En trabajo, **o implementada y validada en su rama pero aún no integrada** en la base del equipo; la fila debe indicar la rama o PR en evidencia |
 | `bloqueada` | Un impedimento concreto la frena (permiso, credencial, decisión, dependencia fallida); se describe en §9 y se bloquea **solo esa tarea** y lo que dependa de ella |
-| `completada` | Aceptación validada **tras integrarse en la base del equipo** (rama base configurable; hoy `main`), con evidencia registrada en la fila |
+| `completada` | Aceptación validada **tras integrarse en la base del equipo** (hoy `develop`; `main` queda estable), con evidencia registrada en la fila |
 
 **Completada ≠ rama verde ≠ mock.** Una tarea no está completada porque: lo dijo un chat, pasa en una rama sin integrar, o funciona con mocks/preview. Los mocks y dobles (`src/mocks/`, fixtures, preview) prueban contratos y presentación; la integración real con Supabase, proveedores de IA o Hedera es parte explícita de las tareas que lo indican y se acredita con evidencia real o autorizada. Nunca hay fallback mock en producción.
 
-**Excepción única, base heredada.** `MVP-001…005` se marcan `completada` por el cierre de la preparación (validada en copia limpia el 2026-10-16). Esa base aún no está en un commit del equipo: su integración y el primer run remoto de CI quedan en `MVP-006`.
+**Excepción única, base heredada.** `MVP-001…005` se marcan `completada` por el cierre de la preparación (validada en copia limpia el 2026-10-16). Esa base fue posteriormente integrada en `develop` y verificada con CI remoto en `MVP-006`.
 
 **Evidencia** (columna final de la fila): `AAAA-MM-DD · comandos y resultado reales · rama/PR/commit · enlace`. Sin evidencia verificable, la tarea no pasa a `completada`. Resultados históricos se citan como tales.
 
@@ -53,17 +53,17 @@ node -e "const fs=require('node:fs');const counts={};for(const line of fs.readFi
 
 | Estado | Tareas |
 | --- | --- |
-| `completada` | 5 |
-| `en_curso` | 1 |
+| `completada` | 6 |
+| `en_curso` | 0 |
 | `bloqueada` | 0 |
 | `pendiente` | 67 |
 | **Total** | **73** |
 
-Avance: 5/73 (6,8 %), todo correspondiente a la base heredada. Actualizar esta tabla en la misma edición que cambie un estado.
+Avance: 6/73 (8,2 %), con F0=6/7 (base heredada e integración MVP-006 completadas). Actualizar esta tabla en la misma edición que cambie un estado.
 
 | Fase | Completadas / total |
 | --- | --- |
-| F0 Integración y proceso | 5/7 |
+| F0 Integración y proceso | 6/7 |
 | F1 Decisiones abiertas | 0/5 |
 | F2 Contratos y datos | 0/7 |
 | F3 Autenticación | 0/2 |
@@ -91,7 +91,7 @@ Aceptación abreviada: el detalle de cada requisito está en el PRD. Toda tarea 
 | MVP-003 | Contrato y escenarios del dashboard | completada | MVP-001 | Líder | DTO Zod de resumen, props de vista y 8 escenarios ficticios. Alcance: P3; solo dashboard | [P3](../completed/team-workspace-readiness.md) · 2026-10-16 histórico |
 | MVP-004 | Preview local y componente de referencia | completada | MVP-002, MVP-003 | Líder | `preview:ui` en loopback sin entorno, selector de escenarios, smoke de render. Alcance: P4; no prueba integración Next | [P4](../completed/team-workspace-readiness.md) · 2026-10-16 histórico |
 | MVP-005 | CI configurado, plantillas Issue/PR y CODEOWNERS | completada | MVP-004 | Líder | Workflow, plantillas y CODEOWNERS en el árbol. Alcance: solo configuración; **ningún run remoto ni protección de ramas** | [P5](../completed/team-workspace-readiness.md) · 2026-10-16 histórico |
-| MVP-006 | Integrar la base en la rama del equipo y obtener el primer run remoto de CI | en_curso | MVP-005 | Líder | Base commiteada e integrada en la rama base; preparar e integrar la base `develop` de la estrategia objetivo (§6) y obtener el run de GitHub Actions en Linux verde (o fallos corregidos) enlazado. Requiere autorización explícita de commit/push/PR | [f00-integracion-base-ci](mvp/f00-integracion-base-ci.md) · 2026-10-16: entrega autorizada en `delivery/team-foundation` hacia `develop`; pendiente CI remoto e integración |
+| MVP-006 | Integrar la base en la rama del equipo y obtener el primer run remoto de CI | completada | MVP-005 | Líder | Base técnica y documental integrada en `develop` vía PR #1 (`d6013fe`); run de GitHub Actions en Linux verde verificado en PR (#38883794710) y push develop (#38883996495); ramas `main` y `facu` preservadas; sin cambios en branch protection (MVP-131) | [f00-integracion-base-ci](../completed/f00-integracion-base-ci.md) · 2026-10-16 · PR #1 mergeado (`d6013fe`, commits `3b107db`, `f1aec99`) · CI PR #38883794710 verde · CI push develop #38883996495 verde · clon limpio verificado |
 | MVP-007 | Acceso del colaborador al repositorio | pendiente | — | Externo | Handle del colaborador y permisos confirmados fuera del repo; sin esto se bloquea asignarle/ejecutar sus entregas (`MVP-111…115`), no preparar contratos y planes en `MVP-110` | [f00-acceso-colaborador](mvp/f00-acceso-colaborador.md) · — |
 
 ### F1 — Decisiones abiertas del PRD §16
@@ -275,16 +275,16 @@ Cada ola agrupa un rango de niveles de dependencia (calculados con la regla ante
 
 Tareas del colaborador (`MVP-111…115`) entran en la ola 2 y pueden avanzar en paralelo con el trabajo compatible del líder al completar `MVP-110` y confirmar acceso en `MVP-007`. La preparación de paquetes no espera ese acceso. `MVP-014` (externo) y `MVP-007` no frenan al resto salvo lo indicado en sus filas.
 
-**Estrategia de ramas.** El 2026-10-16 se verificó que `origin/develop` ya existe en el mismo commit base que `main`; no se sobrescribió. La entrega MVP-006 está autorizada y en curso: `main` estable, `develop` como integración y una rama/worktree por plan cuando se cumplan sus dependencias, con un máximo de dos implementaciones simultáneas compatibles. Los PR van a `develop`; el paso final a `main` es un release aparte. La mera existencia de un plan no autoriza publicaciones futuras. CI remoto y merge de esta base se comprueban antes de completar MVP-006.
+**Estrategia de ramas.** El 2026-10-16 se completó `MVP-006`: la base técnica y documental quedó integrada en `develop` mediante el [PR #1](https://github.com/nanonoir/galcoa/pull/1) (merge commit `d6013fe`) y su CI en Linux verificado verde. Se preservaron intactas `main` y `facu` en `fa82efd`. La estrategia operativa continúa con `main` estable, `develop` como rama de integración y una rama/worktree por plan cuando se cumplan sus dependencias, con un máximo de dos implementaciones simultáneas compatibles. Los PR van hacia `develop`; la promoción final a `main` es un release aparte. La mera existencia de un plan no autoriza publicaciones futuras.
 
-- Una tarea pasa a `completada` solo tras integrarse en `develop` y repetir los checks; hasta la transición de `MVP-006`, la base vigente sigue siendo la actual (§2).
+- Una tarea pasa a `completada` solo tras integrarse en `develop` y repetir los checks; con la integración de `MVP-006`, la base vigente de integración es `develop` (§2).
 - Si los checkpoints de un plan permiten entregar una parte ya útil para otro, se ejecuta ese checkpoint, se publica un PR acotado y se registran en el maestro solo los IDs integrados; el resto del plan sigue abierto. No hace falta cerrar un plan entero antes de usar una salida ya integrada.
 - `MVP-007` y `MVP-014` son acciones externas: ningún agente implementa el acceso ni el dictamen, la evidencia se registra sin secretos y no se exige rama ni worktree para una acción que no toca archivos.
 - La [guía de ejecución y matriz de compatibilidad](../../execution/mvp-execution-guide.md) propone tandas y parejas; antes de ejecutar se verifican archivos concretos, contratos y precondiciones. No se interpreta un worktree distinto como garantía de independencia.
 
 ## 7. Cómo derivar ExecPlans
 
-Por autorización del usuario, los ExecPlans derivados se crearon **por adelantado para todas las fases pendientes**: 36 planes bajo [`mvp/`](mvp/README.md) cubren los 68 IDs pendientes sin solapes (el catálogo `mvp/README.md` no es un ExecPlan y no cuenta). Tener un plan redactado no habilita a ejecutarlo: deben cumplirse sus dependencias, contratos y autorizaciones, y cada plan describe un objetivo futuro, no una implementación hecha. Las decisiones transversales se mantienen en [fundaciones compartidas](../../design/mvp-shared-foundations.md). Reglas:
+Por autorización del usuario, se prepararon **36 ExecPlans derivados por adelantado**. Tras cerrar MVP-006 quedan 35 planes activos bajo [`mvp/`](mvp/README.md), que cubren los 67 IDs pendientes sin solapes, y un plan archivado para MVP-006; el catálogo no es un ExecPlan. Tener un plan redactado no habilita a ejecutarlo: deben cumplirse sus dependencias, contratos y autorizaciones, y cada plan describe un objetivo futuro, no una implementación hecha. Las decisiones transversales se mantienen en [fundaciones compartidas](../../design/mvp-shared-foundations.md). Reglas:
 
 - **Una tarea ↔ un plan** si es un cambio de comportamiento, arquitectura o integración con varios pasos. Un ajuste pequeño no requiere plan (AGENTS.md).
 - **Varias tareas ↔ un plan** si comparten archivos, contrato o migración y no tienen sentido por separado. Ejemplos razonables: `MVP-022…024` (esquema, migraciones y RLS), `MVP-072…075` (invitaciones y respuesta), `MVP-090…093` (Hedera). El plan lista los IDs que cubre.
@@ -317,5 +317,7 @@ Acciones que requieren autorización expresa y bloquean **solo** la tarea que la
 Se comprobó al redactarlo (2026-10-16): IDs únicos, todas las dependencias referencian IDs existentes y forman un grafo acíclico, cada REQ-01…18 tiene tareas, y el recuento del §3 coincide con el tablero. Volver a verificarlo tras agregar o cambiar tareas.
 
 **Revisión documental de dependencias y planes (2026-10-16).** Es una verificación de documentos, no un resultado de ejecución: no se corrió código ni se cambió ningún estado. Cambios del grafo: `MVP-022` depende además de `MVP-011` y `MVP-012`; `MVP-070` de `MVP-012`; `MVP-054` de `MVP-053`; `MVP-110` ya no depende de `MVP-007`, que sí condiciona a `MVP-111…115`; `MVP-116` depende de `MVP-054` y `MVP-114` y es dueño de `documents/[id]/page.tsx`; `MVP-121` depende además de `MVP-031` y `MVP-116` (el E2E del flujo exige las páginas de composición y la autenticación completas; no hay ciclo con `MVP-118`, que no depende de `MVP-121`). Se recalcularon los niveles del DAG (máximo 31): `MVP-116` pasa de la ola 3 a la ola 4. Cobertura: 36 planes cubren los 68 IDs pendientes sin omisiones ni duplicados; `MVP-001…005` conservan su enlace histórico; los totales del §3 no cambian (5 completadas, 68 pendientes, 73).
+
+**Actualización posterior de entrega (2026-10-16).** MVP-006 se completó con merge y CI Linux reales, según su evidencia. Totales actuales: 6 completadas y 67 pendientes; 35 planes derivados activos cubren esos 67 IDs y el plan de integración quedó archivado. La revisión documental anterior es histórica, no el estado actual del contador.
 
 [Índice](../../README.md) · [PRD](../GALCOA-PRD-v1.4.md) · [Arquitectura](../../architecture.md) · [Desarrollo](../../development.md)

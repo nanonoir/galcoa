@@ -4,7 +4,7 @@
 
 ## Camino simple
 
-1. **Preparar la base de integración.** Con autorización, publicar la base y establecer `develop` mediante MVP-006. Hoy no se presupone que esa rama ni la protección remota existan. `main` queda estable; la promoción final requiere autorización aparte.
+1. **Preparar la base de integración (hecho).** La base técnica y documental quedó publicada e integrada en `develop` mediante MVP-006 con CI remoto verificado en Linux. `main` se conserva estable. La base del equipo está lista; la siguiente fase es F1 sin lanzarla aún por adelantado.
 2. **Resolver F1.** Trabajar en paralelo en decisiones de ingesta/modelos y de confirmación/sello. No son funcionalidades terminadas por existir un borrador de spec: los parámetros pendientes deben resolverse y registrarse.
 3. **Integrar contratos F2.** Un único responsable publica los contratos compartidos antes de que otros los consuman.
 4. **Abrir dos carriles.** Un carril construye backend siguiendo el recorrido inferior; el otro hace presentación frontend o una tarea técnica independiente que ya tenga sus entradas.
@@ -19,7 +19,7 @@ Estas son tandas orientativas, **no una agenda obligatoria**. El maestro y los c
 
 | Momento | Carril principal | Segundo carril posible |
 | --- | --- | --- |
-| Base | [Integración/CI](../exec-plans/active/mvp/f00-integracion-base-ci.md) | [Acceso del colaborador](../exec-plans/active/mvp/f00-acceso-colaborador.md), gestión humana sin escribir código |
+| Base | [Integración/CI](../exec-plans/completed/f00-integracion-base-ci.md) (completado) | [Acceso del colaborador](../exec-plans/active/mvp/f00-acceso-colaborador.md), gestión humana sin escribir código |
 | Decisiones | [Ingesta y modelos](../exec-plans/active/mvp/f01-decisiones-ingesta-y-modelos.md) | [Confirmaciones y sello](../exec-plans/active/mvp/f01-decisiones-confirmacion-y-sello.md) |
 | Contratos | [Contratos de dominio](../exec-plans/active/mvp/f02-contratos-dominio.md), un solo escritor | Checkpoint MVP-122 del [dataset](../exec-plans/active/mvp/f12-ai-evaluation-dataset-and-runner.md), una vez decidido MVP-013; sin tocar contratos globales |
 | Servicios base | [SQL, migraciones y RLS](../exec-plans/active/mvp/f02-esquema-migraciones-rls.md) | [Proveedor Gemini](../exec-plans/active/mvp/f05-gemini-provider.md), si manifiestos/configuración se reservaron antes al líder |

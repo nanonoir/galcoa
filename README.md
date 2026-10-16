@@ -28,7 +28,7 @@ El preview es local, usa datos ficticios y no necesita `.env` ni credenciales. P
 | `npm run preview:ui` | Preview Vite local sin servicios |
 | `npm run test:e2e` | Playwright: navegador Chromium, preview y smoke de Next |
 
-Antes de ejecutar Playwright por primera vez: `npx playwright install chromium` (Linux/CI: `npx playwright install --with-deps chromium`). GitHub Actions define los checks de PR/push; agregar el workflow no activa protección de ramas ni prueba una ejecución remota.
+Antes de ejecutar Playwright por primera vez: `npx playwright install chromium` (Linux/CI: `npx playwright install --with-deps chromium`). GitHub Actions ejecuta los checks de PR/push en Linux (verificado verde en la base de integración [MVP-006](docs/exec-plans/completed/f00-integracion-base-ci.md)); la protección de ramas y suites ampliadas corresponden a fases posteriores (MVP-131).
 
 ## Variables de entorno
 
