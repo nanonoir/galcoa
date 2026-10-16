@@ -1,6 +1,10 @@
 # F13 · Seguridad y privacidad transversal, y CI ampliado con protección de ramas
 
-**Estado: planificado; implementación no iniciada.** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (filas de `MVP-130` y `MVP-131`). El maestro conserva IDs, estados y evidencia; este plan no los modifica.
+**Estado: checkpoint MVP-131 en curso (2026-10-16); MVP-130 no iniciado.** ExecPlan derivado del [plan maestro](../mvp-master-plan.md) (filas de `MVP-130` y `MVP-131`). El maestro conserva IDs, estados y evidencia.
+
+### Ejecución acotada de MVP-131
+
+Dependencia MVP-120 integrada por PR #79/#81 (Issue #32). Se conserva `validate` y se añade un job Ubuntu aislado con Docker/Supabase local efímero, suites RLS, servidor local, persistencia, executor, rutas y Auth real local en serie. Se reutilizan CLI bloqueada y setup/reset existentes; no se cambia producto, paquetes, migraciones ni configuración compartida. Lanzador CI captura toda salida sensible sin publicarla, falla si faltan prerrequisitos y detiene solo su proyecto al finalizar. La DB de esta máquina está reservada a otro carril: no se arranca ni resetea aquí. Validación: sintaxis/YAML, checks sin DB y run Linux real del PR; evidencia pendiente hasta ejecutarlos. Sin proveedores/cloud, despliegue ni protección/checks obligatorios. MVP-130 y matriz futura MVP-121 quedan fuera.
 
 Tareas del maestro: `MVP-130`, `MVP-131`
 
