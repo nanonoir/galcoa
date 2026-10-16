@@ -49,7 +49,7 @@ REQ-12, REQ-14, REQ-08. INV-02, INV-11, INV-14, INV-17. PRD §10: «¿Quiénes v
 
 ## 5. Rutas, propiedad y fronteras
 
-El líder implementa la integración y los containers. La **presentación** de snapshot/advertencias es del colaborador (`MVP-112`); selección, avance y compartir son del líder en esta entrega inicial. Un eventual delegado posterior de presentación pura requeriría un Issue y allowlist propios (no forma parte de este plan).
+**Delegación expresa del usuario, 2026-10-16:** Facu (`@jfacundoayala`) implementa #21 después de #31, incluyendo la ruta, presentación y containers enumerados abajo. Consume las entradas reales de #18/#19/#20 de Gastón; no modifica sus servicios, RPC ni migraciones. El líder conserva contratos compartidos, configuración global, dependencias y seguridad. Esta autorización sustituye la propiedad inicial exclusiva del líder, sin ampliar el producto ni permitir endpoints inventados o mocks en producto.
 
 | Superficie | Contenido |
 | --- | --- |
