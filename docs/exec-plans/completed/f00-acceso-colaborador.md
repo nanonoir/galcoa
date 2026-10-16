@@ -26,7 +26,7 @@ Referencias: [arquitectura: delegación y CODEOWNERS](../../architecture.md) · 
 2. El líder elige la modalidad mínima: invitación como colaborador con permiso suficiente para ramas y PR, o fork + PR. Debe ser un permiso sin administración. La elección es del líder; el PRD no la fija.
 3. El líder envía la invitación desde la configuración del repositorio en GitHub y el colaborador la acepta.
 4. Confirmación manual: el colaborador puede clonar/leer el repositorio y el líder ve el permiso en la lista de colaboradores. No se abre un PR de prueba (sería una acción remota sin necesidad).
-5. Onboarding sin secretos: indicar `README.md`, `AGENTS.md`, [desarrollo](../../../development.md) (inicio desde clon limpio) y la plantilla de Issue. La presentación no necesita `.env`.
+5. Onboarding sin secretos: indicar `README.md`, `AGENTS.md`, [desarrollo](../../development.md) (inicio desde clon limpio) y la plantilla de Issue. La presentación no necesita `.env`.
 6. Registrar la evidencia en la fila (ver Cierre).
 
 ## Alcance no automatizable
