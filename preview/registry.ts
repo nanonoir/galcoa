@@ -41,7 +41,7 @@ export interface PreviewEntry {
 
 const dashboard: PreviewEntry = {
   id: "dashboard-reference",
-  label: "Dashboard (referencia mínima)",
+  label: "Dashboard (MVP-111)",
   scenarios: dashboardScenarios.map(({ id, label }) => ({ id, label })),
   render(scenarioId, handlers) {
     const scenario = dashboardScenarios.find((s) => s.id === scenarioId);
