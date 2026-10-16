@@ -2,9 +2,9 @@
 
 Índice por plan de los ExecPlans preparados por adelantado, derivados del [plan maestro](../mvp-master-plan.md). **No es un ExecPlan** ni cuenta como tal. No guarda estados: el estado, las dependencias y la evidencia de cada tarea viven solo en el maestro. Que un plan exista no autoriza ejecutarlo; antes deben cumplirse sus dependencias y autorizaciones.
 
-Cobertura: **36 planes** preparados (28 activos bajo este directorio + 8 completados y archivados en [`completed/`](../../completed/)). Algunos planes activos contienen checkpoints ya completados y otros pendientes: el estado por ID vive únicamente en el maestro. Los índices y este catálogo no son ExecPlans. Cada plan declara sus IDs en la línea `Tareas del maestro:`.
+Cobertura: **36 planes** preparados (27 activos bajo este directorio + 9 completados y archivados en [`completed/`](../../completed/)). Algunos planes activos contienen checkpoints ya completados y otros pendientes: el estado por ID vive únicamente en el maestro. Los índices y este catálogo no son ExecPlans. Cada plan declara sus IDs en la línea `Tareas del maestro:`.
 
-Grupos: A = F0–F3 (4 activos + 7 archivados), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (8 activos + 1 archivado).
+Grupos: A = F0–F3 (4 activos + 7 archivados), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (7 activos + 2 archivados).
 
 | Plan | Grupo | IDs del maestro | Título |
 | --- | --- | --- | --- |
@@ -40,7 +40,7 @@ Grupos: A = F0–F3 (4 activos + 7 archivados), B = F4–F6 (8 activos), C = F7�
 | [f11-product-ui-integration-and-review](f11-product-ui-integration-and-review.md) | D | MVP-116, MVP-118 | Integración de dashboard, historial y documento; revisión transversal de accesibilidad y responsive |
 | [f12-ai-evaluation-dataset-and-runner](f12-ai-evaluation-dataset-and-runner.md) | D | MVP-122…123 | Dataset de evaluación de IA y runner |
 | [f12-critical-flow-matrix-and-e2e](f12-critical-flow-matrix-and-e2e.md) | D | MVP-121 | Matriz del PRD §12 y E2E del flujo crítico |
-| [f12-server-test-harness](f12-server-test-harness.md) | D | MVP-120 | Harness de tests de servidor |
+| [f12-server-test-harness](../../completed/f12-server-test-harness.md) | D | MVP-120 | Harness de tests de servidor (completado y archivado) |
 | [f13-deploy-and-demo](f13-deploy-and-demo.md) | D | MVP-132…133 | Despliegue en Vercel y datos y cuentas de demo |
 | [f13-live-validation-and-closure](f13-live-validation-and-closure.md) | D | MVP-134…136 | Smoke real integrado, evaluación de IA real y cierre del MVP |
 | [f13-release-security-and-ci](f13-release-security-and-ci.md) | D | MVP-130…131 | Seguridad y privacidad transversal, y CI ampliado con protección de ramas |

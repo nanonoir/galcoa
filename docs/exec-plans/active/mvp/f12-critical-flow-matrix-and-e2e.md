@@ -4,7 +4,7 @@
 
 Tareas del maestro: `MVP-121`
 
-Producto: [PRD v1.5](../../GALCOA-PRD-v1.4.md) (REQ-18; §12; INV-03, INV-11…INV-18). Fundaciones: [mvp-shared-foundations](../../../design/mvp-shared-foundations.md) (SH-09 define la distribución de evidencia por frontera). Base previa: [`f12-server-test-harness`](f12-server-test-harness.md). Política de evidencia: [release-validation](../../../specs/release-validation.md) (§1–§3). Seam del E2E: [data-transactions §7](../../../design/data-transactions.md#7-costuras-de-tests-y-evidencia).
+Producto: [PRD v1.5](../../GALCOA-PRD-v1.4.md) (REQ-18; §12; INV-03, INV-11…INV-18). Fundaciones: [mvp-shared-foundations](../../../design/mvp-shared-foundations.md) (SH-09 define la distribución de evidencia por frontera). Base previa: [`f12-server-test-harness`](../../completed/f12-server-test-harness.md). Política de evidencia: [release-validation](../../../specs/release-validation.md) (§1–§3). Seam del E2E: [data-transactions §7](../../../design/data-transactions.md#7-costuras-de-tests-y-evidencia).
 
 ## 1. Objetivo y alcance
 
