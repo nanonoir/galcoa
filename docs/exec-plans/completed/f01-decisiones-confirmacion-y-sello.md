@@ -12,7 +12,7 @@ Referencias: [fundaciones SH-03, SH-04 y SH-06](../../design/mvp-shared-foundati
 
 - Sin dependencias; las dos tareas son independientes. Checkpoint A: `MVP-011`. Checkpoint B: `MVP-012`.
 - Consumidores: `MVP-011` → `MVP-072/075`; `MVP-012` → `MVP-082`, `MVP-090`, `MVP-092` (y, por SH-03, el hash del snapshot de `MVP-070`).
-- Ayudan a cerrar el diseño SQL ([plan de esquema](../active/mvp/f02-esquema-migraciones-rls.md)): definen columnas y tablas de capacidades, nonce, referencia pública e intentos HCS. No lo bloquean para el núcleo.
+- Ayudan a cerrar el diseño SQL ([plan de esquema](f02-esquema-migraciones-rls.md)): definen columnas y tablas de capacidades, nonce, referencia pública e intentos HCS. No lo bloquean para el núcleo.
 - Sin credenciales ni llamadas reales; Testnet y Mirror Node se estudian por documentación oficial.
 
 ## Objetivo y aceptación
