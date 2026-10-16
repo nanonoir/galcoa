@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 const alias = { "@": path.resolve(import.meta.dirname, "src") };
 
@@ -26,6 +26,22 @@ export default defineConfig({
           environment: "jsdom",
           include: ["src/**/*.test.tsx", "preview/**/*.test.tsx"],
           setupFiles: ["tests/setup.dom.ts"],
+        },
+      },
+      {
+        // Servidor con dobles (MVP-120): sin Docker ni credenciales. La base local real vive
+        // en `vitest.rls.config.ts` y `vitest.server-local.config.ts` (scripts aparte).
+        // `server-only` → centinela vacío solo en este proyecto de test; Next lo conserva.
+        extends: true,
+        resolve: {
+          alias: [{ find: /^server-only$/, replacement: path.resolve(import.meta.dirname, "tests/server/support/server-only-sentinel.ts") }],
+        },
+        test: {
+          name: "server",
+          environment: "node",
+          include: ["tests/server/**/*.test.ts"],
+          exclude: [...configDefaults.exclude, "tests/server/rls/**", "tests/server/local/**"],
+          testTimeout: 30_000,
         },
       },
       {
