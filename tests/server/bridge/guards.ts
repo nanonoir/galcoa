@@ -39,7 +39,7 @@ const FORBIDDEN_EXTERNALS: readonly RegExp[] = [
 const FORBIDDEN_MODULES: readonly { pattern: RegExp; reason: string }[] = [
   { pattern: /[\\/]src[\\/]app[\\/]/, reason: "rutas/páginas de la app (src/app)" },
   { pattern: /[\\/]node_modules[\\/]next[\\/]/, reason: "Next empaquetado (p. ej. next/headers)" },
-  { pattern: /[\\/]node_modules[\\/](?:@ai-sdk[\\/]google|groq-sdk|@hiero-ledger|@hashgraph)[\\/]/, reason: "SDK real de proveedor empaquetado" },
+  { pattern: /[\\/]node_modules[\\/](?:@ai-sdk[\\/]google|groq-sdk|@hiero-ledger|@hashgraph|@react-pdf)[\\/]/, reason: "SDK real de proveedor empaquetado" },
 ];
 
 const matches = (specifier: string, rule: string | RegExp) => (typeof rule === "string" ? specifier === rule : rule.test(specifier));

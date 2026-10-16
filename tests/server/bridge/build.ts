@@ -70,7 +70,7 @@ export async function buildTestBridge(options: BridgeBuildOptions): Promise<Brid
   try {
     const result = await build({
       configFile: false,
-      envFile: false,
+      envDir: false,
       root: ROOT,
       logLevel: "warn",
       resolve: {
