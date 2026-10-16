@@ -67,6 +67,21 @@ El workflow `.github/workflows/ci.yml` define `npm ci`, lint, tipos, Vitest, bar
 
 La ejecución base de Linux en GitHub Actions fue comprobada verde en el PR de integración y push a `develop` (ver [f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)). Un workflow y `CODEOWNERS` no activan protección de ramas ni otorgan permisos; la configuración de branch protection es opcional posthackathon y el CI ampliado con pruebas de servidor/RLS corresponde a `MVP-131`.
 
+### CI ampliado (MVP-131)
+
+`validate` conserva todos sus checks (incluido `npm test`, con los dobles y guards del puente). El job independiente `local-server-db` usa Docker de Ubuntu y la CLI Supabase instalada por `npm ci`, sin servicios cloud ni secretos configurados. Arranca la pila del repositorio y ejecuta **en serie**, con reset compartido antes de cada suite:
+
+1. `npm run test:rls`.
+2. `npm run test:server:local`.
+3. `npx vitest run --config tests/server/persistence/vitest.local.config.ts`.
+4. `npx vitest run --config tests/server/persistence/executor/vitest.local.config.ts`.
+5. `npx vitest run --config tests/server/routes/vitest.local.config.ts`.
+6. `npm run test:e2e:auth` (opt-in activo por su runner, tres casos reales con Auth/Mailpit locales, puerto 3217).
+
+`scripts/ci-local.mjs` invoca directamente los mismos entrypoints bloqueados, fuerza reset y captura stdout/stderr de CLI y tests: solo publica progreso/resultado, nunca claves efímeras, correos, cookies ni errores crudos. Falla sin omitir suites si faltan prerrequisitos. No sube artefactos de este job; Auth ya deshabilita trazas, vídeos y capturas. `always()` detiene únicamente `galcoa` en ese runner desechable. El lanzador rechaza ejecución fuera de GitHub Linux para no resetear bases compartidas; para reproducir usar los comandos anteriores con reserva exclusiva de DB y no publicar logs privados.
+
+No acredita la matriz futura MVP-121, seguridad pendiente MVP-130, evaluación IA, smoke remoto, Vercel ni proveedores reales. CI sigue siendo señal, no gate universal; no configura branch protection ni checks requeridos.
+
 ## Entorno y seguridad
 
 - El único archivo local de entorno es **`.env`** en la raíz. `.env*` sigue ignorado (salvo `.env.example`) y los agentes no lo leen ni imprimen. `.env.example` se versiona con nombres del PRD; solo lleva valores no secretos por defecto.
@@ -88,6 +103,33 @@ La ejecución base de Linux en GitHub Actions fue comprobada verde en el PR de i
 - Preview sin carga de archivos de entorno ni inyección de secretos; datos ficticios, sin persistencia y solo loopback. No sirve para compartir una demo por red.
 - Supabase Auth/RLS, migraciones, rutas, integraciones y claves solo dentro del alcance explícito del pedido/ticket del líder. HCS únicamente Testnet, sin herramientas abiertas para agentes (INV-04).
 - Auditoría: registrar resultado completo y de producción por separado. Las incidencias dev conocidas no se ocultan ni justifican `npm audit fix --force`; consultar [deuda](exec-plans/tech-debt-tracker.md).
+
+### Ejecutor interno F4: provisión privada del operador
+
+En `galcoa-dev` ya están las migraciones F4 y `executor_login`; el LOGIN
+`galcoa_exec_login` se creó **sin contraseña** y todavía no acredita conexión remota.
+Solo el propietario realiza estos pasos, sin pasar secretos al agente/chat:
+
+1. Provisionar una contraseña fuerte para **ese rol**, no para `postgres`, desde
+   la gestión de roles del panel si ofrece esa acción; de lo contrario usar una
+   sesión SQL privada controlada por el propietario. No guardar el secreto en
+   snippets compartidos, historial exportado, repositorio ni capturas.
+2. Obtener host/puerto del pooler desde Connect y construir privadamente la URL
+   con usuario `galcoa_exec_login.<PROJECT_REF>` y contraseña codificada para URL.
+   Usar el mismo proyecto que `NEXT_PUBLIC_SUPABASE_URL`; no usar clave API,
+   `service_role`, URL de administrador ni parámetros query en la URL.
+3. Guardarla como `GALCOA_EXECUTOR_DATABASE_URL`, solo servidor: en `.env` para
+   local o como variable sensible de Vercel en el entorno elegido, cuando se
+   decida desplegar. Si hace falta CA, `GALCOA_EXECUTOR_DATABASE_CA` contiene el
+   certificado de confianza del proveedor. **Nunca** desactivar verificación TLS
+   ni recurrir a un rol privilegiado para resolver un error de conexión.
+4. Reiniciar/redeploy tras cambios de URL/CA. Comprobar LOGIN limitado, TLS y
+   Supavisor con una prueba acotada autorizada antes de anunciarlo usable. Hoy no
+   están probados en cloud; el éxito local no los sustituye. No tocar URLs/Auth
+   de producción como parte de esta provisión.
+
+Evidencia y permisos: [checkpoint remoto F4](exec-plans/active/mvp/f04-documents-chat-audit.md#aplicación-remota-autorizada--2026-10-16).
+Sintaxis del usuario pooler: [documentación Supabase](https://supabase.com/docs/guides/troubleshooting/tenant-or-user-not-found).
 
 ## Entrega del colaborador
 

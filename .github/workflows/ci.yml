@@ -13,6 +13,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  local-server-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install Chromium for real local Auth
+        run: npx playwright install --with-deps chromium
+      - name: Test private-output CI launcher without Docker
+        run: node --test scripts/ci-local.test.mjs
+      - name: Start ephemeral local Supabase (private output)
+        run: node scripts/ci-local.mjs start
+      - name: Serial RLS, server, persistence, executor, routes and real Auth
+        run: node scripts/ci-local.mjs test
+      - name: Stop only this runner's local project
+        if: always()
+        run: node scripts/ci-local.mjs stop
+
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
