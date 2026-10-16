@@ -146,6 +146,13 @@ compatibilidad real del proyecto/despliegue, no se declara configurada.
 Prueba de LOGIN real y catálogo requiere reserva exclusiva de la pila local;
 no sustituirla por SET ROLE desde superusuario. Revisión independiente pendiente.
 
+Evidencia local posterior en PR #80: seis migraciones desde cero en PostgreSQL
+17; LOGIN TCP real con identidad de sesión igual al login mínimo, RPC pg con
+actor Auth local, replay y rollback forzado comprobados. Suite ampliada **6/6**,
+catálogo/RLS **119/119**; detalle en el checkpoint #10 de F4. Contraseña efímera
+retirada y pila propia detenida. No acredita conexión remota/Supavisor; revisión
+independiente y provisión por operador siguen pendientes.
+
 ### Base real y dobles separados
 
 `MVP-024` posee `tests/server/rls/`: arranque/reset local, usuarios A/B, cliente `anon`, assertions de tablas/Storage/grants y helpers de conexiones independientes. `MVP-120` **reutiliza** esos helpers y añade builders y dobles, no crea otra pila RLS. `src/mocks/` conserva solo escenarios/fixtures de contratos; dobles que importan interfaces de servicios viven en `tests/server/`. Esta precisión evita relajar la barrera actual pese al inventario amplio de SH-07/arquitectura.

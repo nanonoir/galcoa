@@ -52,6 +52,7 @@ it("LOGIN real sin SET ROLE, mínimos de catálogo y sin membresías API", async
   expect(await psqlOk("select r.rolname, m.inherit_option, m.set_option from pg_auth_members m join pg_roles r on r.oid=m.roleid join pg_roles u on u.oid=m.member where u.rolname='galcoa_exec_login';")).toEqual([["galcoa_executor", "t", "f"]]);
   expect(await psqlOk("select rolcanlogin from pg_roles where rolname='galcoa_executor';")).toEqual([["f"]]);
   expect(await psqlOk("select pg_has_role('authenticator','galcoa_exec_login','MEMBER'), pg_has_role('authenticated','galcoa_executor','MEMBER'), has_schema_privilege('galcoa_exec_login','public','CREATE');")).toEqual([["f", "f", "f"]]);
+  expect(await psqlOk("select count(*) from pg_roles api cross join pg_roles target where api.rolname in ('anon','authenticated','authenticator','service_role') and target.rolname in ('galcoa_exec_login','galcoa_executor') and pg_has_role(api.oid,target.oid,'MEMBER');")).toEqual([["0"]]);
   expect(await psqlOk("select count(*) from pg_class where relowner = 'galcoa_exec_login'::regrole;")).toEqual([["0"]]);
   expect(await psqlOk("select count(*) from pg_proc where proowner = 'galcoa_exec_login'::regrole;")).toEqual([["0"]]);
   expect(await psqlOk("select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and (has_table_privilege('galcoa_exec_login', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_any_column_privilege('galcoa_exec_login', c.oid, 'SELECT,INSERT,UPDATE,REFERENCES'));")).toEqual([["0"]]);
@@ -74,6 +75,16 @@ it("rechaza contraseña errónea sin divulgar detalle", async () => {
       typeof error === "object" && error !== null && "code" in error ? error.code : "unknown");
     expect(code).toBe("28P01");
   } finally { await wrong.end(); }
+});
+
+it("adapter real rechaza RPC no enumerada y actor ajeno; API no puede falsificar agente", async () => {
+  const args = { p_actor_id: user.id, p_document_id: randomUUID(), p_content: "No autorizado",
+    p_declared_event_date: { kind: "unknown" }, p_key: randomUUID(), p_correlation_id: "executor-test" };
+  expect(await executor!.rpc("list_documents")).toEqual({ data: null, error: { code: "EXECUTOR_UNAVAILABLE" } });
+  expect(await executor!.rpc("append_agent_message", { ...args, p_actor_id: randomUUID() }))
+    .toEqual({ data: null, error: { code: "EXECUTOR_UNAVAILABLE" } });
+  const denied = await user.client.rpc("append_agent_message", args);
+  expect(denied.error?.code).toBe("42501");
 });
 
 it("store real: agente y auditoría idempotentes y evento atómico", async () => {
