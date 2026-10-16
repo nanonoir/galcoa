@@ -15,12 +15,13 @@ const SERVER_ONLY_TABLES = [
 const column = async (sql: string) => (await psqlOk(sql)).map((row) => row[0]);
 
 describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
-  it("registra las cuatro migraciones versionadas", async () => {
+  it("registra las migraciones base y la aditiva F4", async () => {
     expect(await column("select version from supabase_migrations.schema_migrations order by 1;")).toEqual([
       "20261016000100",
       "20261016000200",
       "20261016000300",
       "20261016000400",
+      "20261016001000",
     ]);
   });
 
@@ -83,12 +84,12 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
     expect(unreadable).toEqual(SERVER_ONLY_TABLES);
   });
 
-  it("no hay funciones en `public` (nada se expone como RPC todavía)", async () => {
+  it("solo se exponen las RPC de F4 enumeradas (sin funciones genéricas)", async () => {
     expect(
       await column(
-        `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public';`,
+        `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' order by p.proname;`,
       ),
-    ).toEqual([]);
+    ).toEqual(["append_agent_message", "append_document_audit", "append_message", "create_document", "get_document", "list_documents", "list_messages"]);
   });
 
   it("toda función propia fija `search_path` y ninguna es ejecutable por PUBLIC ni anon", async () => {

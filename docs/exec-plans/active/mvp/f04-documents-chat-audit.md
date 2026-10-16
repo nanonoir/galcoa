@@ -2,13 +2,133 @@
 
 Tareas del maestro: `MVP-040`, `MVP-041`, `MVP-044`
 
-**Estado: servicios implementados con dobles (2026-10-16, Gastón por delegación de Nahuel, Issue #10, opción B).** Hechos: puertos de sesión y persistencia, servicios de documentos, mensajes y auditoría y 23 tests con un doble en memoria (`tests/server/documents/`). **Pendientes:** adaptador Supabase con RPC atómicas `create_document`/`append_message` (migración aditiva F4, después de MVP-025), conexión del helper de sesión de MVP-030, Route Handlers y prueba en base local real (UPDATE/DELETE de eventos rechazados). Ninguna tarea se marca completada hasta entonces. Fuentes: [maestro](../mvp-master-plan.md) (IDs, dependencias y evidencia), [PRD v1.5](../../GALCOA-PRD-v1.4.md), [fundaciones compartidas](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-04`, `SH-07`), [arquitectura](../../../architecture.md) y [desarrollo](../../../development.md). Este plan no repite esos documentos: los referencia.
+**Estado: checkpoint de autor implementado y probado con Supabase local (2026-10-16), PR #74 → #76 sin merge.** Conserva los servicios puros de Gastón (#43) y agrega RPC, adaptador, sesión real y HTTP. Evidencia local: persistencia 8/8, HTTP de dominio con Auth/RPC 2/2 y RLS 119/119. **Pendientes:** revisión independiente, integración y transporte productivo acotado del ejecutor para agente/auditoría interna. No se marca ningún ID completado. Fuentes: [maestro](../mvp-master-plan.md) (IDs, dependencias y evidencia), [PRD v1.5](../../GALCOA-PRD-v1.4.md), [fundaciones compartidas](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-04`, `SH-07`), [arquitectura](../../../architecture.md) y [desarrollo](../../../development.md). Este plan no repite esos documentos: los referencia.
 
 ## 1. Objetivo y estado de partida
 
+### Conexión autorizada — 2026-10-16 (`flow/persistence-wiring`)
+
+Secuencia coordinada de #10/#11/#13/#14/#15 (sin duplicar planes): primero RPC,
+adaptador y HTTP de documentos/mensajes; después reservas/Storage/extracción;
+finalmente CAS de borrador, reportes y claim durable del turno. Se conservan los
+servicios puros. Migración reservada: `20261016001000_f4_persistence.sql`, sin
+editar C1–C4. Auth y `src/lib/supabase/**` pertenecen a la sesión #9; no se editan.
+Al comenzar la base local estaba reservada por esa sesión; no se tocó hasta la
+cesión explícita registrada abajo. Cada checkpoint se entrega parcial con `Refs`, sin
+automerge ni cierre de IDs. Los IDs permanecen `en_curso` hasta evidencia real.
+
+Checkpoint #10: las RPC de autor derivan identidad de `auth.uid()`; nunca del
+body. El canal de agente/auditoría interna queda limitado a `galcoa_executor`,
+sin grants directos a tablas ni uso de `service_role`. Su composición depende
+del transporte acotado de MVP-025, aún ausente en esta base. No se sustituye con
+el cliente privilegiado actual. Pruebas de contratos con dobles no acreditan
+aislamiento, atomicidad ni concurrencia en Postgres.
+
+Entrega de #10 en dos PR encadenados, sin merge automático: primero migración,
+adaptador y tests de persistencia (`flow/persistence-core`, base `develop`);
+después composición y HTTP (`flow/persistence-wiring`, base del primero).
+El contrato HTTP siguiente corresponde al segundo PR: no se declara disponible
+al integrar únicamente el núcleo. El segundo se retargetea a `develop` después
+del merge del primero, conservando ancestros y verificando su diff.
+
+**Reserva local cedida explícitamente por el coordinador (2026-10-16):** Auth
+terminó sus pruebas y apagó la pila. Esta sesión puede iniciar/resetear solo
+`galcoa`, ejecutar C1–C4 + F4 y apagarla al finalizar. `entrenar-*` queda fuera.
+Se integra `origin/develop` con el cierre #75 antes de validar. Esto habilita
+la prueba local, no llamadas remotas ni proveedores; hasta registrar resultados
+la evidencia SQL sigue pendiente.
+
+La primera ejecución real detectó restricciones del migrador Supabase PG17:
+transferir funciones exige `SET ROLE` temporal, y `postgres` no puede delegar
+`USAGE` del esquema proveedor `auth`. Se corrige solo F4: permisos de función
+aplicados como su nuevo owner, SET/INHERIT deshabilitados de nuevo al terminar;
+`private.f4_actor()` (owner migrador, sin argumentos ni acceso a tablas) delega
+exclusivamente a `auth.uid()`, ejecutable solo por `galcoa_f4_writer`. No se
+modifica `auth` ni se conceden membresías a roles de API/ejecutor. El catálogo
+RLS reemplaza su expectativa obsoleta «cero RPC» por allowlist de siete firmas
+F4; no se relaja el chequeo global de PUBLIC/anon ni los grants de tablas.
+El harness compartido recibe un único parámetro opcional de usuario SQL local
+(`postgres` por defecto, `supabase_admin` para asumir el ejecutor en tests):
+el `postgres` de Supabase no es superusuario y correctamente no puede asumir
+`galcoa_executor`. No se amplían sus permisos para hacer pasar las pruebas;
+se prueba el rol real desde una conexión administrativa local y se conserva el
+comportamiento por defecto de todas las suites existentes.
+
 Crear el servicio de documentos del propietario (crear, listar, reabrir), conservar los mensajes originales del chat con fecha real de carga y fecha declarada separadas, y ofrecer el servicio de auditoría solo-agregar que emiten las demás tareas.
 
-**Estado real verificado:** solo existen los contratos de resumen/dashboard ([`document.ts`](../../../../src/lib/contracts/document.ts), `dashboard.ts`), escenarios, preview y barreras. No existen Auth, SQL, `src/lib/documents/`, `src/lib/supabase/`, rutas de documento ni servicios. Nada de lo descrito abajo está implementado.
+**Estado de partida de esta conexión:** contratos, servicios puros, Auth y C1–C4 ya integrados; faltaban RPC/adaptadores/rutas. El checkpoint #10 agrega esos archivos, sin dar por verificadas su aplicación SQL ni las carreras reales hasta ejecutar la suite local con reserva. El transporte del ejecutor sigue pendiente en MVP-025; las rutas de autor no lo necesitan.
+
+### Contrato HTTP del checkpoint #10 (consumidor #16)
+
+Todos los endpoints son privados, `Cache-Control: private, no-store, max-age=0`.
+POST requiere `Content-Type: application/json`, `Origin` en la
+lista de orígenes de `NEXT_PUBLIC_APP_URL` configurada (helper de Auth #70 ya
+integrado; no se deriva del Host del request),
+sesión verificada y body estricto de hasta 64 KiB de transporte. No se admite
+`ownerId`, `sender`, fechas de carga ni IDs de documento en el body.
+
+| Método/ruta | Body | `result` del éxito |
+| --- | --- | --- |
+| `GET /api/documents` | ninguno | `DocumentSummary[]` |
+| `POST /api/documents` | `{title, idempotencyKey}` (`CreateDocumentCommandSchema`) | `DocumentSummary` |
+| `GET /api/documents/[id]` | ninguno | `DocumentSummary` |
+| `GET /api/documents/[id]/messages` | ninguno | `Message[]`, orden de secuencia SQL |
+| `POST /api/documents/[id]/messages` | `{content, declaredEventDate, idempotencyKey}` (`RecordMessageCommandSchema` sin `documentId`) | `Message` del autor |
+
+Éxito HTTP 200: `{schemaVersion:1, outcome:"completed", result, replayed?}`;
+`replayed` solo acompaña escrituras. Error: `{error: TechnicalError}`, igual al
+handler de turnos existente. Estados: entrada inválida 400, sin sesión 401,
+origen rechazado 403, ajeno/inexistente/UUID inválido 404, clave divergente 409,
+body excesivo 413, fallo técnico reintentable 503. El texto original no se
+recorta. Se conserva `declaredEventDate` según el contrato, sin inferir zona.
+
+El cliente debe conservar la misma `idempotencyKey` al reintentar el mismo
+mensaje. Esta ruta de mensajes **no** genera IA ni sustituye el turno de chat:
+`clientMessageId`, cancelación y NDJSON siguen siendo el contrato de
+`turns/http.ts`, aún sin ruta productiva conectada en este checkpoint. Rutas de
+evidencia/extracción/contraste se documentarán en sus checkpoints, no se anuncian
+como disponibles por existir servicios con dobles.
+
+RPC de autor: `create_document`, `append_message`, `list_documents`,
+`get_document`, `list_messages`; identidad derivada de `auth.uid()`, sin DML
+directo. `append_agent_message` y `append_document_audit` son solo ejecutor.
+Los fingerprints SQL se derivan de los campos semánticos en la función: no se
+acepta un fingerprint aportado por el cliente como prueba de equivalencia.
+El rol no-login `galcoa_f4_writer` posee solo las funciones F4 y permisos sobre
+sus tablas/columnas necesarias; no se otorga membresía al ejecutor/API ni
+`BYPASSRLS`, propiedad de tablas o DML general a `galcoa_executor`.
+
+Prueba real (ejecutar únicamente con reserva exclusiva):
+`npx.cmd vitest run --config tests/server/persistence/vitest.local.config.ts`.
+Reutiliza setup y conexiones independientes de `tests/server/rls/`; el setup
+resetea la pila salvo `RLS_SKIP_RESET=1`, por eso no se invoca en paralelo a Auth.
+Incluye dos propietarios/anon, idempotencia concurrente, auditoría atómica ante
+fallo forzado, grants, canal de agente y rechazo de UPDATE/DELETE. No cubre aún
+cuotas de evidencias ni claims de turnos: pertenecen a los checkpoints pendientes.
+
+**Evidencia del checkpoint completo (2026-10-16, base `dc2ccb2` con Auth #70):**
+`npx.cmd vitest run --project server --project boundaries` **612/612**;
+31 son tests nuevos de adapter/HTTP con dobles. ESLint focalizado en los archivos
+del checkpoint: exit 0. `next typegen` + `tsc --noEmit`: exit 0 antes de actualizar
+la base; `npm.cmd run build` repetido sobre la base actual: exit 0, incluidas las
+tres rutas documentales. `env:check` del prebuild pasó sin leer archivos de
+entorno. Autorrevisión de grants, separación de canales, origen
+confiable y diff; revisión independiente aún pendiente. `npm ci` reportó nueve
+vulnerabilidades altas preexistentes; no se cambiaron dependencias ni lockfile.
+
+**Evidencia real posterior con reserva cedida (base con cierre Auth #75):**
+`npx.cmd vitest run --config tests/server/persistence/vitest.local.config.ts`
+**8/8**, con reset que aplica C1–C4 + F4 desde cero. Luego, sin reset paralelo:
+`RLS_SKIP_RESET=1 npx.cmd vitest run --config tests/server/routes/vitest.local.config.ts`
+**2/2** y `RLS_SKIP_RESET=1 npm.cmd run test:rls` **119/119**. Prueba propietarios
+A/B/anon, conexiones SQL independientes, replay/conflicto y secuencia única,
+auditoría atómica ante fallo forzado, canales/grants y UPDATE/DELETE rechazados.
+El HTTP probado es la misma factory de dominio que montan las rutas, con
+`auth.getUser()` y RPC locales reales: no acredita navegador ni transporte de
+cookies Next extremo a extremo. `tsc --noEmit` y ESLint focalizado repetidos:
+exit 0. Pila `galcoa` detenida al terminar; solo quedan contenedores ajenos
+`entrenar-*`, no modificados. Sin IA ni servicios remotos. Cuotas/Storage de
+evidencias y claims durables de turnos siguen sin implementar en esta conexión.
 
 ## 2. Criterios del PRD y requisitos cubiertos
 
