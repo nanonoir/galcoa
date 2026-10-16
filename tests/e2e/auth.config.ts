@@ -1,24 +1,20 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { resolveAuthE2eEnv } from "./auth-env";
+
 /**
  * E2E real de Auth local (MVP-031). Configuración **propia**: no toca los
- * puertos ni los servidores de `playwright.config.ts`. Necesita una instancia
- * local de Supabase con confirmación de correo activa (ver `docs/auth-local.md`)
- * y estas variables (valores de `npx supabase status`, nunca de `.env`):
+ * puertos ni los servidores de `playwright.config.ts`. Se ejecuta con
+ * `npm run test:e2e:auth`, que obtiene los datos efímeros de la pila local
+ * (`tests/server/auth-flow/run-local-auth.mjs`) sin imprimirlos ni leer `.env`.
  *
- *   AUTH_E2E_SUPABASE_URL       URL del API local, p. ej. http://127.0.0.1:54321
- *   AUTH_E2E_PUBLISHABLE_KEY    clave pública (anon/publishable) efímera de la instancia
- *   AUTH_E2E_MAIL_URL           buzón local (Mailpit), p. ej. http://127.0.0.1:54324
- *   AUTH_E2E_PORT               puerto de Next para esta suite (por defecto 3217)
- *
- * Sin ellas la suite queda **omitida y lo dice**: no hay doble que la sustituya.
- * Ejecución: `npx playwright test -c tests/e2e/auth.config.ts`.
+ * Opt-in explícito: sin `AUTH_E2E=1` la suite se omite; con `AUTH_E2E=1` y datos
+ * faltantes esta configuración **falla** (ver `auth-env.ts`). Detalle en
+ * `docs/auth-local.md`.
  */
 
-const PORT = Number(process.env.AUTH_E2E_PORT ?? 3217);
-const supabaseUrl = process.env.AUTH_E2E_SUPABASE_URL;
-const publishableKey = process.env.AUTH_E2E_PUBLISHABLE_KEY;
-const configured = Boolean(supabaseUrl && publishableKey && process.env.AUTH_E2E_MAIL_URL);
+const e2e = resolveAuthE2eEnv(process.env);
+const PORT = e2e?.port ?? 3217;
 
 export default defineConfig({
   testDir: ".",
@@ -34,11 +30,14 @@ export default defineConfig({
     ...devices["Desktop Chrome"],
     browserName: "chromium",
     baseURL: `http://127.0.0.1:${PORT}`,
-    trace: "retain-on-failure",
+    // Sin trazas: contendrían cuerpos de petición con credenciales de prueba.
+    trace: "off",
+    screenshot: "off",
+    video: "off",
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
   },
-  webServer: configured
+  webServer: e2e
     ? {
         command: `npm run dev -- --hostname 127.0.0.1 --port ${PORT}`,
         url: `http://127.0.0.1:${PORT}/acceso`,
@@ -46,8 +45,9 @@ export default defineConfig({
         timeout: 180_000,
         env: {
           NEXT_TELEMETRY_DISABLED: "1",
-          NEXT_PUBLIC_SUPABASE_URL: supabaseUrl!,
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey!,
+          NEXT_PUBLIC_APP_URL: `http://127.0.0.1:${PORT}`,
+          NEXT_PUBLIC_SUPABASE_URL: e2e.supabaseUrl,
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: e2e.publishableKey,
         },
         stdout: "pipe",
         stderr: "pipe",

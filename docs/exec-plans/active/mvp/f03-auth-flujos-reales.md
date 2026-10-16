@@ -1,6 +1,6 @@
 # ExecPlan F3 — Registro, login, logout y recuperación reales
 
-**Estado: implementado con dobles y verificado en unidad/build; la prueba real local (Playwright + Supabase local) NO se ha ejecutado, así que `MVP-031` sigue pendiente.** No cambia estados del [maestro](../mvp-master-plan.md).
+**Estado: en curso (desarrollado y verificado en local; en revisión, sin mergear).** E2E real Playwright + Supabase local + Mailpit ejecutado: 3/3 verde. Falta ruta privada (`MVP-116`), correo real y remoto.
 
 Tareas del maestro: `MVP-031`
 
@@ -83,9 +83,11 @@ Ninguna: SH-07 y SH-09 bastan. Si el equipo quiere una nota breve de Auth/correo
 
 Rama `flow/9-auth`. Decisión: adaptadores de servidor (Route Handlers `POST /api/auth/{register,login,logout,recovery,password}` y `GET /api/auth/callback`), sin cliente de navegador. CSRF: `Origin` debe coincidir con el host de la petición y el cuerpo ser JSON. Destinos del callback de lista cerrada (`flow=signup|recovery`).
 
-Comprobado en worktree aislado: `npm run lint`, `npm run typecheck`, `npm test` (746 pasan; incluye `tests/server/auth-flow/` y los containers), `npm run test:boundaries`, `npm run build`; humo con `next start` sin credenciales (503 neutral, 403 por origen, 422 por campo, redirección interna del callback).
+Origen confiable: lista cerrada desde `NEXT_PUBLIC_APP_URL` (coincidencia exacta de esquema y host; sin `Host`/`X-Forwarded-*`); falta de configuración → 503 neutral. `/nueva-contrasena` sin Auth disponible muestra aviso técnico neutral.
 
-**No comprobado:** Playwright real (`tests/e2e/auth.config.ts`, omitido sin instancia), correo real/remoto y ruta privada (`MVP-116`). Requisito del líder: `enable_confirmations = true` y URLs de redirección en `supabase/config.toml` ([`auth-local.md`](../../../auth-local.md)).
+Comprobado (último run, tras integrar `origin/develop`, con Supabase local propio): `npm run lint`, `npm run typecheck`, `npm test` (846 pasan, 44 archivos), `npm run test:boundaries`, `npm run build`, `npm run test:e2e:auth` (3 pasan: registro→Mailpit→confirmar→acceso→guarda→logout→recuperación→nueva contraseña→acceso; respuestas uniformes; origen/destinos externos), `npm run test:rls` (119 pasan), `npm run test:server:local` (3 pasan), `npm run test:e2e` (68 pasan). Negativo de configuración: con `AUTH_E2E=1` y datos faltantes la suite falla (no omite).
+
+**No comprobado:** correo real/remoto y ruta privada (`MVP-116`). Limitación documentada: la sesión de recuperación es completa con `secure_password_change = false` ([`auth-local.md`](../../../auth-local.md)).
 
 ## Cierre
 

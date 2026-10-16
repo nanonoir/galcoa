@@ -9,7 +9,9 @@ import {
   handleNewPassword,
   handleRecoveryRequest,
   handleRegister,
-  sameOrigin,
+  readTrustedOrigins,
+  TrustedOriginConfigError,
+  trustedOrigin,
 } from "@/lib/supabase/auth-http";
 import { callbackFlow, classifyProviderError, MESSAGES } from "@/lib/supabase/auth-flows";
 
@@ -31,7 +33,7 @@ function fakeClient(overrides: Auth = {}) {
     exchangeCodeForSession: vi.fn(async () => ({ data: {}, error: null })),
     ...overrides,
   };
-  return { auth, deps: { getClient: async () => ({ auth }) as never } };
+  return { auth, deps: { getClient: async () => ({ auth }) as never, trustedOrigins: [ORIGIN] } };
 }
 
 const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
@@ -79,18 +81,60 @@ describe("Protección de origen y formato (CSRF)", () => {
     expect((await handleLogin(request, deps)).status).toBe(400);
   });
 
-  it("sameOrigin compara con el Host que usó el cliente, no con la URL normalizada por Next", () => {
-    const viaLoopback = new Request("http://localhost:3000/api/auth/login", {
-      method: "POST",
-      headers: { origin: ORIGIN, host: "127.0.0.1:3000" },
-    });
-    expect(sameOrigin(viaLoopback)).toBe(ORIGIN);
+  const VERCEL = "https://galcoa-nea.vercel.app";
+
+  it("trustedOrigin: coincidencia exacta de esquema y host con la lista canónica", () => {
+    const trusted = [ORIGIN, VERCEL];
+    expect(trustedOrigin(post("/x", {}), trusted)).toBe(ORIGIN);
+    expect(trustedOrigin(post("/x", {}, { origin: VERCEL }), trusted)).toBe(VERCEL);
+    for (const origin of ["ftp://127.0.0.1:3000", "http://127.0.0.1:3001", "https://127.0.0.1:3000", "http://galcoa-nea.vercel.app", `${VERCEL}.atacante.invalid`, "null"]) {
+      expect(trustedOrigin(post("/x", {}, { origin }), trusted), origin).toBeNull();
+    }
   });
 
-  it("sameOrigin acepta solo el origen del servidor", () => {
-    expect(sameOrigin(post("/x", {}))).toBe(ORIGIN);
-    expect(sameOrigin(post("/x", {}, { origin: "ftp://127.0.0.1:3000" }))).toBeNull();
-    expect(sameOrigin(post("/x", {}, { origin: "http://127.0.0.1:3001" }))).toBeNull();
+  it("HTTP no sirve donde solo se confía en HTTPS (y viceversa)", async () => {
+    const { auth, deps } = fakeClient();
+    const strict = { ...deps, trustedOrigins: [VERCEL] };
+    const response = await handleLogin(post("/api/auth/login", { email: EMAIL, password: PASSWORD }, { origin: "http://galcoa-nea.vercel.app" }), strict);
+    expect(response.status).toBe(403);
+    expect(auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("Host o X-Forwarded-Host falsificados no legitiman un Origin ajeno, ni sin Origin", async () => {
+    const { auth, deps } = fakeClient();
+    const body = { email: EMAIL, password: PASSWORD };
+    const spoofed = await handleLogin(
+      post("/api/auth/login", body, { origin: "https://atacante.invalid", host: "atacante.invalid", "x-forwarded-host": "atacante.invalid", "x-forwarded-proto": "https" }),
+      deps,
+    );
+    expect(spoofed.status).toBe(403);
+    const noBrowser = new Request(`${ORIGIN}/api/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json", host: "127.0.0.1:3000", "x-forwarded-host": "127.0.0.1:3000" },
+      body: JSON.stringify(body),
+    });
+    expect((await handleLogin(noBrowser, deps)).status).toBe(403);
+    expect(auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("el enlace de correo usa el origen confiable, nunca cabeceras de la petición", async () => {
+    const { auth, deps } = fakeClient();
+    const request = post("/api/auth/recovery", { email: EMAIL }, { "x-forwarded-host": "atacante.invalid", "x-forwarded-proto": "https", host: "atacante.invalid" });
+    expect((await handleRecoveryRequest(request, { ...deps, trustedOrigins: [ORIGIN, VERCEL] })).status).toBe(200);
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledWith(EMAIL, { redirectTo: `${ORIGIN}/api/auth/callback?flow=recovery` });
+  });
+
+  it("sin origen canónico configurado: 503 neutral y sin llamar a Auth (no «origen hostil»)", async () => {
+    const { auth, deps } = fakeClient();
+    const response = await handleLogin(post("/api/auth/login", { email: EMAIL, password: PASSWORD }), { getClient: deps.getClient, readEnv: () => undefined });
+    expect(response.status).toBe(503);
+    expect(auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("readTrustedOrigins: lista por comas, normaliza y descarta lo inválido; vacío lanza", () => {
+    expect(readTrustedOrigins(() => `${ORIGIN}/ruta, ${VERCEL} ,no-url,javascript:alert(1)`)).toEqual([ORIGIN, VERCEL]);
+    expect(() => readTrustedOrigins(() => undefined)).toThrow(TrustedOriginConfigError);
+    expect(() => readTrustedOrigins(() => "no-url,ftp://x.invalid")).toThrow(TrustedOriginConfigError);
   });
 
   it("las respuestas son privadas: sin caché ni Referer", async () => {

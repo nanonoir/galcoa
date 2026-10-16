@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { resolveAuthE2eEnv } from "./auth-env";
+
 /**
  * Flujo real de Auth contra Supabase local (MVP-031): registro → buzón local →
  * confirmación → acceso → cierre de sesión → recuperación → enlace → nueva
@@ -10,8 +12,10 @@ import { expect, test, type Page } from "@playwright/test";
  * sesión se comprueba con `/nueva-contrasena`, que exige sesión verificada.
  */
 
-const MAIL_URL = process.env.AUTH_E2E_MAIL_URL;
-const configured = Boolean(process.env.AUTH_E2E_SUPABASE_URL && process.env.AUTH_E2E_PUBLISHABLE_KEY && MAIL_URL);
+// Lanza si AUTH_E2E=1 y falta algo; `null` solo si la suite no fue solicitada.
+const e2e = resolveAuthE2eEnv(process.env);
+const MAIL_URL = e2e?.mailUrl;
+const configured = e2e !== null;
 
 const stamp = Date.now().toString(36);
 const EMAIL = `e2e-${stamp}@galcoa-e2e.test`;
@@ -42,15 +46,15 @@ async function nextLinkFor(to: string, seen: Set<string>): Promise<string> {
 }
 
 async function fill(page: Page, fields: Record<string, string>) {
-  for (const [label, value] of Object.entries(fields)) await page.getByLabel(label, { exact: true }).fill(value);
+  for (const [label, value] of Object.entries(fields)) await page.getByRole("textbox", { name: label, exact: true }).fill(value);
 }
 
-const hasSessionCookie = async (page: Page) => (await page.context().cookies()).some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
+const hasSessionCookie = async (page: Page) => (await page.context().cookies()).some((c) => /^sb-.*-auth-token(\.\d+)?$/.test(c.name));
 
 test.describe.configure({ mode: "serial" });
 
 test.describe("Auth local real (MVP-031)", () => {
-  test.skip(!configured, "Falta la instancia local de Supabase con confirmación de correo: ver tests/e2e/auth.config.ts. Suite NO ejecutada.");
+  test.skip(!configured, "Suite NO solicitada (AUTH_E2E!=1): ejecútala con `npm run test:e2e:auth`. No acredita nada.");
 
   const seen = new Set<string>();
 
