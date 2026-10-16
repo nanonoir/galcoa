@@ -429,7 +429,7 @@
     "key": "delivery-120",
     "title": "MVP-120 · Harness local de servidor y puente de tests",
     "bodyFile": "docs/tasks/issue-rollout/delivery/120-harness.md",
-    "plan": "docs/exec-plans/active/mvp/f12-server-test-harness.md",
+    "plan": "docs/exec-plans/completed/f12-server-test-harness.md",
     "ids": [
       "MVP-120"
     ],

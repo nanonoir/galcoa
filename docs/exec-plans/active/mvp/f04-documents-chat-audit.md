@@ -2,9 +2,33 @@
 
 Tareas del maestro: `MVP-040`, `MVP-041`, `MVP-044`
 
-**Estado: checkpoint de autor implementado y probado con Supabase local (2026-10-16), PR #74 → #76 sin merge.** Conserva los servicios puros de Gastón (#43) y agrega RPC, adaptador, sesión real y HTTP. Evidencia local: persistencia 8/8, HTTP de dominio con Auth/RPC 2/2 y RLS 119/119. **Pendientes:** revisión independiente, integración y transporte productivo acotado del ejecutor para agente/auditoría interna. No se marca ningún ID completado. Fuentes: [maestro](../mvp-master-plan.md) (IDs, dependencias y evidencia), [PRD v1.5](../../GALCOA-PRD-v1.4.md), [fundaciones compartidas](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-04`, `SH-07`), [arquitectura](../../../architecture.md) y [desarrollo](../../../development.md). Este plan no repite esos documentos: los referencia.
+**Estado: autor y transporte interno integrados (#74/#76/#80); migraciones F4 y LOGIN mínimo aplicadas en `galcoa-dev` (2026-10-16).** Conserva los servicios puros de Gastón (#43). Evidencia local histórica: persistencia 8/8, HTTP de dominio con Auth/RPC 2/2, RLS 119/119 y LOGIN real 6/6. **Pendientes:** provisión privada del operador y comprobación de conexión/TLS/Supavisor/despliegue; catálogo remoto no acredita ese recorrido. `MVP-040/041/044` permanecen parciales. Fuentes: [maestro](../mvp-master-plan.md) (IDs, dependencias y evidencia), [PRD v1.5](../../GALCOA-PRD-v1.4.md), [fundaciones compartidas](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-02`, `SH-03`, `SH-04`, `SH-07`), [arquitectura](../../../architecture.md) y [desarrollo](../../../development.md). Este plan no repite esos documentos: los referencia.
 
 ## 1. Objetivo y estado de partida
+
+### Corrección posterior a review #74/#76 — 2026-10-16
+
+Base `origin/develop` `0d31876`, ambos PR ya integrados. Entrega separada
+`flow/persistence-errors`, `Refs #10`, sin merge automático ni cierre de
+`MVP-040/041/044`. Se preservan los servicios puros y sus contratos: HTTP captura
+solo la clase local segura del adaptador antes de su normalización por el servicio.
+Whitelist RPC: SQLSTATE `42501` → HTTP **401**, `NO_SESSION`, `retryable:false`
+(reautenticar antes de volver a intentar); `22023` → **400**, `INVALID_INPUT`,
+`retryable:false` (corregir entrada). Caídas y errores no reconocidos → **503**,
+`TECHNICAL_FAILURE`, `retryable:true`. No se serializan SQL message/details/hint/stack.
+Ajeno/inexistente sigue **404**; no se modifica ninguna validación de body ni
+contratos de otros handlers (incluido 422 donde ya exista).
+
+Validación focalizada: `npx.cmd vitest run --project server
+tests/server/persistence/documents.test.ts tests/server/routes/documents.test.ts`
+**36/36**, con store real y RPC doble verificando 400/401/503 en las cinco acciones
+HTTP, envelope exacto y ausencia de diagnósticos ficticios. ESLint focalizado y
+`npx.cmd tsc --noEmit`: exit 0. El test SQL de recurso de auditoría incorrecto ahora
+exige específicamente **22023** mediante `expectRejected`; **no ejecutado** aquí:
+base local reservada por Auth (#32), harness indisponible. Los anteriores 8/8 y
+2/2 son evidencia histórica, no una repetición de esta corrección. No se inicia,
+resetea ni detiene Docker. Transporte productivo `galcoa_executor` sigue pendiente;
+no se implementan roles, dependencias, migraciones ni configuración aquí.
 
 ### Conexión autorizada — 2026-10-16 (`flow/persistence-wiring`)
 
@@ -226,6 +250,115 @@ Checks al ejecutar (`development.md`, «Checks según el cambio»): `npm run lin
 La fila de cada ID se actualiza en el maestro solo tras integrar y repetir checks (§8 del maestro), con evidencia real; escribir este documento no marca ninguna tarea. Al cerrar: actualizar solo las filas `MVP-040`, `MVP-041`, `MVP-044` y el recuento del §3 del maestro, y archivar este plan en `completed/` conservando el enlace. **Al archivar:** mover el plan a `docs/exec-plans/completed/`, conservar su enlace en las filas de sus IDs actualizándolo a la nueva ubicación y corregir los relativos del propio plan (pierden un nivel: `../../../x` → `../../x`, `../../GALCOA-PRD-v1.4.md` → `../GALCOA-PRD-v1.4.md`; el maestro pasa a `../active/mvp-master-plan.md` y los planes hermanos aún activos a `../active/mvp/<plan>.md`). El cierre registra solo los IDs propios, el recuento del §3 del maestro y la evidencia de la integración en `develop` (hasta la transición de `MVP-006`, la base vigente). Se archiva únicamente al completar; ningún plan se archiva ahora.
 
 ## 10. Pendientes y solicitudes
+
+### Checkpoint transporte interno #10 (en ejecución)
+
+Decisión técnica local en data-transactions §7: login mínimo aditivo y adapter
+pg server-only ligado al usuario verificado, solo agente/auditoría F4. Pasos:
+migración sin password, allowlist parametrizada, composición opcional, barreras
+y unitarios; después, con reserva explícita, LOGIN real y catálogo desde cero.
+Sin operaciones cloud, sin cambiar contratos HTTP ni store, sin cerrar
+MVP-040/041/044. Provisión remota y revisión independiente quedan pendientes.
+
+Evidencia de este checkpoint (2026-10-16): `npm ci` y altas acotadas de
+`pg`/`@types/pg`; unitarios de persistencia **32/32** (17 del transporte),
+barreras **69/69**, `npm run typecheck`, ESLint focalizado y build Next: exit 0.
+Sin Docker ni llamadas cloud. npm informa nueve vulnerabilidades altas también
+presentes antes del alta; no se ejecutó audit fix ni se actualizaron otros paquetes.
+Suite real preparada (NO ejecutada, espera reserva del flujo 32):
+`npx.cmd vitest run --config tests/server/persistence/executor/vitest.local.config.ts`.
+Reutiliza setup RLS y reset de las **seis** migraciones, contraseña aleatoria
+efímera en memoria, LOGIN sin SET ROLE, catálogo, replay y rollback forzado.
+Después de esa prueba: repetir catálogo RLS con `RLS_SKIP_RESET=1`, revisar
+independientemente rol/transporte y recién evaluar aceptación. No hay evidencia
+de LOGIN real ni provisión remota todavía; PR sin merge/cierre de IDs.
+
+**Reserva local concedida, evidencia posterior (2026-10-16, PR #80):**
+primera ejecución de la suite executor con reset: **5/5**, aplicando desde cero
+las seis migraciones (PostgreSQL 17). Tras ampliar negativos, repetición sin
+reset: **6/6**. LOGIN real por TCP con password criptográfico efímero generado
+en memoria; `current_user = session_user = galcoa_exec_login`, sin SET ROLE
+para establecer la conexión. El mismo adapter pg, ligado a usuario comprobado
+con Auth local, escribe agente/auditoría y reproduce idempotencia. Fallo forzado
+de auditoría revierte mensaje, secuencia e idempotencia. Catálogo confirma
+membresía única, INHERIT true/SET false, ejecutor NOLOGIN, sin propiedad,
+SELECT/DML general ni CREATE de esquema; ningún rol API alcanza esos roles.
+Negativos: password erróneo, SET ROLE, helper privado, RPC no enumerada,
+actor ajeno y llamada de agente desde authenticated rechazados.
+Sobre esa misma base sin reset: RLS **119/119**, persistencia F4 **8/8**,
+factories HTTP con Auth/RPC locales **2/2**. Typecheck y ESLint del test
+ampliado: exit 0. Credenciales solo transitorias en proceso; password del rol
+retirado en teardown. Pila galcoa propia detenida; solo siguen los dos
+contenedores entrenar ajenos, intactos. Reserva liberada.
+No acredita Supavisor/TLS remotos ni provisión cloud. Revisión independiente
+pendiente antes de merge; no se cierran MVP-040/041/044 ni el pendiente global.
+
+**Delta de revisión PR #80 (2026-10-16):** revisión independiente inicial
+PASS WITH FINDINGS; se corrige el warning de un pool por request. Ahora hay
+un owner privado por proceso con pool único perezoso `max:2`; wrappers ligados
+a cada actor sin cierre compartido. Tests tienen owners propios y teardown
+propio. Rotación de configuración requiere reinicio, falla cerrada sin acumular
+pools. API `createExecutorRpc(userId)` compatible; el wrapper ya no tiene
+`close()`: los consumidores de tests deben cerrar su factory/owner propio.
+Solo se conservan las dos RPC F4 de esta rama.
+Tras merge de `origin/develop` (`c865be2`, PR #78/#79): focal servidor
+persistencia/HTTP **57/57** (suite executor **21**, incluye ocho contextos A/B
+concurrentes con un solo pool y negativos de actor/RPC, rotación y ownership
+de close); barreras **69/69**, typecheck, ESLint focalizado y build: exit 0.
+`npm audit --omit=dev`: **0 vulnerabilidades**. Sin actualización de paquetes.
+No se inició ni modificó Docker/DB ni se repitieron pruebas reales durante
+este delta: la evidencia LOGIN/RLS anterior corresponde al commit anterior,
+no se presenta como reejecutada con pool compartido. Ver §7 del diseño para
+precondición de rol preexistente y límite de privilegios PUBLIC de base.
+Pendiente revisión independiente del delta antes de merge; sin acceso cloud.
+
+### Aplicación remota autorizada — 2026-10-16
+
+Autorización explícita posterior a pruebas/revisión: crear el mismo acceso limitado
+en `galcoa-dev`. PR #80 integrado en `ca957b03ac7305f4ddaa08b7774915d5ab68e0e9`,
+con revisión final PASS del delta de pool. Solo se aplicaron
+`20261016001000_f4_persistence.sql` y `20261016001100_executor_login.sql`;
+sin reset, borrados, usuarios Auth, contraseñas ni cambios de configuración.
+Se amplía únicamente la autorización remota de este checkpoint; las prohibiciones
+anteriores describen las etapas locales, no esta ejecución.
+
+- Preflight de catálogo/historial: cuatro bases alineadas, 24/24 tablas con RLS,
+  siete RPC F4 ausentes; writer/login ausentes y executor NOLOGIN sin bypass.
+- Fuente: `fetch` de ambos archivos públicos al commit exacto, pasando la cadena
+  intacta a `apply_migration` (sin transcripción ni normalización). SHA-256 del
+  blob Git y del SQL guardado en `statements[1]` coinciden: F4
+  `566c7a4f3a525c8b644e7b59c13f8e86066d62ff7bcccf5ed80568afb7318e80`;
+  LOGIN `befc41b9d63e85e458280f30c1b1df7db69da2d7f88a017d987a6756b17db621`.
+  El checkout Windows solo difiere por CRLF; no se editaron migraciones.
+- Ambas aplicaciones exitosas. Historial reconciliado solo en `version`,
+  con transacción, bloqueo y guardas de nombres/IDs/huellas/cantidad:
+  `20261016191628` → `20261016001000`, `20261016191633` → `20261016001100`.
+  Seis filas finales; las cuatro bases intactas. MD5 de `statements::text`
+  antes/después: F4 `d7470d33cc19e021b6a799b88ef68441`, LOGIN
+  `fa75f4896c11d55fe2671c758703c86d`. No se borró ni reaplicó historial.
+- Postflight real: RLS 24/24; `authenticated` conserva solo SELECT en 18 tablas;
+  anon/service_role/PUBLIC sin grants de tabla en public. Cinco RPC de autor
+  para authenticated y dos internas para executor, firmas exactas sin EXECUTE
+  de anon/service_role/PUBLIC. Helpers privados y owner mínimo según migración;
+  writer sin tablas propias, membresías ni CREATE de esquema.
+- LOGIN con límite 5, INHERIT true y sin superusuario/BYPASSRLS/CREATEDB/
+  CREATEROLE/REPLICATION; única membresía saliente a executor con INHERIT true,
+  SET false y ADMIN false. Executor/writer siguen NOLOGIN; roles API y
+  authenticator no alcanzan ninguno. Login sin acceso efectivo directo a tablas
+  public ni CREATE de esquema/base; USAGE solo en public entre esquemas de app.
+  CONNECT/TEMPORARY heredados de PUBLIC en la base siguen existentes; no se
+  afirma «cero privilegios». Membresías administrativas del migrador `postgres`
+  no permiten INHERIT/SET y no se alteraron fuera del SQL revisado.
+- Buckets de evidencias/versiones privados. Advisors: cuatro INFO de tablas
+  servidor sin políticas, cinco WARN esperados por las RPC de autor definers y
+  dos WARN preexistentes de `public.rls_auto_enable`, intacta. Referencias y
+  límites de aceptación en [evidencia remota F2](f02-entorno-supabase-remoto.md).
+
+No se consultaron datos de usuarios ni secretos. LOGIN creado con `PASSWORD NULL`
+por el archivo original; no se intentó conectar con él ni se probó TLS/Supavisor
+remoto. El propietario debe seguir [provisión del ejecutor](../../../development.md#ejecutor-interno-f4-provisión-privada-del-operador).
+No se repitieron tests locales ni se tocó Docker reservado por otro flujo.
+No se cierran IDs, Auth remoto ni despliegue por esta evidencia de catálogo.
 
 **Referencias** (documentos objetivo ya disponibles; los parámetros operativos siguen pendientes de F1):
 

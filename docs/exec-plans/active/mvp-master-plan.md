@@ -53,13 +53,13 @@ node -e "const fs=require('node:fs');const counts={};for(const line of fs.readFi
 
 | Estado | Tareas |
 | --- | --- |
-| `completada` | 21 |
-| `en_curso` | 28 |
+| `completada` | 22 |
+| `en_curso` | 27 |
 | `bloqueada` | 0 |
 | `pendiente` | 24 |
 | **Total** | **73** |
 
-Avance: 21/73 (28,8 %). Recuento consolidado el 2026-10-16 desde las filas tras integrar Auth por PR #70; incluye los estados parciales actuales sin completar otros IDs. Los checkpoints parciales no se cuentan como tareas completadas. Actualizar esta tabla en la misma edición que cambie un estado.
+Avance: 22/73 (30,1 %). Recuento consolidado el 2026-10-16 tras integrar MVP-120 por PR #79; sin completar otros IDs. Los checkpoints parciales no se cuentan como tareas completadas. Actualizar esta tabla en la misma edición que cambie un estado.
 
 | Fase | Completadas / total |
 | --- | --- |
@@ -75,7 +75,7 @@ Avance: 21/73 (28,8 %). Recuento consolidado el 2026-10-16 desde las filas tras 
 | F9 Hedera HCS | 0/4 |
 | F10 Verificador público | 0/2 |
 | F11 Producto y UI | 1/8 |
-| F12 Pruebas y evaluación | 1/4 |
+| F12 Pruebas y evaluación | 2/4 |
 | F13 Seguridad, despliegue y validación | 0/7 |
 
 ## 4. Tablero por fases
@@ -214,7 +214,7 @@ La presentación simple se delega al colaborador solo tras `MVP-110`; la integra
 
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
-| MVP-120 | Harness de tests de servidor | en_curso | MVP-023, MVP-002 | Nahuel (@nanonoir) | Base local con claves efímeras, dobles de Gemini/Groq/Storage/HCS y builders; reutiliza helpers RLS de MVP-024. Puente ESM exclusivo de tests para factories reales y Auth local, sin flags ni dobles en producto, conforme al diseño SQL §7 | [f12-server-test-harness](mvp/f12-server-test-harness.md) · 2026-10-16 · checkpoint 2 en rama `flow/32-harness` (H1–H5 hechos, incluidos dobles de Groq/Storage/HCS/Mirror contra los puertos reales; H6: entry con las factories de servicio/handler existentes, pendiente el helper de Auth local; H7 parcial; `--project server` 377 y `npm test` 689 pasan; `test:server:local`/`test:rls` no re-ejecutados; ver evidencia del plan) · Issue [#32](https://github.com/nanonoir/galcoa/issues/32) (publicación no acredita implementación) · PR #42 integrado (7f130e5) + fix de revisión en `fix/server-harness-review`; sigue en_curso |
+| MVP-120 | Harness de tests de servidor | completada | MVP-023, MVP-002 | Nahuel (@nanonoir) | Base local con claves efímeras, dobles de Gemini/Groq/Storage/HCS y builders; reutiliza helpers RLS de MVP-024. Puente ESM exclusivo de tests para factories reales y Auth local, sin flags ni dobles en producto, conforme al diseño SQL §7 | [f12-server-test-harness](../completed/f12-server-test-harness.md) · 2026-10-16 · H1–H7 integrados por PR #42/#45/#68/#79; merge final `c865be2eed21abfaae863e678fbbfbd5a2706593` (autor `626c6a1`). Evidencia del implementador: 925 unitarios, 26 puente focal, 8 servidor local, 119 RLS, 67 barreras; lint/typecheck/build PASS, instalación limpia sin `.env`. Revisión independiente PASS WITH FINDINGS, sin bloqueantes (reejecutó 26 puente, no DB); CI validate verde. No acredita MVP-121/REQ-18 ni transporte Next íntegro. Issue [#32](https://github.com/nanonoir/galcoa/issues/32): cierre operativo tras merge documental |
 | MVP-121 | Matriz del PRD §12 y E2E del flujo crítico | pendiente | MVP-024, MVP-031, MVP-076, MVP-077, MVP-084, MVP-092, MVP-100, MVP-116, MVP-120 | Nahuel (@nanonoir) | Los 15 casos deterministas con test enlazado y las 4 selecciones: evidencia compuesta de navegador Next + factories/servicios/RPC reales con dobles externos. Identificar mutaciones interceptadas y huecos; no afirmar recorrido HTTP Next íntegro. El transporte íntegro real se valida en MVP-134; ningún caso obligatorio sin probar se acepta como cubierto | [f12-critical-flow-matrix-and-e2e](mvp/f12-critical-flow-matrix-and-e2e.md) · — · Issue [#33](https://github.com/nanonoir/galcoa/issues/33) (publicación no acredita implementación) |
 | MVP-122 | Dataset de evaluación de IA etiquetado | completada | MVP-013 | Gastón (@grancobud) | ~30 casos (correctos y con errores sembrados) con etiquetas fijadas antes de ejecutar modelos; criterios de medición y calidad mínima documentados | [f12-ai-evaluation-dataset-and-runner](mvp/f12-ai-evaluation-dataset-and-runner.md) · 2026-10-16 · `evals/ai/dataset/`: 30 casos ficticios (15 correctos, 15 sembrados), 12 demo, etiquetas v1 congeladas (SHA-256 canónico `f2f2061e4bb68a4930e9a697e76e020125e5d147b8edd3067f111a545f47e05e`, 2026-10-16T14:34:06Z) · `tests/contracts/ai-evaluation-dataset.test.ts` 20/20; lint, typecheck, `npm test` 244, boundaries 66, build exit 0 · Sin modelos ejecutados ni cifras de calidad · Issue [#34](https://github.com/nanonoir/galcoa/issues/34) (MVP-123 pendiente) |
 | MVP-123 | Runner de evaluación y registro de métricas | en_curso | MVP-122, MVP-053 | Gastón (@grancobud) | Ejecución separada de CI; registra modelos, prompts, detecciones, falsos positivos, omisiones y variación; sin llamadas en PRs | [f12-ai-evaluation-dataset-and-runner](mvp/f12-ai-evaluation-dataset-and-runner.md) · 2026-10-16 · `evals/ai/` runner.ts (Agente 1 → Agente 2 con los servicios reales sobre puertos en memoria; un reintento transitorio; repeticiones explícitas), metrics.ts (detección, omisiones, falsos positivos, acuerdo de estado, candidatos a inventado, variación; fallos técnicos fuera de denominadores), report.ts (JSON y tabla sin texto de prompts), live.ts (exige `GALCOA_EVAL_LIVE=1` y configuración de servidor; falla sin simular) · `tests/contracts/ai-evaluation-runner.test.ts` 21/21 con dobles; lint, typecheck, `npm test` 386, boundaries 67, build exit 0 · Sin llamadas reales ni cifras · Pendiente del líder: mecanismo `server-only` y script `eval:ai` (propuesta en `evals/ai/README.md`) · Issue [#34](https://github.com/nanonoir/galcoa/issues/34) |

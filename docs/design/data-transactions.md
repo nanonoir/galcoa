@@ -130,6 +130,49 @@ Retención de hashes de token/resultados idempotentes, staging publicado, nonce 
 
 ## 7. Costuras de tests y evidencia
 
+### Decisión local pendiente #10: transporte del ejecutor F4
+
+Se incorpora `galcoa_exec_login`, LOGIN sin contraseña inicial, con membresía
+única de aplicación en `galcoa_executor` (`INHERIT TRUE, SET FALSE`, PostgreSQL
+16+). El ejecutor conserva NOLOGIN. No se conceden tablas, propiedad, bypass,
+roles API ni membresías a authenticator/postgres. El servidor usa `pg`, con
+dos RPC F4 enumeradas, parámetros enlazados y actor ligado a sesión verificada.
+Sin URL privada el canal sigue cerrado; no hay fallback ni service_role.
+Conexiones remotas exigen TLS verificado; CA opcional sin degradación TLS.
+El operador provisionará contraseña y URL privada fuera del repositorio/chat;
+no se autoriza provisión remota. Context7 (2026-10-16) confirma la sintaxis
+`rol.projectref` para Supavisor y SSL/Pool de node-postgres; falta comprobar
+compatibilidad real del proyecto/despliegue, no se declara configurada.
+Prueba de LOGIN real y catálogo requiere reserva exclusiva de la pila local;
+no sustituirla por SET ROLE desde superusuario. Revisión independiente pendiente.
+
+Evidencia local posterior en PR #80: seis migraciones desde cero en PostgreSQL
+17; LOGIN TCP real con identidad de sesión igual al login mínimo, RPC pg con
+actor Auth local, replay y rollback forzado comprobados. Suite ampliada **6/6**,
+catálogo/RLS **119/119**; detalle en el checkpoint #10 de F4. Contraseña efímera
+retirada y pila propia detenida. No acredita conexión remota/Supavisor; revisión
+independiente y provisión por operador siguen pendientes.
+
+**Corrección de recursos tras revisión de PR #80:** composición productiva usa
+un owner privado a nivel de módulo, con un único pool perezoso `max:2` por
+proceso, no por request/actor. Cada wrapper conserva su actor en su closure;
+no comparte identidad mutable ni expone SQL/cliente/cierre del pool. Una factory
+de owners permite aislar recursos en pruebas: su `close()` solo drena el pool
+propio, nunca el singleton productivo. La configuración validada queda fijada
+en la primera RPC; un cambio de URL/CA exige reiniciar el owner/proceso y falla
+cerrado sin crear pools adicionales. No hay mapa creciente de credenciales.
+La cota por proceso no reemplaza el límite global de cinco conexiones ni
+acredita capacidad de múltiples instancias de despliegue.
+
+Precondición de provisión: `galcoa_exec_login` debe ser nuevo o estar auditado
+con exactamente los atributos/membresías mínimos del catálogo probado. El
+guard `if not exists` de la migración publicada no sanea un rol preexistente
+alterado. No se reescribe esa migración ni se asume hardening remoto realizado.
+Los privilegios heredados de PUBLIC a nivel de base (por ejemplo TEMP) no se
+revocan globalmente aquí; el catálogo probado acredita tablas/esquemas/RPC, no
+ausencia de todo privilegio de base. Revisar el catálogo del entorno objetivo
+antes de provisionar credenciales, bajo autorización específica.
+
 ### Base real y dobles separados
 
 `MVP-024` posee `tests/server/rls/`: arranque/reset local, usuarios A/B, cliente `anon`, assertions de tablas/Storage/grants y helpers de conexiones independientes. `MVP-120` **reutiliza** esos helpers y añade builders y dobles, no crea otra pila RLS. `src/mocks/` conserva solo escenarios/fixtures de contratos; dobles que importan interfaces de servicios viven en `tests/server/`. Esta precisión evita relajar la barrera actual pese al inventario amplio de SH-07/arquitectura.

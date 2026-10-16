@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 
 import { buildTestBridge, BRIDGE_CACHE_ROOT, removeOwnDir, smokeImportBridge, type BridgeBuild } from "./build";
-import type { createBridgeHandlers } from "./entry";
+import type { createBridgeHandlers, createLocalAuthContext } from "./entry";
 import { findBridgeViolations, type BridgeChunk } from "./guards";
 
 const fixture = (name: string) => path.join(import.meta.dirname, "fixtures", name);
@@ -58,6 +58,7 @@ describe("puente de test: build programático y smoke ESM", () => {
     ["bad-real-adapter.ts", /@ai-sdk\/google|SDK real de proveedor/],
     ["bad-app-route.ts", /src[\\/]app|react/],
     ["bad-next-headers.ts", /next/],
+    ["bad-auth-composition.ts", /next/],
     ["bad-unlisted-dependency.ts", /date-fns/],
   ])("rechaza %s con un error explícito de prestep y no deja directorio", async (entry, pattern) => {
     const ns = path.join(CACHE, `fail-${randomUUID().slice(0, 8)}`);
@@ -132,7 +133,7 @@ describe("entry real del puente de test", () => {
   it("compila con los guards, se importa tal cual y expone las factories reales", async () => {
     const bridge = await build(entry);
     built.push(bridge);
-    expect(smokeImportBridge(bridge)).toEqual(["BRIDGE_API_VERSION", "createBridgeHandlers", "createMirrorReader", "createTestComposition"]);
+    expect(smokeImportBridge(bridge)).toEqual(["BRIDGE_API_VERSION", "createBridgeHandlers", "createLocalAuthContext", "createMirrorReader", "createTestComposition"]);
   });
 
   it("el artefacto compuesto responde sin sesión sin tocar almacenes ni proveedores", async () => {
@@ -160,5 +161,16 @@ describe("entry real del puente de test", () => {
 
     const verified = await handlers.verification.verify("referencia-invalida");
     expect(verified).toMatchObject({ registrationStatus: "no_iniciado", proof: null });
+  });
+
+  it("Auth local rechaza configuración no local o privilegiada sin credenciales ni red", async () => {
+    const bridge = await build(entry);
+    built.push(bridge);
+    const { createLocalAuthContext: create } = (await import(/* @vite-ignore */ bridge.fileUrl)) as { createLocalAuthContext: typeof createLocalAuthContext };
+    for (const url of ["https://cloud.invalid", "http://127.0.0.1:54322", "http://127.0.0.1:54321/path", "http://u@127.0.0.1:54321"]) {
+      expect(() => create({ url, publishableKey: "no-key", cookies: [] })).toThrow("Auth del puente requiere");
+    }
+    const privileged = `e30.${Buffer.from(JSON.stringify({ role: "service_role" })).toString("base64url")}.ficticio`;
+    expect(() => create({ url: "http://127.0.0.1:54321", publishableKey: privileged, cookies: [] })).toThrow("clave pública");
   });
 });

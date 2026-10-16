@@ -7,7 +7,7 @@ El usuario autorizó ejecutar las tandas desde esta sesión, con worktrees separ
 ## Secuencia
 
 - [x] Tanda 0, parte ejecutable: #3 acceso cerrado (PR #64); preparación de #4 integrada (PR #65) y preparación de #7 integrada (PR #63). Dictamen y confirmación del objetivo remoto pendientes; no se declaran completadas #4/#7.
-- [ ] Tanda 1 (parcial integrada): #9 Auth entregada por PR #70 (MVP-031 completada; cierre operativo de #9 tras merge documental). #16 chat y #32 harness con checkpoints parciales integrados por PR #69 y #68 respectivamente; no se declaran completos.
+- [ ] Tanda 1 (parcial integrada): #9 Auth completada y archivada; #32 harness completado por PR #79 (`c865be2`), con [plan archivado](../completed/f12-server-test-harness.md) y cierre operativo del Issue tras merge documental. #16 chat conserva checkpoint parcial por PR #69; no se declara completo. La tanda y este plan global siguen activos.
 - [ ] Confirmaciones: #18 → #19 → #20 delegadas expresamente a Gastón por el usuario; esta sesión no las implementa. Consumir sus entregas integradas para #21 y avances disjuntos de #31/#32.
 - [ ] Verificador #25 y composición #31, si no están ya tomados por otro ejecutor.
 - **Reparto actualizado:** el usuario confirmó #31 y #21 para Facu; asignaciones y comentarios de coordinación publicados en GitHub. Esta sesión no implementa sus páginas/containers. Las dependencias globales, Auth, persistencia, chat y seguridad siguen en el carril del líder.
@@ -48,3 +48,11 @@ Estas decisiones posteriores sustituyen los pendientes iniciales anteriores; no 
 - **IA:** el usuario exige usar las capas gratuitas de Gemini y Groq, con los modelos seleccionados `gemini-3.5-flash-lite` y `openai/gpt-oss-120b`. No usar el presupuesto orientativo anterior como permiso para consumir planes pagos; sin fallback a modelos pagos ni habilitación de facturación. La disponibilidad y cuota se comprueban en la única sesión real final, no haciendo llamadas reales durante desarrollo.
 - **Hedera:** la elección/creación del topic se decide al final. Esta respuesta no autoriza todavía crear topics, fondear cuentas ni enviar transacciones. Se mantiene Testnet como único alcance posible.
 - **Jurídica:** uso y demo solo con datos ficticios. El profesional y el dictamen siguen siendo gestiones humanas; #4 no se cierra por tener material preparatorio.
+
+### Acceso interno del servidor: autorización posterior
+
+El usuario autorizó expresamente crear en `galcoa-dev` el mismo acceso limitado probado en local, **después de pasar las pruebas y la revisión independiente**. Esto habilita las migraciones versionadas de persistencia F4 y del login `galcoa_exec_login` necesarias para ese canal. No autoriza reset, borrado de datos, acceso administrador, cambios destructivos ni desactivar TLS. El rol solo hereda las operaciones concretas de `galcoa_executor`, no privilegios generales de tabla. La contraseña se provisiona fuera del repo/chat y la URL privada se carga por el propietario en Vercel. La autorización no acredita que ese acceso ya esté operativo en remoto. Las migraciones y operaciones de evidencias que todavía están en desarrollo requieren su revisión y alcance de despliegue propios.
+
+### Conexiones en ejecución
+
+PR #74/#76 integraron RPC, adaptador y rutas de autor para documentos/mensajes. PR #78 corrigió errores SQL no reintentables. El canal interno se implementa en PR #80, con pool compartido privado y actor ligado a cada contexto; aún pendiente de verificación final e integración. #10 permanece abierta. El transporte de evidencias debe conservar una autorización real de 120 s: no se aceptan URLs firmadas de Supabase que duran 2 h con una fecha de UI ficticia. Se investigó y seleccionó subida estándar autenticada con reserva y vencimiento comprobados por RLS; la implementación y pruebas reales pertenecen al checkpoint de #11.

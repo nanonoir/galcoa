@@ -56,7 +56,8 @@ Si falta Docker o la pila local, `test:server:local` y `test:rls` **fallan** con
 
 - **`server-only`** se sustituye por `tests/server/support/server-only-sentinel.ts` solo en `vitest.config.ts` (proyecto `server`), `vitest.server-local.config.ts` y el bundle del puente. Next y el producto conservan el import real (hay tests que lo comprueban); `eslint` prohíbe que `src/` importe `tests/`.
 - **Dobles**: `scriptedGeminiModel` se inyecta en `createModel` del puerto real; `ScriptedBehavior` (éxito, fallo, salida inválida, latencia con reloj de test, cuelgue hasta cancelar, resultado incierto) es la base de los dobles de Groq (`scriptedGroqClient`, `createClient` del puerto), Storage (`createInMemoryEvidenceStorage`, puerto `EvidenceStorage`), HCS (`scriptedHcsTransport`) y Mirror (`scriptedMirrorFetch`), todos contra los puertos reales y sin SDK ni red. Cada doble acredita el comportamiento del puerto, no el adaptador real.
-- **Puente Node para Playwright** (`tests/server/bridge/build.ts`): `buildTestBridge({ entry })` compila con la API programática de Vite (`configFile:false`, `envFile:false`, SSR/ESM, alias `@/` y `server-only` solo ahí) a `node_modules/.cache/galcoa-tests/<runId>/handlers.mjs`; aplica los guards (`guards.ts`) y lanza si el grafo incluye `src/app`, `next/*`, SDK reales de IA/HCS o dependencias fuera de la lista permitida; `smokeImportBridge` importa el ESM en un proceso Node limpio; `cleanup()` borra solo su directorio. `entry.ts` expone `createBridgeHandlers`, que cablea las factories reales de servicio/handler a dependencias explícitas (la sesión entra como `SessionPort`; el helper de Auth local sigue pendiente). No es un servidor ni un clon de la app y no acredita el transporte HTTP de Next (`MVP-134`).
+- **Puente Node para Playwright** (`tests/server/bridge/build.ts`): `buildTestBridge({ entry })` compila con la API programática de Vite (`configFile:false`, `envDir:false`, SSR/ESM, alias `@/` y `server-only` solo ahí) a `node_modules/.cache/galcoa-tests/<runId>/handlers.mjs`; aplica los guards (`guards.ts`) y lanza si el grafo incluye `src/app`, `next/*`, SDK reales de IA/HCS o dependencias fuera de la lista permitida; `smokeImportBridge` importa el ESM en un proceso Node limpio; `cleanup()` borra solo su directorio. `entry.ts` expone `createBridgeHandlers`, que cablea las factories reales de servicio/handler a dependencias explícitas. No es un servidor ni un clon de la app y no acredita el transporte HTTP de Next (`MVP-134`).
+- **Auth del puente:** `createLocalAuthContext({ url, publishableKey, cookies })` acepta exclusivamente `http://127.0.0.1:54321` (sin credenciales, query ni rutas), la clave pública efímera obtenida del CLI y cookies `{ name, value }` efectivas de la petición. Rechaza URLs ajenas y claves privilegiadas antes de crear el cliente. Devuelve `{ session, cookieChanges, cookieHeaders }`; pasa `session` a las factories y propaga cambios de cookies/headers a la respuesta interceptada. Usa las mismas `createSessionClient` y `createSessionPort` de producto (`auth.getUser()`, caché por petición), con `EnvReader` explícito; no acepta UID ni lee `.env`. Solo `@supabase/ssr` y `@supabase/supabase-js` habilitan el runtime Auth/RPC real; los imports nombrados permiten eliminar helpers Next no usados y los guards siguen rechazando su composición de petición. `local/auth-bridge.test.ts` ejerce el ESM en Node limpio contra Auth local, A/B/sin sesión/cookies inválidas/refresco; el almacén de dominio es memoria explícita (no acredita persistencia). Concurrencia SQL y RLS mantienen sus suites reales separadas.
 
 ## Navegador y CI
 
@@ -87,6 +88,33 @@ La ejecución base de Linux en GitHub Actions fue comprobada verde en el PR de i
 - Preview sin carga de archivos de entorno ni inyección de secretos; datos ficticios, sin persistencia y solo loopback. No sirve para compartir una demo por red.
 - Supabase Auth/RLS, migraciones, rutas, integraciones y claves solo dentro del alcance explícito del pedido/ticket del líder. HCS únicamente Testnet, sin herramientas abiertas para agentes (INV-04).
 - Auditoría: registrar resultado completo y de producción por separado. Las incidencias dev conocidas no se ocultan ni justifican `npm audit fix --force`; consultar [deuda](exec-plans/tech-debt-tracker.md).
+
+### Ejecutor interno F4: provisión privada del operador
+
+En `galcoa-dev` ya están las migraciones F4 y `executor_login`; el LOGIN
+`galcoa_exec_login` se creó **sin contraseña** y todavía no acredita conexión remota.
+Solo el propietario realiza estos pasos, sin pasar secretos al agente/chat:
+
+1. Provisionar una contraseña fuerte para **ese rol**, no para `postgres`, desde
+   la gestión de roles del panel si ofrece esa acción; de lo contrario usar una
+   sesión SQL privada controlada por el propietario. No guardar el secreto en
+   snippets compartidos, historial exportado, repositorio ni capturas.
+2. Obtener host/puerto del pooler desde Connect y construir privadamente la URL
+   con usuario `galcoa_exec_login.<PROJECT_REF>` y contraseña codificada para URL.
+   Usar el mismo proyecto que `NEXT_PUBLIC_SUPABASE_URL`; no usar clave API,
+   `service_role`, URL de administrador ni parámetros query en la URL.
+3. Guardarla como `GALCOA_EXECUTOR_DATABASE_URL`, solo servidor: en `.env` para
+   local o como variable sensible de Vercel en el entorno elegido, cuando se
+   decida desplegar. Si hace falta CA, `GALCOA_EXECUTOR_DATABASE_CA` contiene el
+   certificado de confianza del proveedor. **Nunca** desactivar verificación TLS
+   ni recurrir a un rol privilegiado para resolver un error de conexión.
+4. Reiniciar/redeploy tras cambios de URL/CA. Comprobar LOGIN limitado, TLS y
+   Supavisor con una prueba acotada autorizada antes de anunciarlo usable. Hoy no
+   están probados en cloud; el éxito local no los sustituye. No tocar URLs/Auth
+   de producción como parte de esta provisión.
+
+Evidencia y permisos: [checkpoint remoto F4](exec-plans/active/mvp/f04-documents-chat-audit.md#aplicación-remota-autorizada--2026-10-16).
+Sintaxis del usuario pooler: [documentación Supabase](https://supabase.com/docs/guides/troubleshooting/tenant-or-user-not-found).
 
 ## Entrega del colaborador
 
