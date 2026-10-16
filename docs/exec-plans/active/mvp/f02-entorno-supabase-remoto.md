@@ -75,7 +75,24 @@ Ninguna.
 
 ## Progreso y evidencia
 
-No ejecutado.
+Preparación de solo lectura, 2026-10-16 (no es aceptación ni validación remota; `MVP-026` sigue `pendiente`).
+
+- El repositorio no designa un proyecto remoto: `supabase/config.toml` solo trae `project_id = "galcoa"` (identificador de la pila local), y ninguna doc ni configuración versionada nombra otro. No se leyó `.env*`.
+- Metadatos públicos del listado de proyectos del conector de Supabase (sin claves): una única cuenta visible con un proyecto `galcoa-dev` (región `us-east-2`, estado `ACTIVE_HEALTHY`). Que sea el objetivo previsto **no está confirmado** por el usuario; no se consultó su catálogo, no se aplicaron migraciones y no se leyó uso de plan.
+- Límite: no se ejecutaron consultas autenticadas ni cambios remotos. Esta nota no acredita acceso privado.
+- Migraciones locales a aplicar (ya verificadas en local por `MVP-024`, sin DDL nuevo): `20261016000100_c1_core`, `20261016000200_c2_revision`, `20261016000300_c3_version_seal`, `20261016000400_rls_storage`.
+
+### Bloqueo exacto
+
+Falta (1) confirmación expresa de que `galcoa-dev` es el proyecto objetivo y (2) autorización para esta acción remota concreta (checkpoints A y B). Pregunta única: ¿`galcoa-dev` es el proyecto de desarrollo/demo y autorizas aplicar las 4 migraciones y consultar su catálogo en solo lectura?
+
+### Checklist de ejecución posterior (tras autorización)
+
+1. Confirmar con la CLI (`supabase link --help`, `supabase db push --help`) los subcomandos de la versión instalada; vincular sin guardar secretos en el repo.
+2. Aplicar las 4 migraciones sin editar el esquema a mano.
+3. Solo lectura: versiones de migración aplicadas = las 4 del repositorio; `pg_tables.rowsecurity` activo en tablas expuestas; `storage.buckets.public = false`.
+4. Auth: confirmación de email activa, redirecciones provisionales, límite del emisor integrado anotado (PRD §0).
+5. Registrar evidencia sin valores sensibles y actualizar la fila `MVP-026`.
 
 ## Cierre
 
