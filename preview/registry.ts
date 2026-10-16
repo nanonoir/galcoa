@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { createElement } from "react";
+import { createElement, useState } from "react";
 
 import { LoginForm } from "@/features/auth/components/login-form";
 import { NewPasswordForm } from "@/features/auth/components/new-password-form";
@@ -14,6 +14,7 @@ import type {
 import { DashboardReference } from "@/features/dashboard/components/dashboard-reference";
 import type { DashboardViewProps } from "@/features/dashboard/contracts/dashboard-view";
 import type { SnapshotViewProps } from "@/features/documents/contracts/snapshot-view";
+import { VersionHistory } from "@/features/documents/components/version-history";
 import type { VersionHistoryViewProps } from "@/features/documents/contracts/version-history-view";
 import type { LandingViewProps } from "@/features/marketing/contracts/landing-view";
 import { authFormScenarios } from "@/mocks/auth";
@@ -82,26 +83,32 @@ const snapshot: PreviewEntry = {
   },
 };
 
+/** Historial (MVP-113): selección controlada por estado local del preview; los callbacks solo registran el evento. */
+function VersionHistoryPreview({ scenarioId, handlers }: { scenarioId: string; handlers: LocalHandlers }) {
+  const scenario = versionHistoryScenarios.find((s) => s.id === scenarioId);
+  const [selected, setSelected] = useState({ scenarioId, versionId: scenario?.selectedVersionId ?? null });
+  if (!scenario) return null;
+  // Al cambiar de escenario vuelve a la selección inicial del fixture.
+  const selectedVersionId = selected.scenarioId === scenarioId ? selected.versionId : scenario.selectedVersionId;
+  const props: VersionHistoryViewProps = {
+    state: scenario.state,
+    selectedVersionId,
+    onSelect: (versionId) => {
+      setSelected({ scenarioId, versionId });
+      handlers.log(`onSelect("${versionId}")`);
+    },
+    onRetry: handlers.onRetry,
+  };
+  return createElement(VersionHistory, props);
+}
+
 const versionHistory: PreviewEntry = {
-  id: "version-history-placeholder",
-  label: "Historial (placeholder, MVP-113)",
+  id: "version-history",
+  label: "Historial (MVP-113)",
   scenarios: versionHistoryScenarios.map(({ id, label }) => ({ id, label })),
   render(scenarioId, handlers) {
-    const scenario = versionHistoryScenarios.find((s) => s.id === scenarioId);
-    if (!scenario) return null;
-    const props: Pick<VersionHistoryViewProps, "state" | "selectedVersionId"> = {
-      state: scenario.state,
-      selectedVersionId: scenario.selectedVersionId,
-    };
-    const versions = scenario.state.status === "ready" ? scenario.state.versions : [];
-    return createElement(ScenarioPlaceholder, {
-      title: "Historial de versiones",
-      data: props,
-      callbacks: [
-        { name: "onRetry()", run: handlers.onRetry },
-        ...versions.map((v) => ({ name: `onSelect("${v.versionId}")`, run: () => handlers.log(`onSelect("${v.versionId}")`) })),
-      ],
-    });
+    if (!versionHistoryScenarios.some((s) => s.id === scenarioId)) return null;
+    return createElement(VersionHistoryPreview, { scenarioId, handlers });
   },
 };
 
