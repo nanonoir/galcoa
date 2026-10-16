@@ -28,6 +28,8 @@ export type StoredEvidence = {
   /** Tiempo del servidor de base. */
   uploadedAt: string;
   acceptedAt: string | null;
+  /** Vencimiento impuesto por la DB para INSERT directo autenticado. */
+  uploadExpiresAt: string;
 };
 
 export type ReserveEvidenceInput = {
@@ -96,14 +98,23 @@ export type EvidenceStore = {
 /** Storage privado (bucket `evidences-private`). Sin URLs públicas ni sobrescritura. */
 export type EvidenceStorage = {
   /** Permiso de subida directa: un solo objeto, ruta fija, vida corta, sin `upsert`. */
-  createSignedUpload(
+  authorizeDirectUpload(
     privateLocation: string,
-    options: { contentType: string; maxBytes: number; expiresInSeconds: number },
-  ): Promise<{ url: string; token: string; expiresAt: string }>;
+    options: { contentType: string; maxBytes: number; expiresAt: string },
+  ): Promise<DirectUploadPermit>;
   /** Bytes del objeto, o `null` si todavía no se subió. */
   download(privateLocation: string): Promise<Uint8Array | null>;
   /** Solo para objetos rechazados que ninguna fila aceptada referencia. */
   remove(privateLocation: string): Promise<void>;
   /** Lectura breve para el propietario. */
   createSignedRead(privateLocation: string, expiresInSeconds: number): Promise<{ url: string; expiresAt: string }>;
+};
+
+export type DirectUploadPermit = {
+  transport: "authenticated";
+  bucket: "evidences-private";
+  objectPath: string;
+  contentType: string;
+  maxBytes: number;
+  expiresAt: string;
 };

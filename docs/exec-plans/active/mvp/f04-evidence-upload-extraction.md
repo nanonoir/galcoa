@@ -49,6 +49,73 @@ Tareas del maestro: `MVP-042`, `MVP-043`
 
 ## 6. Pasos
 
+### Checkpoint de conexión #11 — investigación previa (2026-10-16)
+
+**Decisión posterior del líder (autorizada en esta sesión):** carga estándar
+autenticada con JWT de sesión existente y RLS de reserva con columna aditiva
+`upload_expires_at`; no emitir tokens `upload/sign`, que eluden RLS al consumirlos.
+`authorizeDirectUpload` devuelve `transport: authenticated`, bucket fijo,
+objectPath opaco, MIME, maxBytes y expiresAt de la DB. La autoridad expira en
+Storage/RLS, no en un reloj de UI. No hay credencial nueva ni proxy de bytes.
+La migración 001200 aún no se aplicó al tomar esta decisión y agrega la columna
+y el reemplazo del helper C4; C4 no se edita. El helper browser autorizado vive
+solo en `features/auth/containers/supabase-browser.ts`; su esquema puro en
+`features/auth/contracts/evidence-upload.ts` evita llevar módulos server-only
+al navegador. La prueba debe distinguir upload iniciado después del vencimiento
+de uno en vuelo: no se promete cancelación de transferencia a los 120 s.
+
+**Reanudación autorizada:** se implementa primero persistencia independiente de
+Storage. Canal interno exclusivo para las siete RPC: `reserve_evidence`,
+`get_evidence`, `list_evidences`, `accept_evidence`, `discard_evidence_reservation`,
+`append_evidence_extraction`, `list_evidence_extractions`. Todas reciben primero
+`p_actor_id` ligado por el adapter a Auth verificado; no son RPC públicas de autor.
+Reserva: documento, tipo/MIME/longitud/hash/ruta/fecha, clave y fingerprint;
+lecturas: documento y, para get, evidencia; aceptar/descartar: evidencia
+(aceptar además correlación); extraer: documento/evidencia, método/modelo/prompt,
+páginas/texto/limitaciones/correlación. Límites SQL fijos 10 MiB/3/20 MiB y
+vigencia derivada de `uploaded_at + 120 s`; replay vencido no renueva autoridad.
+Aceptación y extracción auditan atómicamente. Un rol owner NOLOGIN mínimo
+posee estas funciones, sin acceso del ejecutor a tablas. Se ajusta únicamente
+la condición de vigencia del helper de INSERT Storage existente, sin publicar
+todavía adapter de carga ni endpoint HTTP. La investigación de transporte sigue
+separada; no bloquea este checkpoint SQL. Se probarán conexiones independientes,
+caducidad, rollback y lecturas mediante el mismo EvidenceStore de producción.
+
+Base exclusiva: `flow/evidence-wiring`, `a132ccb`, encadenada a
+`flow/executor-transport` (PR #80); sin merge automático ni cierre de #11.
+Se preservan los servicios puros de PR #48. Secuencia prevista: (1) comprobar
+el contrato real de Storage y la frontera de autorización; (2) enumerar las
+RPC de evidencia/extracción y sus argumentos ligados al actor en el ejecutor;
+(3) migración aditiva `20261016001200_evidence_persistence.sql`, adapters y
+catálogo mínimo de auditoría; (4) composición Auth real y handlers con DTO
+sin rutas internas; (5) pruebas locales A/B/anon, conexiones independientes,
+Storage real y modelo doble, más checks de integración. El contrato HTTP
+exacto se registrará al resolver el transporte de carga, antes de publicarlo
+a consumidores; no hay endpoints nuevos disponibles todavía.
+
+**Bloqueo encontrado antes de código:** `EvidenceStorage.createSignedUpload`
+recibe `expiresInSeconds: 120` desde el servicio existente. La API oficial
+`createSignedUploadUrl(path, { upsert })` no admite duración; sus permisos de
+carga duran dos horas. No es correcto devolver `expiresAt = ahora + 120 s`
+para un token que sigue autorizando cargas después. Tampoco se ha comprobado
+que una reserva vencida revoque un token de carga ya firmado. Fuentes:
+[API Storage JS](https://github.com/supabase/supabase-js/blob/master/packages/core/storage-js/src/packages/StorageFileApi.ts)
+y [referencia oficial de permisos de carga](https://supabase.com/docs/reference/python/storage-from-createsigneduploadurl),
+consultadas con Context7 el 2026-10-16. La lectura firmada sí acepta duración.
+
+Decisión necesaria del líder: autorizar un transporte que pueda imponer los
+120 s reales (y sus requisitos de configuración), o revisar expresamente ese
+contrato. No se cambia a dos horas, no se inventa caducidad en el DTO y no se
+introduce proxy de archivos grandes ni credenciales nuevas por iniciativa
+del agente. La persistencia/RPC es una parte independiente aún no implementada;
+este hallazgo no la declara bloqueada ni completada.
+
+Comprobaciones realizadas: árbol limpio y HEAD/base verificados; Issue #11 y
+comentarios leídos; puertos/servicio y diseño transaccional inspeccionados.
+`docker.exe ps` mostró únicamente `entrenar-backend-1` y
+`entrenar-postgres-1`: no se tocaron. No se arrancó pila, no se aplicó migración,
+no se leyeron secretos y no se ejecutaron tests ni llamadas a proveedores.
+
 ### 6.1 MVP-042 — Carga privada
 
 - [ ] Verificar `MVP-010` documentado; leer la fila y las guías locales de Route Handlers (`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md`) para el tratamiento de cuerpos multipart/binarios en la versión instalada.

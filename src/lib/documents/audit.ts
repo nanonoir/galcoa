@@ -33,6 +33,8 @@ const BaseEventSchema = {
 export const AuditEventSchema = z.discriminatedUnion("type", [
   z.strictObject({ ...BaseEventSchema, type: z.literal("document.created"), resourceType: z.literal("document"), resourceId: IdSchema }),
   z.strictObject({ ...BaseEventSchema, type: z.literal("message.recorded"), resourceType: z.literal("message"), resourceId: IdSchema }),
+  z.strictObject({ ...BaseEventSchema, type: z.literal("evidence.accepted"), resourceType: z.literal("evidence"), resourceId: IdSchema }),
+  z.strictObject({ ...BaseEventSchema, type: z.literal("extraction.recorded"), resourceType: z.literal("extraction"), resourceId: IdSchema }),
 ]);
 
 export type AuditEvent = z.infer<typeof AuditEventSchema>;

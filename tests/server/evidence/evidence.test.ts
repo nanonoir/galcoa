@@ -85,7 +85,8 @@ describe("Carga privada en dos pasos (MVP-042)", () => {
     expect(reserved.ok).toBe(true);
     if (!reserved.ok) return;
     expect(reserved.value.upload).not.toBeNull();
-    expect(ctx.signedUploads).toEqual([{ location: `${DOC}/obj-1`, maxBytes: bytes.byteLength, expiresInSeconds: UPLOAD_PERMIT_SECONDS }]);
+    expect(UPLOAD_PERMIT_SECONDS).toBe(120);
+    expect(ctx.signedUploads).toEqual([{ location: `${DOC}/obj-1`, maxBytes: bytes.byteLength, expiresAt: reserved.value.evidence.uploadExpiresAt }]);
     expect(JSON.stringify(reserved.value.evidence)).not.toContain("obj-1");
 
     ctx.upload(`${DOC}/obj-1`, bytes);

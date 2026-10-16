@@ -10,7 +10,7 @@ import type { SessionPort } from "../ports";
 import { commandFingerprint, failure, IDEMPOTENCY_KEY_PATTERN, newId, type ServiceDeps, type ServiceResult } from "../result";
 
 import { EVIDENCE_LIMITS, EVIDENCE_MIME_TYPES, inspectEvidence } from "./inspect";
-import type { EvidenceStorage, EvidenceStore, StoredEvidence } from "./ports";
+import type { DirectUploadPermit, EvidenceStorage, EvidenceStore, StoredEvidence } from "./ports";
 
 /**
  * Evidencias: carga privada, hash y metadatos (MVP-042; REQ-04, INV-06/09;
@@ -63,7 +63,7 @@ export function createEvidenceService(deps: EvidenceServiceDeps) {
 
   return {
     async requestUpload(command: unknown): Promise<
-      ServiceResult<{ evidence: EvidenceSummary; upload: { url: string; token: string; expiresAt: string } | null }>
+      ServiceResult<{ evidence: EvidenceSummary; upload: DirectUploadPermit | null }>
     > {
       const correlationId = correlation();
       const ownerId = await deps.session.currentUserId();
@@ -108,10 +108,10 @@ export function createEvidenceService(deps: EvidenceServiceDeps) {
       const replayed = reserved.status === "replayed";
       if (evidence.uploadState === "accepted") return { ok: true, value: { evidence: toEvidenceSummary(evidence), upload: null }, replayed };
       try {
-        const upload = await deps.storage.createSignedUpload(evidence.privateLocation, {
+        const upload = await deps.storage.authorizeDirectUpload(evidence.privateLocation, {
           contentType: evidence.mimeType,
           maxBytes: evidence.byteLength,
-          expiresInSeconds: UPLOAD_PERMIT_SECONDS,
+          expiresAt: evidence.uploadExpiresAt,
         });
         return { ok: true, value: { evidence: toEvidenceSummary(evidence), upload }, replayed };
       } catch {
