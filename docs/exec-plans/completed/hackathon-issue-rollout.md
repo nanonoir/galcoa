@@ -17,7 +17,7 @@ El usuario autorizó preparar y publicar Issues, actualizar documentación y ent
 - [x] Enlazar dependencias reales, checkpoints y orden por persona, sin marcar implementaciones completadas por crear tickets.
 - [x] Validar cuerpos publicados, enlaces, cobertura y ausencia de ciclos artificiales; archivar el plan.
 
-La entrega Git de la documentación a `develop` queda pendiente para la sesión principal; este cierre documental no ejecuta Git ni acredita un commit o SHA de entrega.
+La sesión principal confirmó la entrega Git de la documentación a `origin/develop` en [e6f388e12b33da47a9d308c717e471d567f53d6c](https://github.com/nanonoir/galcoa/commit/e6f388e12b33da47a9d308c717e471d567f53d6c), con push desde `0bd0040` y árbol limpio y sincronizado al entregar.
 
 ## Contrato de las Issues
 
@@ -46,7 +46,7 @@ Comprobar cobertura de los 60 IDs pendientes, identidades, enlaces y dependencia
 - Se acotó la excepción de preview de Facu a la entrada y pruebas correspondientes, con un único escritor; el acceso pendiente de Gastón no bloquea a Facu.
 - Se autorizó configuración Node local de las suites de Gastón hasta integrar el harness: el Vitest global actual no descubre `tests/server/**`.
 - Las dependencias enlazan checkpoints por ID integrado, sin bloqueos nativos por Issue completa que creen ciclos artificiales.
-- La publicación documental en `develop` no forma parte de este cierre local; queda a cargo de la sesión principal, sin inventar evidencia de entrega.
+- Al archivar inicialmente quedó pendiente la entrega Git; la sesión principal confirmó posteriormente su publicación efectiva en `origin/develop` en el commit enlazado arriba.
 
 ### Validación
 
@@ -55,11 +55,10 @@ Evidencia de la ejecución recibida para el cierre:
 - `galcoa-publish-issues.mjs verify`: PASS, 35 títulos, cuerpos y asignaciones coinciden con el inventario; no había Issues previas ni se generaron duplicados.
 - GitHub confirmó colaboradores `nanonoir` y `jfacundoayala`, e invitación pendiente de `grancobud`.
 - Revisión completa del orquestador sobre los 35 tickets, incluidos permisos, protocolo Git y dependencias por ID; sin revisión adicional pendiente.
-- Validación local previa al cierre: 111 Markdown, 907 enlaces locales y cero rotos (antes de las últimas tres referencias de documentos raíz); 270 enlaces absolutos a fuentes de `develop` comprobados en los tres grupos. `git diff --check`: PASS en la sesión principal.
+- Validación final informada por la sesión principal: 111 Markdown, 912 enlaces locales y cero rotos; 270 enlaces absolutos a fuentes de `develop` comprobados en los tres grupos. Bloque de Next sin cambios, escaneo de patrones de secretos PASS y `git diff --check` PASS. La verificación final de los 35 cuerpos y asignaciones coincide con lo publicado.
 - Sin cambios de runtime, lectura de secretos ni llamadas a servicios de la aplicación; no correspondía repetir tests de la aplicación. Las únicas acciones externas fueron la publicación y verificación autorizadas en GitHub.
 
 ### Seguimiento
 
 - Gastón debe aceptar su invitación antes de ejecutar sus seis Issues; su acceso sigue en MVP-007.
 - Las implementaciones y validaciones futuras permanecen en sus Issues y planes activos; no se cierran por esta publicación. La brecha de suites de servidor ya está registrada en la deuda técnica existente (§5) y cubierta por MVP-120/MVP-131; no se duplica.
-- Entrega Git de esta documentación pendiente en la sesión principal.
