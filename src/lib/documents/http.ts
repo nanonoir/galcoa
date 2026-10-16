@@ -11,6 +11,7 @@ import { trustedOrigin } from "@/lib/supabase/auth-http";
 import { createDocumentService, CreateDocumentCommandSchema } from "./documents";
 import { createMessageService, RecordMessageCommandSchema } from "./messages";
 import type { DocumentStore } from "./ports";
+import { DocumentPersistenceError } from "./persistence/store";
 import type { ServiceResult } from "./result";
 
 export interface DocumentHttpContext {
@@ -89,22 +90,42 @@ export function createDocumentHttpHandler(deps: DocumentHttpDeps, action: Docume
       if (context.session.status === "unavailable") return error("AUTH_UNAVAILABLE", true);
       if (action !== ACTION.LIST && action !== ACTION.CREATE && !UUID.safeParse(documentId).success) return error("NOT_AVAILABLE");
       const userId = context.session.user.id;
-      const store = context.storeForUser(userId);
+      const source = context.storeForUser(userId);
+      // Los servicios puros normalizan excepciones. Conservamos solo la clasificación
+      // del adaptador durante esta petición, sin cambiar sus contratos compartidos.
+      let persistenceError: DocumentPersistenceError | undefined;
+      async function capture<T>(operation: Promise<T>): Promise<T> {
+        try { return await operation; } catch (cause) {
+          if (cause instanceof DocumentPersistenceError) persistenceError = cause;
+          throw cause;
+        }
+      }
+      const store: DocumentStore = {
+        createDocument: (...args) => capture(source.createDocument(...args)),
+        listDocuments: (...args) => capture(source.listDocuments(...args)),
+        getDocument: (...args) => capture(source.getDocument(...args)),
+        appendMessage: (...args) => capture(source.appendMessage(...args)),
+        listMessages: (...args) => capture(source.listMessages(...args)),
+        appendAuditEvent: (...args) => capture(source.appendAuditEvent(...args)),
+      };
+      function respond<T>(result: ServiceResult<T>): Response {
+        return persistenceError ? error(persistenceError.code) : resultResponse(result);
+      }
       const session = { currentUserId: async () => userId };
       const documents = createDocumentService(session, store);
       const messages = createMessageService(session, store);
-      if (action === ACTION.LIST) return resultResponse(await documents.listDocuments());
-      if (action === ACTION.GET) return resultResponse(await documents.getDocument(documentId!));
-      if (action === ACTION.MESSAGES) return resultResponse(await messages.listMessages(documentId!));
+      if (action === ACTION.LIST) return respond(await documents.listDocuments());
+      if (action === ACTION.GET) return respond(await documents.getDocument(documentId!));
+      if (action === ACTION.MESSAGES) return respond(await messages.listMessages(documentId!));
       if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("Content-Type") ?? "")) return error("INVALID_INPUT");
       let body: unknown;
       try { body = await readJson(request); } catch (cause) { return error(cause instanceof RangeError ? "PAYLOAD_TOO_LARGE" : "INVALID_INPUT"); }
       if (action === ACTION.CREATE) {
         const parsed = CreateDocumentCommandSchema.safeParse(body);
-        return parsed.success ? resultResponse(await documents.createDocument(parsed.data)) : error("INVALID_INPUT");
+        return parsed.success ? respond(await documents.createDocument(parsed.data)) : error("INVALID_INPUT");
       }
       const parsed = MessageBodySchema.safeParse(body);
-      return parsed.success ? resultResponse(await messages.recordUserMessage({ ...parsed.data, documentId })) : error("INVALID_INPUT");
+      return parsed.success ? respond(await messages.recordUserMessage({ ...parsed.data, documentId })) : error("INVALID_INPUT");
     } catch {
       return error("TECHNICAL_FAILURE", true);
     }
