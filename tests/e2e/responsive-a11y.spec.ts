@@ -11,6 +11,10 @@ const SCREENS = [
   { name: "acceso", path: "/acceso" },
   { name: "registro", path: "/registro" },
   { name: "recuperar", path: "/recuperar" },
+  // Sin base ni invitación real la pantalla pública muestra el estado de enlace no
+  // disponible / error técnico: audita estructura y responsive de ese estado. Los estados
+  // con operación (casilla, nombre, modal) requieren la pila local: viven en el preview.
+  { name: "confirmación sin invitación", path: "/confirm/token-inexistente" },
 ] as const;
 const WIDTHS = [360, 1280] as const;
 
@@ -30,7 +34,7 @@ for (const screen of SCREENS) {
       test("estructura: un solo h1, región main y títulos sin saltos", async ({ page }) => {
         // Hallazgo MVP-118 abierto: los formularios de auth (presentación ajena, solo lectura
         // en este ticket) usan h2 sin h1; se corrige con su propietario. Ver plan F11.
-        test.skip(screen.name !== "landing", "formularios de auth sin h1: hallazgo registrado");
+        test.skip(["acceso", "registro", "recuperar"].includes(screen.name), "formularios de auth sin h1: hallazgo registrado");
         await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
         await expect(page.getByRole("main")).toHaveCount(1);
         const levels = await page.evaluate(() => [...document.querySelectorAll("h1,h2,h3,h4")].map((h) => Number(h.tagName[1])));
