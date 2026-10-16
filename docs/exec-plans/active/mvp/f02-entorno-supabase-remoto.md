@@ -1,6 +1,6 @@
 # ExecPlan F2 — Entorno Supabase de desarrollo/demo con migraciones aplicadas (remoto)
 
-**Estado: planificado; no ejecutado.** Procedimiento con acciones **externas y autorizadas**. No cambia estados del [maestro](../mvp-master-plan.md).
+**Estado: en curso.** Migraciones aplicadas y verificadas en `galcoa-dev`; falta confirmar redirecciones y límites de correo de Auth. Procedimiento con acciones **externas y autorizadas**.
 
 Tareas del maestro: `MVP-026`
 
@@ -66,11 +66,11 @@ Ninguna.
 
 ## Checklist
 
-- [ ] Autorización expresa para acciones remotas.
-- [ ] Proyecto y credenciales provistos por el usuario (fuera del repo).
-- [ ] Migraciones aplicadas con la CLI.
-- [ ] Verificación de solo lectura: migraciones, RLS, buckets privados.
-- [ ] Ajustes de Auth anotados.
+- [x] Autorización expresa para acciones remotas.
+- [x] Proyecto y credenciales provistos por el usuario (fuera del repo).
+- [x] Migraciones aplicadas (con `apply_migration` del conector, no con la CLI) y historial reconciliado.
+- [x] Verificación de solo lectura: migraciones, RLS, buckets privados.
+- [ ] Ajustes de Auth anotados (email confirmado; redirecciones y límites de correo sin confirmar).
 - [ ] Fila de `MVP-026` actualizada sin secretos.
 
 ## Progreso y evidencia
@@ -87,14 +87,17 @@ Preparación de solo lectura, 2026-10-16 (no es aceptación ni validación remot
 Autorización del usuario: usar `galcoa-dev` como base de prueba y crear tablas y reglas de seguridad versionadas, probadas en local, **sin borrar datos**. Sin reset, sin borrados, sin usuarios ni correos, sin llamadas a IA/Hedera.
 
 - Estado previo (solo lectura): 0 tablas en `public`, historial de migraciones vacío, 0 usuarios; existían la función `public.rls_auto_enable` (propia de Supabase) y el bucket privado `documents`. Sin conflictos con las 4 migraciones (aditivas; solo agregan objetos, un rol `nologin` y defaults de privilegios de `postgres`).
-- Aplicadas con `apply_migration` del conector (SQL idéntico al del repo, una por una, sin error): `c1_core`, `c2_revision`, `c3_version_seal`, `rls_storage`. Versiones asignadas por el conector: `20261016173321`, `…173346`, `…173417`, `…173429` (los nombres coinciden con el repo; los timestamps difieren porque el conector los asigna). Un futuro `db push` con la CLI deberá reconciliar ese historial.
-- Verificación de solo lectura: 24/24 tablas de `public` con RLS activo; 0 grants para `anon`/`service_role`/`PUBLIC` en `public`; `authenticated` solo `SELECT` (18 tablas); 22 políticas de lectura propietaria y de Storage; buckets `evidences-private` y `versions-private` con `public = false`; `galcoa_executor` sin login ni bypass.
+- Aplicadas con `apply_migration` del conector, una por una, sin error: `c1_core`, `c2_revision`, `c3_version_seal`, `rls_storage`. El SQL se transcribió **manualmente** al conector; la equivalencia con los archivos del repo se revisó de forma independiente tras normalizar comentarios, espacios y delimitadores de dólar, pero **no es byte a byte idéntica**. La revisión reportó coincidencia de huellas normalizadas (prefijos `c1 bbf3771b`, `c2 4c95ad69`, `c3 beb57830`, `rls 9a443120`; el algoritmo de la huella no se conoce, no se afirma que sea criptográfico).
+- Versiones asignadas por el conector: `20261016173321`, `…173346`, `…173417`, `…173429` (mismos nombres que el repo, timestamps distintos).
+- Reconciliación del historial, 2026-10-16 (autorizada solo para esos cuatro identificadores): destino confirmado como `galcoa-dev` por metadatos del conector (sin leer `.env`). Antes: exactamente 4 filas con los nombres esperados. Se actualizó **solo** la columna `version` de `supabase_migrations.schema_migrations`, en una transacción con guardas (4 filas, sin colisión con los IDs locales, mapeo exacto): `20261016173321`→`20261016000100` (`c1_core`), `…173346`→`…000200` (`c2_revision`), `…173417`→`…000300` (`c3_version_seal`), `…173429`→`…000400` (`rls_storage`). Nombres y `statements` sin cambios (huella md5 por fila idéntica antes y después; no se imprimió contenido). Sin borrar filas, sin `repair`, sin migración nueva, sin cambios de tablas, datos ni permisos; los archivos del repo no se tocaron. Un `db push` futuro ya encuentra el historial alineado con los nombres de archivo. Sin otras migraciones concurrentes hasta ahora.
+- Verificación de solo lectura: 24/24 tablas de `public` con RLS activo; 0 grants de **tabla** para `anon`/`service_role`/`PUBLIC` en `public` (los privilegios de función, como los de la `rls_auto_enable` preexistente, son aparte); `authenticated` solo `SELECT` en 18 tablas; 22 políticas: 18 `SELECT` de lectura propietaria en `public` más 4 de Storage (2 `SELECT` y 2 `INSERT`); buckets `evidences-private` y `versions-private` con `public = false`; `galcoa_executor` sin login ni bypass.
 - Advisors de seguridad: 6 INFO `rls_enabled_no_policy` (tablas solo de servidor, intencional) y 2 WARN sobre `public.rls_auto_enable`, función preexistente de Supabase que no crea este repo (no se modificó).
-- **Auth no verificado**: el conector no expone la configuración de Auth (confirmación de email, redirecciones, límite del emisor). Queda pendiente de revisión humana en la consola (paso 5). Por eso `MVP-026` **no** se marca aceptada.
+- **Auth parcialmente confirmado**: el usuario confirmó en el panel (2026-10-16) que la confirmación de email está activa. La URL de Vercel (`https://galcoa-nea.vercel.app`) y las claves están configuradas en `main`. Las redirecciones de Auth y los límites de correo **no** están confirmados automáticamente; el conector no expone esa configuración y no se afirma su estado. Por eso `MVP-026` **no** se marca aceptada.
+- Proveedores de IA (solo modelos gratuitos, sin llamadas reales ni lectura de `.env`): Gemini y Groq; configurados `openai/gpt-oss-120b` y `gemini-3.5-flash-lite`. Hedera queda para más adelante; no se autorizan planes de pago.
 
-### Bloqueo exacto (resuelto en parte: autorización y objetivo; resta Auth)
+### Pendiente (checkpoint B cumplido salvo Auth)
 
-Falta (1) confirmación expresa de que `galcoa-dev` es el proyecto objetivo y (2) autorización para esta acción remota concreta (checkpoints A y B). Pregunta única: ¿`galcoa-dev` es el proyecto de desarrollo/demo y autorizas aplicar las 4 migraciones y consultar su catálogo en solo lectura?
+Autorización y proyecto objetivo resueltos. Resta verificar en la consola las redirecciones de Auth y los límites del emisor de correo (paso 5) antes de aceptar `MVP-026`.
 
 ### Checklist de ejecución posterior (tras autorización)
 
