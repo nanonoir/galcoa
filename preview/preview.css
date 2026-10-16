@@ -1,0 +1,5 @@
+/* Reutiliza el CSS real de la aplicación; solo añade las fuentes que Tailwind debe escanear. */
+@import "../src/app/globals.css";
+
+@source "../src";
+@source ".";

@@ -2,18 +2,18 @@
 
 Plataforma de documentación autónoma de operaciones por conversación: una persona describe una operación y aporta evidencias, la IA redacta y contrasta, los participantes elegidos confirman el mismo snapshot y la huella de la versión final se sella en Hedera HCS (Testnet). El producto está definido en el [PRD](docs/exec-plans/GALCOA-PRD-v1.4.md).
 
-> **Estado: arranque.** El repositorio contiene hoy la plantilla de Next.js y componentes de UI (shadcn). Auth, base de datos, agentes de IA, PDF y Hedera **todavía no están implementados**; lo descrito en el PRD es el objetivo, no el estado actual.
+> **Estado: base para colaboración.** Next.js conserva la página de plantilla. Se prepara presentación desacoplada con contratos Zod, escenarios ficticios, preview local y pruebas. Auth, base de datos, agentes de IA, PDF y Hedera **todavía no están implementados**; el preview no es el producto conectado.
 
 ## Inicio rápido
 
-Requisitos: Node.js `>=20.9.0` (mínimo que declara Next 16.4.2) y npm. El repo usa `package-lock.json`.
+Requisitos: Node.js **24.18.0** (`.nvmrc`; engines `>=24.18.0 <25`) y npm **11 o superior**. El lockfile se generó con npm 11.16.0. Local y CI usan la misma versión Node.
 
 ```bash
-npm install
-npm run dev
+npm ci
+npm run preview:ui
 ```
 
-Abre <http://localhost:3000>. Hoy muestra la página de plantilla de `create-next-app`.
+El preview es local, usa datos ficticios y no necesita `.env` ni credenciales. Para la aplicación Next ejecuta `npm run dev` y abre <http://localhost:3000>: todavía muestra la plantilla de `create-next-app`. Consulta [desarrollo](docs/development.md) para escenarios, puertos y validación.
 
 | Comando | Qué hace |
 | --- | --- |
@@ -21,24 +21,32 @@ Abre <http://localhost:3000>. Hoy muestra la página de plantilla de `create-nex
 | `npm run build` | Build de producción |
 | `npm run start` | Sirve el build |
 | `npm run lint` | ESLint |
-| `npm run typecheck` | `tsc --noEmit` |
+| `npm run typecheck` | Genera tipos Next y ejecuta `tsc --noEmit` |
+| `npm test` | Vitest: contratos, componentes y barreras |
+| `npm run test:watch` | Vitest interactivo, solo local |
+| `npm run test:boundaries` | Límites de dependencias e imports |
+| `npm run preview:ui` | Preview Vite local sin servicios |
+| `npm run test:e2e` | Playwright: navegador Chromium, preview y smoke de Next |
 
-No hay script de tests ni CI configurados.
+Antes de ejecutar Playwright por primera vez: `npx playwright install chromium` (Linux/CI: `npx playwright install --with-deps chromium`). GitHub Actions define los checks de PR/push; agregar el workflow no activa protección de ramas ni prueba una ejecución remota.
 
 ## Variables de entorno
 
-Copia `.env.example` a `.env.local` y completa los valores. Nunca versiones valores reales. Nombres definidos hoy:
+Copia la plantilla versionada `.env.example` a `.env.local` **solo al implementar/probar integraciones autorizadas**. No es necesaria para preview, tests ni build. Nunca versiones valores reales:
 
-- App y Supabase: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (solo servidor), `SUPABASE_STORAGE_BUCKET`.
-- IA: `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `GROQ_API_KEY`, `AI_GENERATOR_PROVIDER`, `AI_VERIFIER_PROVIDER` (más `AI_GENERATOR_MODEL`/`AI_VERIFIER_MODEL`, comentadas).
-- Hedera: `HEDERA_NETWORK`, `HEDERA_OPERATOR_ID`, `HEDERA_OPERATOR_KEY` (solo servidor), `HEDERA_TOPIC_ID`.
-- Fases posteriores: `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`; opcional `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`.
+- Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- IA: `GOOGLE_GENERATIVE_AI_API_KEY`, `GROQ_API_KEY`.
+- Hedera: `HEDERA_NETWORK=testnet`, `HEDERA_ACCOUNT_ID`, `HEDERA_PRIVATE_KEY`, `HEDERA_TOPIC_ID`.
 
-Solo las variables `NEXT_PUBLIC_*` son visibles en el navegador. `.gitignore` ignora `.env*`, incluido `.env.example`, por lo que ese archivo hoy no está versionado. Los nombres del PRD (§13) y de `.env.example` difieren en parte; ver [deuda técnica](docs/exec-plans/tech-debt-tracker.md).
+Solo las variables `NEXT_PUBLIC_*` pueden exponerse al navegador. `.env` y `.env.local` siguen ignorados. La plantilla solo contiene nombres y valores vacíos salvo Testnet; las integraciones futuras documentarán cualquier clave privilegiada adicional necesaria, siempre de servidor.
 
 ## Stack
 
-Objetivo del PRD: Next.js 16 + React + TypeScript, Tailwind v4 + shadcn/ui, Supabase (Auth, Postgres, Storage), Gemini 3.5 Flash-Lite (generación) y GPT-OSS 120B en Groq (verificación), Zod, Hedera HCS con `@hiero-ledger/sdk`, `@react-pdf/renderer`, Vercel. Instalado y usado hoy: Next, React, Tailwind, shadcn/ui, React Compiler. El resto figura en `package.json` pero sin código que lo use.
+Objetivo del PRD: Next.js 16 + React + TypeScript, Tailwind v4 + shadcn/ui, Supabase (Auth, Postgres, Storage), Gemini 3.5 Flash-Lite (generación) y GPT-OSS 120B en Groq (verificación), Zod, Hedera HCS con `@hiero-ledger/sdk`, `@react-pdf/renderer`, Vercel. La base usa Next, React, Tailwind, shadcn, Zod, Vite, Vitest y Playwright. Algunos SDK están instalados sin integración; `ai`, `@ai-sdk/react` y `groq-sdk` se incorporarán con sus consumidores reales.
+
+## Trabajo delegado
+
+El líder prepara contrato, escenarios y entrypoint del preview. Cada Issue autoriza archivos concretos de presentación y sus tests; no toda una feature. El colaborador no modifica rutas, contratos, servicios o configuración por iniciativa propia. Entrega en rama corta y PR; el líder revisa e integra. Ver [propiedad y límites](docs/architecture.md#árbol-objetivo-y-propiedad).
 
 ## Limitaciones
 
@@ -51,6 +59,8 @@ Objetivo del PRD: Next.js 16 + React + TypeScript, Tailwind v4 + shadcn/ui, Supa
 
 - [Índice de `docs/`](docs/README.md)
 - [PRD de producto](docs/exec-plans/GALCOA-PRD-v1.4.md)
+- [Plan maestro del MVP](docs/exec-plans/active/mvp-master-plan.md)
+- [Orden de ejecución y compatibilidad](docs/execution/mvp-execution-guide.md)
 - [Arquitectura: objetivo vs. actual](docs/architecture.md)
 - [Desarrollo, validación y seguridad](docs/development.md)
 - [Deuda técnica](docs/exec-plans/tech-debt-tracker.md)

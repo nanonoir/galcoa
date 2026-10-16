@@ -26,7 +26,7 @@ Puedes trabajar directamente a partir de un pedido: no hace falta crear un Issue
 ## Alcance y estado
 
 - Alcance: **P0** del PRD (§4, REQ-01…REQ-18). P1 (§4, §15), Mainnet, pagos (Mercado Pago/Stripe) y envío automático de invitaciones están **fuera de P0**.
-- Estado actual: solo plantilla de `create-next-app` + componentes shadcn. No hay auth, base de datos, IA, Hedera ni tests implementados. No asumas que existen; ver [`docs/architecture.md`](docs/architecture.md).
+- Estado actual: plantilla Next + shadcn, contratos/escenarios de dashboard y herramientas de presentación/tests. No hay auth, base de datos, IA, PDF ni Hedera implementados. No confundas preview o tests con integraciones reales; ver [`docs/architecture.md`](docs/architecture.md).
 - El PRD no fija orden de trabajo (§13–14). La tarea asignada delimita el alcance.
 
 ## Reglas de producto que más afectan al código
@@ -45,6 +45,7 @@ Estas reglas son obligatorias; detalle y justificación en PRD §3, §5 y §6. R
 - Se conserva `src/`; el árbol del PRD §13 es **orientativo**, no ordena mover código (D-17). Alias `@/*` → `src/*`.
 - `src/components/ui/`: componentes shadcn (`base-nova`, configurado en `components.json`); prefiere la CLI para incorporar componentes. Se permiten cambios manuales coherentes con el estilo, la accesibilidad y las APIs existentes.
 - Helpers en `src/lib/`, hooks en `src/hooks/`. Crea carpetas del árbol orientativo solo cuando la tarea las necesite.
+- Presentación delegada en `src/features/<dominio>/components/`, tests y fixtures locales **solo según la allowlist del ticket**. Contratos, containers, mocks compartidos, rutas, primitivas UI, estilos y configuración son del líder salvo autorización. Sigue las barreras de imports de arquitectura; no introduzcas red, SDK ni entorno en presentación.
 - Gestor: **npm** (`package-lock.json` versionado). No agregues Redis, colas, microservicios, email externo ni pagos en P0.
 - Antes de escribir código Next.js, lee la guía correspondiente en `node_modules/next/dist/docs/` (ver bloque al final).
 
@@ -58,7 +59,7 @@ Estas reglas son obligatorias; detalle y justificación en PRD §3, §5 y §6. R
 
 ## Checks reales
 
-Scripts existentes en `package.json`: `npm run lint`, `npm run typecheck`, `npm run build` (también `dev`, `start`). **No hay** runner de tests, CI ni script `test`; no los des por ejecutados. Qué correr según el cambio: [`docs/development.md`](docs/development.md).
+Scripts de validación en `package.json`: `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:boundaries`, `npm run build` y `npm run test:e2e`. Vitest cubre contratos/componentes; Playwright cubre navegador. `preview:ui` es solo desarrollo local sin credenciales. CI está definido en `.github/workflows/ci.yml`; no presupongas que corrió en GitHub ni que hay branch protection activa. Qué correr según el cambio: [`docs/development.md`](docs/development.md).
 
 Comprueba `package.json` y el código al comenzar: este inventario puede cambiar. Para cambios riesgosos, se recomienda revisión independiente cuando esté disponible; si no, realiza una autorrevisión explícita y declara sus límites. No requiere un subagente ni un servicio concreto.
 
@@ -70,6 +71,7 @@ Comprueba `package.json` y el código al comenzar: este inventario puede cambiar
 | Estructura actual vs. objetivo | [`docs/architecture.md`](docs/architecture.md) |
 | Comandos, validación, secretos | [`docs/development.md`](docs/development.md) |
 | Deuda conocida | [`docs/exec-plans/tech-debt-tracker.md`](docs/exec-plans/tech-debt-tracker.md) |
+| Seguimiento del MVP | [Plan maestro](docs/exec-plans/active/mvp-master-plan.md): actualiza solo las filas de tus IDs `MVP-NNN`, con evidencia real |
 | Planes de trabajo | `docs/exec-plans/active/` (abiertos) y `docs/exec-plans/completed/` |
 
 Para cambios importantes de comportamiento, arquitectura o integraciones, registra primero objetivo, pasos y validación en un ExecPlan en `docs/exec-plans/active/`; actualízalo durante el trabajo y archívalo en `completed/` al cerrar. Puedes hacerlo directamente, sin herramientas ni agentes especializados. Los ajustes pequeños de presentación o mantenimiento no requieren un plan. No hay una secuencia obligatoria de especificación → diseño → plan: crea solo los documentos que la tarea necesite.

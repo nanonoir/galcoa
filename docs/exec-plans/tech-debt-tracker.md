@@ -7,8 +7,8 @@
 - **Discovered/Recorded**: 2026-10-16
 - **Originating Plan**: `docs/exec-plans/completed/lint-types-audit-hardening.md`
 - **Severity**: High (dev-only; 9 advisories)
-- **Description**: `npm audit` reports 9 high-severity vulnerabilities rooted in transitive dependency `braces` (latest published version 3.0.3 remains vulnerable) via `fast-glob`, pulled in by development dependencies (`shadcn`, `ts-morph`, `@next/eslint-plugin-next`).
-- **Impact**: Zero production impact (`npm audit --omit=dev` reports 0 vulnerabilities).
+- **Description**: `npm audit` reports 9 high-severity vulnerabilities rooted in transitive dependency `braces` (latest published version 3.0.3 remains vulnerable) via `fast-glob`, pulled in exclusively by development packages used for build, linting, and tooling (`shadcn`, `ts-morph`, `@next/eslint-plugin-next`).
+- **Impact**: Zero production impact on client bundles or production runtime artifacts (`npm audit --omit=dev` reports 0 vulnerabilities). However, audit metrics are not treated as an absolute proof of security, as vulnerable code exists in the development tooling tree.
 - **Current State**: Blocked upstream. No compatible patched versions of `braces` or consumers (`fast-glob`) have been released. Applying `npm audit fix --force` was rejected as it forces major breaking downgrades (`hedera-agent-kit@4.0.0`, `shadcn@1.0.0`, `eslint-config-next@14`).
 - **Remediation**: Monitor upstream updates to `braces`, `fast-glob`, `shadcn`, and Next.js ESLint plugin. Update dependencies once a non-breaking upstream patch is available.
 
@@ -17,37 +17,60 @@
 - **Discovered/Recorded**: 2026-10-16
 - **Originating Plan**: `docs/exec-plans/completed/lint-types-audit-hardening.md`
 - **Severity**: Low / Verification gap
-- **Description**: Local smoke testing verified basic runtime compatibility (ethers `WebSocketProvider` roundtrip over local WS server, MCP `InMemoryTransport` `tools/list`, and Hedera SDK package import). However, real network integration with Hedera nodes using credentials and live OAuth flows were not executed during this change.
+- **Description**: Local smoke testing verified basic runtime compatibility (ethers `WebSocketProvider` roundtrip over local WS server, MCP `InMemoryTransport` `tools/list`, and Hedera SDK package import). In `team-workspace-readiness.md` (P1), unused packages `@hashgraph/hedera-agent-kit` and `@hashgraph/hedera-agent-kit-ai-sdk` were removed from `package.json`, reducing the unverified dependency surface. However, real network integration with Hedera Testnet nodes using live credentials (`@hiero-ledger/sdk`) and live OAuth authentication flows remain unexecuted.
 - **Impact**: Potential edge-case incompatibilities in live network calls or credentialed authentication remain unverified by automated tests.
-- **Current State**: Static types and local mock transports pass. No live credentials/test environments were configured for this task.
+- **Current State**: Static types and local mock transports pass. No live credentials or network test environments were configured during readiness preparation.
 - **Remediation**: Execute end-to-end integration tests with live Hedera testnet credentials and real OAuth provider configs when integration test harness is in place.
 
 ### 3. Dependencias y variables de entorno desviadas del PRD
 
 - **Discovered/Recorded**: 2026-10-16
-- **Originating Plan**: `docs/exec-plans/completed/docs-initialization.md`
-- **Severity**: Medium (alineación de producto; sin impacto en runtime hoy, no hay código que las use)
-- **Description**: Frente al stack del PRD (§0, §13): faltan `ai`, `@ai-sdk/react`, `groq-sdk` y `zod`; existe `@ai-sdk/groq` en lugar de `groq-sdk`. `package.json` incluye además `@hashgraph/hedera-agent-kit` y `@hashgraph/hedera-agent-kit-ai-sdk` así como `mercadopago` y `stripe`, que son dependencias por revisar / no usadas en P0 (su instalación sola no viola invariantes; el riesgo radicaría únicamente en exponer herramientas a los agentes frente a INV-04), y `react-hook-form`/`@hookform/resolvers`/`react-dropzone`/`sonner`/`date-fns`, no listados en el PRD (`cn` está en uso exportado en `src/lib/utils.ts`, por lo que no es un duplicado comprobado ni una discrepancia con el PRD). `.env.example` incluye `OPENAI_API_KEY` y `AI_*_PROVIDER` (el PRD fija Gemini + Groq) y usa `HEDERA_OPERATOR_ID`/`HEDERA_OPERATOR_KEY` donde el PRD §13 orienta `HEDERA_ACCOUNT_ID`/`HEDERA_PRIVATE_KEY` (el PRD indica verificar el nombre exacto en la implementación).
-- **Impact**: Riesgo de que agentes o tickets adopten herramientas o proveedores no decididos si se exponen; superficie de dependencias mayor a la necesaria en P0.
-- **Current State**: Sin modificar. Solo documentado.
-- **Remediation**: El líder técnico decide por ticket qué dependencias se conservan, eliminan o agregan, y fija los nombres definitivos de variables.
+- **Originating Plan**: `docs/exec-plans/completed/docs-initialization.md` (actualizado en `team-workspace-readiness.md`)
+- **Severity**: Low (alineación de producto; sin impacto en runtime ni bloqueo de presentación)
+- **Description**: Frente al stack del PRD (§0, §13): se incorporó `zod@4.6.7` y se retiraron las dependencias no utilizadas en P0 (`@ai-sdk/groq`, `@hashgraph/hedera-agent-kit`, `@hashgraph/hedera-agent-kit-ai-sdk`, `mercadopago`, `stripe`). `.env.example` se versionó con los nombres canónicos de variables del PRD §13 (`HEDERA_ACCOUNT_ID`, `HEDERA_PRIVATE_KEY`, etc.), vacío salvo `HEDERA_NETWORK=testnet`. Quedan pendientes de incorporar `ai`, `@ai-sdk/react` y `groq-sdk`, las cuales se instalarán junto con sus consumidores reales al implementar el chat con IA; no son requeridas para la presentación del dashboard ni bloquean el trabajo delegado.
+- **Impact**: Superficie de dependencias acotada para el desarrollo frontend; consumidores de IA pendientes de integración con sus dependencias reales en backend.
+- **Current State**: Parcialmente resuelto en `team-workspace-readiness.md`. Zod y `.env.example` alineados; SDKs de IA aplazados hasta la implementación del chat.
+- **Remediation**: Instalar `ai`, `@ai-sdk/react` y `groq-sdk` en el plan de implementación del chat con agentes.
+
+### 5. Sin tests ni CI (lógica de negocio y CI remoto pendientes)
+
+- **Discovered/Recorded**: 2026-10-16
+- **Originating Plan**: `docs/exec-plans/completed/docs-initialization.md` (actualizado en `team-workspace-readiness.md` y `mvp-planning-pack.md`)
+- **Severity**: Medium (REQ-18)
+- **Description**: La infraestructura de tooling, runner y CI se resolvió en `team-workspace-readiness.md`: se configuraron Vitest (Node y jsdom), Playwright (Chromium para preview y Next smoke), comprobación estática de barreras (`tests/boundaries/`) y el workflow de GitHub Actions (`.github/workflows/ci.yml`). La suite local ejecuta 91 tests Vitest, 51 de barreras y 15 tests browser en Playwright. Sin embargo, las suites de tests automatizados para las reglas de negocio del PRD (REQ-01 a REQ-17, y notarización HCS en REQ-18) y la ejecución remota de CI en runners Linux de GitHub Actions continúan pendientes.
+- **Impact**: La infraestructura técnica de CI y pruebas está operativa localmente; la cobertura de las reglas de negocio e integración remota se verificará conforme se implemente el backend.
+- **Current State**: Parcialmente resuelto (tooling, harness de pruebas y configuración CI listos y validados en clon limpio; la cobertura de especificaciones y estrategia de tests se planificó en los 36 ExecPlans [F12-01..F12-03, F13-01..F13-03], pero la implementación de tests de negocio, ejecución remota y cobertura de producto REQ-01 a REQ-18 siguen pendientes de ejecución real sin cambios de código/dependencias en esta fase de planificación).
+- **Remediation**: Desarrollar suites de pruebas de negocio con cada feature backend e iniciar la ejecución remota del workflow en GitHub Actions con el primer PR.
+
+### 6. Aviso de compatibilidad ESM en configs TypeScript de Vite/Vitest
+
+- **Discovered/Recorded**: 2026-10-16
+- **Originating Plan**: `docs/exec-plans/completed/team-workspace-readiness.md`
+- **Severity**: Low (informativo / tooling)
+- **Description**: Node y Vite emiten un aviso informativo no bloqueante al cargar configuraciones TypeScript (`preview/vite.config.ts`, `vitest.config.ts`) sobre la futura compatibilidad del loader nativo ESM en Node.
+- **Impact**: Ninguno en runtime ni en build; las suites de tests y el preview funcionan completamente sin fallos.
+- **Current State**: Se conserva el comportamiento por defecto sin añadir flags globales frágiles en `package.json` ni silenciar artificialmente el aviso.
+- **Remediation**: Monitorear actualizaciones de Vite y Vitest que adopten la resolución nativa de configuraciones TS cuando esté estabilizada.
+
+### 7. Discrepancia menor en extensión utils entre manifest y graph de barreras
+
+- **Discovered/Recorded**: 2026-10-16
+- **Originating Plan**: `docs/exec-plans/completed/team-workspace-readiness.md`
+- **Severity**: Low / Mantenimiento
+- **Description**: En `tests/boundaries/manifest.mjs` la lista de permitidos para presentación incluye `lib/utils.{ts,tsx}`, mientras que en `tests/boundaries/graph.ts` la comprobación explícita valida contra `src/lib/utils.ts`.
+- **Impact**: Ninguno actualmente, ya que el archivo real es `src/lib/utils.ts`. Si en el futuro `utils.ts` se renombrara a `utils.tsx`, el check de grafo lo rechazaría mientras que la regla ESLint lo permitiría.
+- **Current State**: Ambos checks pasan con el archivo existente `src/lib/utils.ts`.
+- **Remediation**: Armonizar la comprobación en `graph.ts` para aceptar tanto `.ts` como `.tsx` en un pase posterior de mantenimiento de herramientas.
+
+---
+
+## Resolved Technical Debt
 
 ### 4. `.env.example` ignorado por `.gitignore`
 
 - **Discovered/Recorded**: 2026-10-16
 - **Originating Plan**: `docs/exec-plans/completed/docs-initialization.md`
+- **Resolution Plan**: `docs/exec-plans/completed/team-workspace-readiness.md`
 - **Severity**: Low
-- **Description**: El patrón `.env*` ignora también `.env.example`, que el README usa como referencia de nombres de variables; no se versiona.
-- **Impact**: Quien clone el repositorio no tendrá la plantilla.
-- **Current State**: Sin modificar (`.gitignore` fuera de alcance).
-- **Remediation**: Añadir excepción `!.env.example` en `.gitignore` por ticket, tras confirmar que no contiene valores reales.
-
-### 5. Sin tests ni CI
-
-- **Discovered/Recorded**: 2026-10-16
-- **Originating Plan**: `docs/exec-plans/completed/docs-initialization.md`
-- **Severity**: Medium (REQ-18)
-- **Description**: No hay runner de tests, script `test` ni CI; el PRD §12–13 exige tests deterministas y checks por PR.
-- **Impact**: Sin verificación automática del flujo crítico.
-- **Current State**: Solo `lint`, `typecheck` y `build` manuales.
-- **Remediation**: Introducir runner y CI mediante ticket, y actualizar `docs/development.md`.
+- **Description**: El patrón `.env*` ignoraba también `.env.example`, que el README usa como referencia de nombres de variables; no se versionaba.
+- **Resolution**: Resuelto en P1 de `team-workspace-readiness.md`. Se añadió la excepción `!.env.example` en `.gitignore`. Se generó y versionó una plantilla `.env.example` limpia con los nombres de variables de PRD §13, vacía salvo `HEDERA_NETWORK=testnet`. La plantilla local previa se preservó en `.env.example.local` (ignorado por Git) sin leer ni exponer ningún valor secreto.
