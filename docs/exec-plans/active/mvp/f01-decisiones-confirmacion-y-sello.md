@@ -62,7 +62,9 @@ Sin credenciales. Un registro erróneo se sustituye por otro fechado que lo refe
 
 ## Decisiones pendientes
 
-- Valores concretos de vigencia, umbrales de abuso, ventana de validez y criterio de ausencia concluyente: resultado de ejecutar este plan con la documentación oficial; no se inventan aquí.
+- Resoluciones técnicas aceptadas por el orquestador el 2026-10-16 (decisión técnica delegada por el usuario; ver Progreso y evidencia).
+- Resuelto el 2026-10-16: `manifest-hcs` §1/§2 se alineó al contrato (`selection` dentro de `content`; V5–V8 sin cambios), y el contrato aplica el máximo de 200 puntos de código en `declaredName` (comandos, resultados y `ReceiptSchema`) con tests.
+- Observación `MVP-070`/`MVP-012` sigue sin comunicarse al integrador (el plan no edita el maestro).
 
 ## Referencias a completar
 
@@ -80,7 +82,13 @@ Sin credenciales. Un registro erróneo se sustituye por otro fechado que lo refe
 
 ## Progreso y evidencia
 
-No ejecutado.
+2026-10-16 (primera tanda, [`hackathon-team-first-wave`](../hackathon-team-first-wave.md)):
+
+- Valores aprobados por el usuario registrados: tokens de 32 bytes con hash en base, 72 h configurable, GET sin consumo, respuesta/consumo atómicos e idempotentes, reemisión que invalida el anterior, sin herencia de respuestas, 60 lecturas y 10 escrituras por minuto en Postgres ([public-capabilities §8](../../../specs/public-capabilities.md)); JCS+SHA-256, nonce privado de 32 bytes, Testnet, plazos 5/20/10/30 s y timeout desconocido = pendiente ([manifest-hcs §8](../../../design/manifest-hcs.md)).
+- Resoluciones técnicas locales (no aprobaciones humanas): token base64url de 32 bytes, ventana fija de 60 s, `429` con `Retry-After`, `503` ante fallo del mecanismo, IP de plataforma solo como hash, nombre máximo 200; validez de transacción 120 s (valor por defecto del SDK instalado, bajo ~180 s de la documentación) y criterio de ausencia concluyente (expiración conocida **y** recibo definitivo de no ejecución; la ausencia sola es desconocida).
+- Vectores reproducibles: V0–V4 sintéticos existentes más V5–V8 de dominio (forma del contrato actual, tres confirmaciones), calculados offline con un script temporal de Node, sin red ni `.env`; ver [manifest-hcs §2](../../../design/manifest-hcs.md). El procedimiento de reproducción consta en manifest-hcs §2; no hay helper ni test de repositorio que los reproduzca todavía (`MVP-082`) y no se exige para F1.
+- No se hicieron llamadas a Hedera ni a Supabase.
+- Decisiones técnicas aceptadas por el orquestador el 2026-10-16. Casillas sin marcar; filas `MVP-011`/`MVP-012` no tocadas: el cierre y el maestro son del integrador.
 
 ## Cierre
 

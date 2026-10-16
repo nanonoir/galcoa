@@ -85,17 +85,57 @@ No afirmar verdad factual, identidad verificada, firma digital ni permanencia de
 | P-06 | Límite aplicado entre instancias; petición limitada no consume como respuesta | 011/075/100/130; REQ-16/17 |
 | P-07 | Sin PDF solo estado; PDF alterado falla; Mirror caído no afirma integridad ni filtra datos | 100/101; 7,14 |
 
-## 8. Registro operativo abierto — MVP-011
+## 8. Registro de decisiones F1 — MVP-011
 
-**Defaults propuestos, NO APROBADOS. No hay duración, cuota ni entropía numérica decididas aquí.**
+**Estado:** valores **aprobados por el usuario el 2026-10-16** (primera tanda, [`hackathon-team-first-wave`](../exec-plans/active/hackathon-team-first-wave.md)). **No cierra MVP-011**: faltan pruebas y elementos de aceptación (§8.2). Los puntos «derivado» no fueron elegidos por el usuario.
 
-| Parámetro | Propuesta de partida / alternativa | Evidencia para finalizar F1 |
+### 8.1 Valores aprobados
+
+| Parámetro | Valor aprobado | Nota |
 | --- | --- | --- |
-| Entropía/representación | Generación criptográfica aleatoria y representación apta URL | Elegir bits/longitud/formato y validar generación/almacenamiento sin secretos expuestos |
-| Caducidad | Vigencia configurable desde emisión, sin renovación por GET | Elegir intervalo por uso de demo y riesgo; probar fronteras temporales/concurrencia |
-| Reemisión | Rotar pendientes revocando anterior; no sobrescribir utilizadas | Aprobar experiencia de pérdida/reintento y prueba concurrente con idempotencia |
-| Abuso | Controles separados por capacidad/acción y contexto de origen, durables | Elegir claves, ventanas, cuotas, retención, respuesta y comportamiento ante fallo; medir coste sin exponer secretos |
-| Cobertura de verificador | Incluir lectura y PDF por sus costes distintos | Fijar límites coordinados con MVP-010/013 y diseño de manifiesto |
-| Nombre autodeclarado | No vacío tras espacios; sin patrón de identidad | Fijar máximo y normalización segura sin excluir nombres legítimos |
+| Entropía del token | 32 bytes aleatorios (CSPRNG) | Token **privado** de invitación; nunca se publica ni se usa como referencia pública |
+| Almacenamiento | Solo hash en base de datos | El token en claro se muestra solo al emitirlo (§2) |
+| Vigencia | 72 h, configurable | Contada desde la emisión; GET no la renueva |
+| GET | Nunca consume el token | §3 |
+| Respuesta y consumo | Atómicos e idempotentes | Misma repetición devuelve el resultado ya persistido |
+| Reemisión | Invalida el token anterior | Conserva historia; no transfiere respuestas |
+| Cambio material | La respuesta **no se hereda**: se crea otra revisión | review-confirmation, INV-12/13 |
+| Lecturas | 60 por minuto | Configurable |
+| Escrituras | 10 por minuto por origen | Configurable |
+| Mecanismo | Postgres; sin servicio nuevo (sin Redis) | Coherente entre instancias y reinicios (§5) |
 
-Al ejecutar F1, el líder registra en este apartado valores definitivos, fundamento/documentación vigente, pruebas positivas/negativas, alternativas y aprobación fechada; actualiza referencias consumidoras. MVP-012 resuelve cadena/canonicalización en manifest-hcs; no se cierra aquí ni con esta preparación. Política jurídica de datos reales sigue MVP-014.
+Consideraciones (derivadas, no cambian los valores):
+
+- **Origen y red compartida:** varias personas pueden compartir una misma IP (oficina, red móvil, NAT); un límite por origen puede limitar a inocentes. Por eso se aprobó configurable y con cuidado; la clave exacta del «origen» y su combinación con la capacidad no están definidas.
+- **No prometer de más:** el límite reduce abuso básico, no impide ataques distribuidos ni sustituye autorización, unicidad ni RLS (§5). No presentarlo como protección completa.
+- **Ámbito no precisado por el usuario:** no consta si las 60 lecturas/min son por origen, por token o globales, ni qué abarcan las 10 escrituras/min; §8.1.1 propone una resolución técnica local, pendiente de aceptación (§8.2).
+- Una petición limitada no consume el token (P-06) y la indisponibilidad del mecanismo no abre un bypass silencioso.
+
+### 8.1.1 Detalles técnicos locales (decisión de implementación, **no aprobados por una persona**)
+
+Resueltos de forma conservadora y compatible con las specs para poder implementar; cualquier ajuste es de configuración o de una constante y no cambia los valores aprobados de §8.1.
+
+| Tema | Decisión técnica local |
+| --- | --- |
+| Representación del token | base64url sin relleno de los 32 bytes (43 caracteres, alfabeto `A-Za-z0-9_-`); malformado = «Enlace no disponible» sin consultar la base |
+| Ventana | Fija de 60 s, alineada al minuto; contador durable en Postgres |
+| Clave | Origen derivado del encabezado de IP que provee la plataforma, almacenado solo como hash; contador separado por clase (lectura/escritura). No incluye el token ni datos privados |
+| Lecturas (60/min) | GET de invitación y consulta de verificación sin PDF |
+| Escrituras (10/min) | Emisión/reemisión, respuesta de invitación y verificación con PDF |
+| Límite excedido | HTTP `429` con `Retry-After`, mensaje genérico, sin consumir el token ni revelar qué clave se limitó |
+| Fallo del mecanismo | Cierra en falla: `503` reintentable, sin éxito ficticio ni bypass |
+| Retención | Solo contadores de ventanas recientes; sin token ni IP en claro |
+| Origen confiable | Solo el encabezado de IP que provee la plataforma de despliegue (Vercel); el cliente no lo puede fijar. Detrás de NAT compartido, varios usuarios comparten contador: límite configurable (§8.1) |
+| Nombre autodeclarado | Texto sin espacios en los extremos, no vacío, **máximo 200 caracteres** (puntos de código tras `trim`); sin patrón de identidad ni normalización Unicode. El contrato (`src/lib/contracts/confirmation.ts`, `DeclaredNameSchema`, reutilizado en `ReceiptSchema`) aplica `trim`, `min(1)` y máximo 200 puntos de código |
+
+### 8.2 Qué impide cerrar MVP-011
+
+El líder debe resolver o aceptar:
+
+1. Aceptar o ajustar ámbito, clave, ventana, retención, respuesta `429` y fallo del mecanismo propuestos como decisión técnica local en §8.1.1 (no aprobados por una persona).
+2. Aceptar la representación base64url del token (§8.1.1). La referencia pública es otra función: 16 bytes opacos, ver [manifest-hcs](../design/manifest-hcs.md) §1.
+3. Nombre autodeclarado: aceptar el máximo técnico de 200 caracteres (§8.1.1) y añadirlo al contrato compartido (hoy falta; es del líder).
+4. Límites del verificador público con PDF (coordinados con MVP-010/013 y [manifest-hcs](../design/manifest-hcs.md)).
+**Pruebas futuras (no son pendientes de decisión).** Fronteras temporales de 72 h, concurrencia de respuesta/consumo, reemisión idempotente y límite entre instancias se implementan con sus funcionalidades; ninguna se ejecutó. La decisión documental de F1 no exige pruebas de consumidor/runtime ni verificar disponibilidad de cuentas antes de implementar.
+
+MVP-012 resuelve cadena/canonicalización en manifest-hcs; política jurídica de datos reales sigue MVP-014. Hasta que se resuelvan o acepten los puntos 1–4, `MVP-011` permanece `pendiente` en el maestro (no se cierra automáticamente); este registro no actualiza su fila.

@@ -1,6 +1,6 @@
 # Fuentes, redacción y contraste trazables
 
-**Estado objetivo P0; funcionalidad pendiente.** Esta especificación concreta el comportamiento, no acredita implementación ni aprueba decisiones F1. Autoridad: [PRD v1.5](../exec-plans/GALCOA-PRD-v1.4.md), §3–7, §11–12 y §16; REQ-03…07, 15–18; INV-01…10, 16. No sustituye el PRD.
+**Estado objetivo P0; funcionalidad pendiente.** Esta especificación concreta el comportamiento, no acredita implementación; las decisiones F1 aprobadas se registran en §7 sin cerrar MVP-010/013. Autoridad: [PRD v1.5](../exec-plans/GALCOA-PRD-v1.4.md), §3–7, §11–12 y §16; REQ-03…07, 15–18; INV-01…10, 16. No sustituye el PRD.
 
 Fundaciones canónicas: [SH-01…04 y SH-08…10](../design/mvp-shared-foundations.md). Persistencia y concurrencia: [diseño SQL](../design/data-transactions.md), consumidor en preparación. Evaluación: [release-validation](release-validation.md). Congelación: [review-confirmation](review-confirmation.md).
 
@@ -86,15 +86,109 @@ Enviar solo material necesario/autorizado, nunca tokens, secretos o URLs firmada
 | S-06 | Crítica permite revisión; contexto excedido/salida inválida detienen solo etapa técnica | MVP-050/053, 060…062; §12.4,5,15 |
 | S-07 | Inyección se trata como fuente; no ejecuta acciones ni admite referencia a documento ajeno | MVP-051/053, 130; INV-01,04,11 |
 
-## 7. Registro operativo abierto — F1
+## 7. Registro de decisiones F1 — MVP-010 / MVP-013
 
-**Todos los defaults siguientes son propuestos, NO APROBADOS; no cierran MVP-010/013.**
+**Estado:** estrategia y límites **aprobados por el usuario el 2026-10-16** (instrucción de la primera tanda, [`hackathon-team-first-wave`](../exec-plans/active/hackathon-team-first-wave.md)). **No cierra MVP-010 ni MVP-013**: faltan elementos de aceptación (§7.5). Los IDs exactos de modelo y los puntos marcados «derivado» **no** fueron elegidos por el usuario. Un cambio de P0 requiere decisión explícita y reconciliación con el PRD.
 
-| Decisión | Default propuesto / alternativa | Parte pendiente y evidencia requerida |
+### 7.1 Límites de ingesta (MVP-010) — aprobados
+
+| Concepto | Valor aprobado | Nota |
 | --- | --- | --- |
-| MVP-010 | Allowlist pequeña de PDF simple e imágenes comunes; alternativa ampliar solo formatos probados | Subtipos, bytes, páginas/dimensiones, recursos, documentos cifrados y extracción/metadatos; probar muestras válidas, ilegibles, corruptas y excedidas |
-| MVP-013 — entrada/contexto | Rechazo técnico explícito al exceder capacidad; alternativa selección explícita y trazable de fuentes | Longitud mensaje, contexto, salida y concurrencia; no truncar ni esconder exclusiones |
-| MVP-013 — ejecución | Configuración explícita por modelo y ejecución acotada recuperable; sin fallback | Parámetros, presupuestos, timeouts/reintentos y compatibilidad con despliegue; sin números aprobados aquí |
-| MVP-013 — reglas/calidad | Indicadores contextuales y evaluación etiquetada; alternativa ajustar configuración, no modelos decididos | Umbrales/severidades por contexto y mínimo de calidad antes de datos reales; medición según release-validation |
+| Formatos de archivo | PDF, JPEG, PNG | Se valida por contenido en servidor (§1), no por extensión. Otros formatos: rechazo técnico |
+| Tamaño por archivo | 10 MB | Ver convención de unidad abajo |
+| Cantidad de archivos | 3 **por documento** | Ámbito aprobado: el documento (operación) completo, no cada envío |
+| Tamaño total de archivos | 20 MB **acumulados por documento** | Ámbito aprobado: suma de todos sus archivos conservados, no por envío |
+| PDF | Hasta 10 páginas; sin contraseña | PDF cifrado/protegido, corrupto o con más páginas: rechazo técnico antes de procesar |
+| Imagen | Hasta 20 megapíxeles | Ancho × alto ≤ 20 000 000 píxeles, medido por el servidor |
+| Mensaje de chat | 8000 caracteres | Rechazo técnico explícito al exceder; sin truncado |
 
-Al ejecutar F1, el líder registra aquí valor elegido, alcance, alternativas descartadas, documentación oficial vigente, pruebas/evidencia y aprobación fechada; propaga referencias a consumidores. Solo esa resolución permite implementar la parte dependiente. Si cambia P0, requiere decisión explícita y reconciliación con PRD. Preparar este registro no completa IDs.
+- **Convención de unidad (decisión técnica local, no una unidad aprobada por una persona):** el usuario aprobó las cifras «10 MB»/«20 MB» sin precisar la base. Se implementa `1 MiB = 1 048 576 bytes` (10 MiB = 10 485 760 B; 20 MiB = 20 971 520 B) y la UI muestra «10 MiB»/«20 MiB» para que lo mostrado coincida con lo aplicado. Si se pretendía 10⁶ bytes, solo cambian las constantes y las etiquetas. En esta spec «MB» se lee como MiB.
+- **Ámbito (aprobado por el usuario):** «3 archivos» y «20 MiB» son **por documento y acumulados**, no por envío: una nueva carga se rechaza si, sumada a los archivos ya conservados en ese documento, supera 3 archivos o 20 MiB. Los 10 MiB, 10 páginas de PDF y 20 megapíxeles se aplican a cada archivo. El límite de contexto (§7.3) sigue rechazando sin truncar.
+- **Otras ingestas:** audio, video y OCR sofisticado siguen fuera de P0 (§1).
+
+**Contexto técnico oficial consultado (2026-10-16):**
+
+| Eslabón | Hallazgo | Consecuencia |
+| --- | --- | --- |
+| Gemini, entrada PDF | Copia de documentación en `docs/generated/gemini/document-processing.md`: hasta 50 MB o 1000 páginas, inline y Files API | Los límites aprobados están por debajo |
+| Gemini, entrada inline | Copia en `docs/generated/gemini/image-understanding.md`: la solicitud inline completa (texto, instrucciones y bytes) se limita a 20 MB; para más, Files API | Con 20 MiB de archivos más prompt, una solicitud inline podría excederlo: derivado, `MVP-043/050` deben usar Files API o llamadas por archivo, sin truncar |
+| Supabase Storage | Plan Free: límite global máximo 50 MB por archivo ([fuente](https://supabase.com/docs/guides/storage/uploads/file-limits)); se puede restringir por bucket | 10 MB cabe; configurar límite y tipos del bucket en `MVP-024/042` |
+| Vercel Functions | Cuerpo de petición/respuesta máximo **4.5 MB** ([fuente](https://vercel.com/docs/functions/limitations), actualizada 2026-08-24) | Un archivo de 10 MB **no puede pasar por una función**. Derivado: la carga debe ir directo a Storage (p. ej. URL de subida firmada, breve y del propietario); el mecanismo concreto es de `MVP-042` |
+
+Las cifras de proveedores son de la fecha de consulta y dependen del plan; revisar antes de documentos reales.
+
+### 7.2 Modelos: estrategia aprobada, IDs propuestos
+
+**Aprobado por el usuario (D-05):** Gemini para extracción/redacción mediante AI SDK/Google y GPT-OSS 120B en Groq para el contraste mediante `groq-sdk`. **No elegidos por el usuario:** los identificadores exactos. Se proponen estos, **estables y compatibles según documentación oficial, sin verificar disponibilidad en la cuenta** (no se hicieron llamadas con credenciales):
+
+| Rol | ID propuesto (configurable) | Evidencia oficial (2026-10-16) |
+| --- | --- | --- |
+| Agente 1 (extracción multimodal y redacción) | `gemini-3.5-flash-lite` | [Models](https://ai.google.dev/gemini-api/docs/models): «Stable». [Deprecations](https://ai.google.dev/gemini-api/docs/deprecations): lanzado 2026-07-21, sin fecha de cierre anunciada. Página del modelo: entradas texto/imagen/PDF, salida texto, 1 048 576 tokens de entrada, 65 536 de salida, salidas estructuradas y *thinking* soportados; *thinking* por defecto «minimal». Precio estándar de pago: USD 0,30 entrada / 2,50 salida (incluye *thinking*) por millón de tokens ([pricing](https://ai.google.dev/gemini-api/docs/pricing)). Presente en el tipo `GoogleModelId` de `@ai-sdk/google` 4.0.98 instalado |
+| Agente 2 (contraste textual) | `openai/gpt-oss-120b` | [Groq Models](https://console.groq.com/docs/models): listado en «Production Models», 131 072 tokens de contexto, 65 536 de salida máxima, USD 0,15 entrada / 0,60 salida por millón; plan Developer 250K TPM / 1K RPM. [Página del modelo](https://console.groq.com/docs/model/openai/gpt-oss-120b): entrada y salida solo texto, modo JSON Schema, razonamiento. Alineado con SH-08 (Groq solo texto) |
+
+**Alternativas descartadas:** `gemini-3.8-flash` (estable y más reciente, sin precio ni calidad medidos aquí; reservar si la evaluación final mostrara fallas del Flash-Lite); `gemini-3.6-flash`; `gemini-3.1-flash-lite` (cierre anunciado para 2027-05-07 con reemplazo `gemini-3.5-flash-lite`); modelos 2.5 (acceso limitado a quienes ya los usaron); alias `*-latest` (se reasignan sin cambio de código); `openai/gpt-oss-20b`.
+
+**Selección técnica (2026-10-16):** por instrucción de la primera tanda, el líder técnico delegó las decisiones locales compatibles: los dos IDs anteriores quedan como **selección técnica configurable**, avalada por documentación oficial vigente. No es una aprobación humana de los nombres ni verifica acceso de la cuenta.
+
+**Reglas:** los IDs viven en configuración no secreta (constantes o variables sin secretos; nombres a definir en `MVP-050/053`), nunca en el cliente. Antes de documentos reales se revisa que el ID siga vigente. **Validación final reservada:** disponibilidad en la cuenta/región, soporte de PDF + salida estructurada en la versión instalada de AI SDK y comportamiento medido solo se comprueban en la evaluación real final autorizada (§7.4), no antes.
+
+### 7.3 Ejecución y coste (MVP-013) — aprobados
+
+| Concepto | Valor aprobado |
+| --- | --- |
+| Contexto por llamada | 24 000 tokens, **incluyendo instrucciones** |
+| Salida por etapa | 4000 tokens |
+| Concurrencia | 1 por documento; 2 globales |
+| Presupuesto de demo | USD 10, ajustable; **no es un tope garantizado** |
+| Reintento | 1, solo para errores transitorios |
+| Fallback | Ninguno (otro proveedor/modelo/fixture) |
+| Truncado | Ninguno: si algo excede, rechazo técnico informando el valor aprobado |
+
+Consideraciones técnicas (derivadas, no cambian los valores):
+
+- **No es un tope duro.** El USD 10 es una meta de planificación; no se verificó un límite de gasto del lado del proveedor. Ningún control de la app debe prometerlo como garantía.
+- **Orden de magnitud del peor caso por llamada** con precios del 2026-10-16: Gemini 24 000 × 0,30 + 4000 × 2,50 ≈ USD 0,0172; Groq 24 000 × 0,15 + 4000 × 0,60 ≈ USD 0,0060. Un par redacción + contraste ≈ USD 0,023; con USD 10 corresponden unas 430 parejas sin reintentos y unas 215 si todo reintentara una vez. Excluye extracciones adicionales; solo estimación, no medición.
+- **El tope de salida incluye razonamiento.** Gemini: `max_output_tokens` cuenta los tokens de *thinking* y, si se alcanza durante el razonamiento, devuelve estado «incomplete» ([thinking](https://ai.google.dev/gemini-api/docs/thinking)). Groq: `reasoning_effort` admite `low`/`medium`/`high` en GPT-OSS ([reasoning](https://console.groq.com/docs/reasoning)); si su tope de salida incluye razonamiento se confirma al implementar. Respuesta incompleta = impedimento técnico de la etapa (§4), nunca borrador ni reporte válido. El nivel de razonamiento se fija por configuración al implementar.
+- **Contexto de 24 000 tokens.** Por referencia, una página PDF equivale a unos 258 tokens en Gemini (copia local); 3 PDF de 10 páginas ocupan unos 7740. El método para medir el contexto antes de enviar lo define `MVP-050`; al excederlo no se trunca.
+- **Plazos por etapa de IA (resolución técnica, 2026-10-16):** valor por defecto de **30 s por etapa** (extracción, redacción, contraste), configurable. Cabe en la duración por defecto de Vercel Functions (300 s, [fuente](https://vercel.com/docs/functions/limitations)). No se afirma un total menor a 30 s para una operación completa ni que la cuenta tenga acceso o cuota; un plazo agotado es impedimento técnico de la etapa (§4); es elegible para el único reintento solo si se clasifica como transitorio.
+- **Parámetros de generación (resolución técnica):** razonamiento **bajo** para reducir latencia donde el modelo lo soporte (Gemini: nivel de *thinking*; Groq GPT-OSS: `reasoning_effort: low`). Temperatura y demás: se usan los valores por defecto del proveedor; no se codifican parámetros que el modelo o el SDK instalado no admitan (un parámetro inválido es un error de configuración, no se reintenta). Se verifica contra el SDK instalado en `MVP-050/053`.
+
+### 7.4 Calidad mínima y evaluación
+
+Aprobado por el usuario el 2026-10-16:
+
+- Conjunto de **12 casos ficticios** de ensayo/demo; sin datos reales. Es un **subconjunto** del dataset de 30 casos del PRD §12, que no se recorta: la evaluación final, ejecutada en una única sesión, puede correr el dataset completo; si solo se corren los 12, queda registrada como brecha explícita frente al PRD y no se presenta como cumplimiento del requisito de 30.
+- Criterio: la salida **no contiene material inventado** (cantidades, nombres, precios, fechas, unidades o voluntades no presentes en las fuentes; §2); contradicciones y omisiones se reportan como **advertencias no bloqueantes**, no como rechazo.
+- La evaluación **real** (proveedores reales) se ejecuta **una sola vez al final**, sobre `develop` integrado. **No ahora.** Mientras tanto los tests usan dobles.
+
+La demo con datos ficticios está autorizada sin un umbral comercial final: no depende de él y no lo anticipa. El umbral queda para la única sesión de evaluación real al final; no se adelanta ni se inventa ahora, y solo condiciona documentos reales.
+
+**Criterios de la demo (resolución técnica, 2026-10-16, sobre el criterio aprobado):**
+
+- En el subconjunto demo de **12 casos**: **0 material inventado** y **100 %** de las contradicciones conocidas (sembradas en los casos) reportadas como advertencia. Cualquier material inventado falla la evaluación.
+- El dataset del PRD (§12, unos 30 casos, MVP-122) **se conserva**: se ejecuta **una sola sesión final** con todos si el tiempo alcanza; no se repite por cada PR. Los 12 son el subconjunto de la demo.
+- Veredicto mínimo de la demo: lo da el líder (Nahuel). El resultado es un criterio de demo, **no una promesa de veracidad** ni de ausencia de errores.
+- Uso no comercial habilitado sin evaluación jurídica real; no se introduce ningún bloqueo o advertencia de producto más allá del PRD. La política de datos reales sigue en MVP-014.
+
+Sin resolver: etiquetado concreto de los 12 casos (MVP-122) y medición por [release-validation](release-validation.md). Hasta entonces los documentos reales permanecen bloqueados.
+
+### 7.5 Mecanismo de carga y extracción (resolución técnica, 2026-10-16)
+
+El líder técnico delegó las decisiones locales compatibles; no cambian producto ni agregan servicios.
+
+- **Carga directa a Storage privado.** Como Vercel limita el cuerpo a 4,5 MB, un archivo de hasta 10 MiB no pasa por una función. Una ruta de servidor autenticada y del propietario valida tipo declarado, tamaño y topes por documento (§7.1) y emite un **permiso de subida acotado** (ruta fija, tamaño máximo, vida corta, un solo objeto) al bucket privado. Tras la subida, el servidor **vuelve a validar** contenido real, tamaño, páginas/megapíxeles y calcula el hash; un objeto que no pasa se elimina y no cuenta como evidencia conservada. Sin servicio nuevo.
+- **Extracción PDF/JPEG/PNG con Gemini mediante Files API, en servidor.** Los bytes se leen del Storage privado dentro del servidor y se suben a Files API (o se pasan inline solo si el total de la solicitud cabe en 20 MB); nunca URLs firmadas ni públicas enviadas al modelo ni «URL a ciegas» a la web. **Ciclo de vida documentado:** el archivo remoto es temporal, se elimina al terminar la etapa o al fallar y no es la copia de registro; se registra el identificador remoto solo mientras exista. Los archivos de Files API caducan por su cuenta según la documentación del proveedor; el borrado explícito es una buena práctica, no la única defensa.
+- **Contraste con Groq:** recibe solo texto (originales de chat y extracciones referenciadas) más la leyenda de limitación visual de §2; nunca archivos.
+- **Sin pruebas ejecutadas:** nada de esto está implementado; la implementación y pruebas son de `MVP-042/043/050/053`.
+
+### 7.6 Qué impide cerrar MVP-010 y MVP-013
+
+Quedaron **resueltas técnicamente** (sin una nueva aprobación humana): convención MiB, mecanismo de carga y Files API (§7.5), IDs de modelo como selección configurable (§7.2), plazo de 30 s por etapa y parámetros por defecto (§7.3), y criterios de la demo (§7.4). El usuario delegó las decisiones técnicas al orquestador, que el 2026-10-16 las **acepta como decisiones locales** (sin aprobación humana adicional):
+
+1. Se aceptan estas resoluciones técnicas y la matriz de extracción por formato, procedencia y leyenda de limitación visual (§1–§5).
+2. Los 12 casos ficticios de la demo son un subconjunto etiquetado para `MVP-122`; su etiquetado concreto lo fija ese ticket (con hash antes de ejecutar modelos) y **no bloquea F1**. Dueño del veredicto: Nahuel (§7.4); el criterio numérico de datos reales queda para la evaluación final.
+3. El dataset completo de ~30 casos del PRD (§12, `MVP-122`, [release-validation](release-validation.md)) se **conserva** y se corre en una sola sesión final si el tiempo alcanza; si solo se corren los 12, la brecha queda explícita.
+
+**Separación de pendientes.** Los puntos 1–3 quedan registrados como decisiones. Lo que sigue **no** es requisito del cierre documental de F1: pruebas de consumidor o runtime (se implementan con `MVP-042/043/050/053/122`), validar IDs de modelo o disponibilidad de cuenta antes de implementar (el modelo es configurable; la propuesta de §7.2 queda definida y la validación real se reserva a la evaluación final). Esas pruebas futuras no se marcan como hechas ni se exigen para decidir.
+
+`MVP-010` y `MVP-013` siguen `pendiente` en el maestro: este registro no actualiza sus filas ni las cierra; lo hace el integrador.

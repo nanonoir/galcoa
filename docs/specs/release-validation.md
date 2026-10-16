@@ -81,7 +81,7 @@ Si falta mínimo aprobado, el resultado no habilita documentos reales. Si no lo 
 | Compuerta | Aceptación verificable |
 | --- | --- |
 | MVP-130 | Upload y endpoints públicos limitados; tokens/privados fuera de logs/referrer/recursos/bundle; sin fixtures en producto; casos negativos de autorización |
-| MVP-131 | Run Linux enlazado al commit con servidor/RLS local; checks requeridos y protección de rama comprobados aparte con permisos efectivos |
+| MVP-131 | Run Linux enlazado al commit con servidor/RLS local. Checks requeridos y protección de rama **no son obligatorios** en la hackathon (opt-out explícito del usuario, AGENTS.md); quedan opcionales posthackathon y, si se configuran, se comprueban aparte con permisos efectivos. El workflow se conserva como señal |
 | MVP-132 | Despliegue Vercel real, Auth redirects y migraciones aplicados al entorno autorizado; nombres de configuración documentados sin valores secretos |
 | MVP-133 | Cuentas autorizadas y datos ficticios; confirmación de correo no desactivada para eludir límites del emisor |
 | MVP-134 | Smoke real de sesión/chat/evidencias/IA/confirmación/finalización/HCS/verificación; fallo/reintento si reproducible, o limitación registrada |

@@ -58,8 +58,13 @@ Sin credenciales ni datos reales. Si una decisión resulta errónea, se reemplaz
 
 ## Decisiones pendientes
 
-- Umbral numérico de calidad mínima (paso 5): puede depender del dataset de `MVP-122`.
-- Valores de límites: no se fijan en este plan; son el resultado de `MVP-010/013`.
+- Umbral numérico de calidad para **datos reales**: queda para la sesión final de evaluación (`MVP-122`); la demo con los 12 casos ficticios ya tiene criterio (sources-and-ai §7.4).
+
+Decisiones locales aceptadas por el orquestador el 2026-10-16 (decisiones técnicas delegadas por el usuario; sin aprobación humana adicional):
+
+- Evaluación final: el dataset de ~30 casos se conserva en una sola sesión; los 12 son el subconjunto de la demo y, si solo corren esos, la brecha queda explícita.
+- Etiquetado concreto de los 12 casos: lo fija `MVP-122` (consumidor), no bloquea F1.
+- Valores de límites (§7.1, §7.3) y resoluciones técnicas de la spec: aceptados.
 
 ## Referencias a completar
 
@@ -76,7 +81,12 @@ Sin credenciales ni datos reales. Si una decisión resulta errónea, se reemplaz
 
 ## Progreso y evidencia
 
-No ejecutado.
+2026-10-16 (primera tanda, [`hackathon-team-first-wave`](../hackathon-team-first-wave.md)):
+
+- Valores aprobados por el usuario (límites de ingesta, contexto/salida/concurrencia/presupuesto/reintento/fallback/truncado y criterio de calidad con 12 casos ficticios) registrados en [sources-and-ai §7](../../../specs/sources-and-ai.md). El ámbito por documento y la unidad MiB constan allí.
+- Resoluciones técnicas locales delegadas por el líder (no aprobaciones humanas): IDs `gemini-3.5-flash-lite` y `openai/gpt-oss-120b` como selección configurable con evidencia oficial; carga directa a Storage por 4,5 MB de Vercel; extracción con Files API en servidor; 30 s por etapa; razonamiento bajo y parámetros por defecto del proveedor; criterios de demo (0 material inventado, 100 % de contradicciones conocidas en los 12 casos).
+- No se hicieron llamadas con credenciales ni pruebas de runtime; disponibilidad de cuenta y comportamiento de modelos quedan para la evaluación real final.
+- Decisiones técnicas aceptadas por el orquestador el 2026-10-16 (§7.6 de la spec). Las casillas del checklist y las filas `MVP-010`/`MVP-013` no se tocaron: el cierre y el maestro son del integrador.
 
 ## Cierre
 

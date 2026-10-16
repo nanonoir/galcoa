@@ -103,3 +103,5 @@ La política de exposición, pérdida y reemisión del secreto vive en public-ca
 | Rechazo adicional del autor | No añadirlo al mínimo P0 | Solo si se solicita esa opción extra, definir su efecto; no bloquea P0 |
 
 F1 registra valor/evidencia/aprobación fechada en public-capabilities para MVP-011; MVP-012 se resuelve en el diseño de manifiesto, no aquí. MVP-014 conserva la revisión jurídica para uso real/comercial; estos textos funcionales no son dictamen. Ningún registro se considera resuelto por esta preparación.
+
+**Registro F1 (2026-10-16):** el usuario aprobó que la respuesta de un tercero **no se hereda** ante un cambio material o de selección (se crea otra revisión sin confirmaciones previas), y que la reemisión invalida el token anterior sin sobrescribir respuestas ya persistidas. Valores de token y límites: [public-capabilities §8](public-capabilities.md#8-registro-de-decisiones-f1--mvp-011). No cierra ningún MVP.
