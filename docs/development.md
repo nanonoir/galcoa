@@ -67,6 +67,21 @@ El workflow `.github/workflows/ci.yml` define `npm ci`, lint, tipos, Vitest, bar
 
 La ejecución base de Linux en GitHub Actions fue comprobada verde en el PR de integración y push a `develop` (ver [f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)). Un workflow y `CODEOWNERS` no activan protección de ramas ni otorgan permisos; la configuración de branch protection es opcional posthackathon y el CI ampliado con pruebas de servidor/RLS corresponde a `MVP-131`.
 
+### CI ampliado (MVP-131)
+
+`validate` conserva todos sus checks (incluido `npm test`, con los dobles y guards del puente). El job independiente `local-server-db` usa Docker de Ubuntu y la CLI Supabase instalada por `npm ci`, sin servicios cloud ni secretos configurados. Arranca la pila del repositorio y ejecuta **en serie**, con reset compartido antes de cada suite:
+
+1. `npm run test:rls`.
+2. `npm run test:server:local`.
+3. `npx vitest run --config tests/server/persistence/vitest.local.config.ts`.
+4. `npx vitest run --config tests/server/persistence/executor/vitest.local.config.ts`.
+5. `npx vitest run --config tests/server/routes/vitest.local.config.ts`.
+6. `npm run test:e2e:auth` (opt-in activo por su runner, tres casos reales con Auth/Mailpit locales, puerto 3217).
+
+`scripts/ci-local.mjs` invoca directamente los mismos entrypoints bloqueados, fuerza reset y captura stdout/stderr de CLI y tests: solo publica progreso/resultado, nunca claves efímeras, correos, cookies ni errores crudos. Falla sin omitir suites si faltan prerrequisitos. No sube artefactos de este job; Auth ya deshabilita trazas, vídeos y capturas. `always()` detiene únicamente `galcoa` en ese runner desechable. El lanzador rechaza ejecución fuera de GitHub Linux para no resetear bases compartidas; para reproducir usar los comandos anteriores con reserva exclusiva de DB y no publicar logs privados.
+
+No acredita la matriz futura MVP-121, seguridad pendiente MVP-130, evaluación IA, smoke remoto, Vercel ni proveedores reales. CI sigue siendo señal, no gate universal; no configura branch protection ni checks requeridos.
+
 ## Entorno y seguridad
 
 - El único archivo local de entorno es **`.env`** en la raíz. `.env*` sigue ignorado (salvo `.env.example`) y los agentes no lo leen ni imprimen. `.env.example` se versiona con nombres del PRD; solo lleva valores no secretos por defecto.
