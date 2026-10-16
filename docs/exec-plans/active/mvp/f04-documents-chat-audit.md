@@ -6,9 +6,82 @@ Tareas del maestro: `MVP-040`, `MVP-041`, `MVP-044`
 
 ## 1. Objetivo y estado de partida
 
+### Conexión autorizada — 2026-10-16 (`flow/persistence-wiring`)
+
+Secuencia coordinada de #10/#11/#13/#14/#15 (sin duplicar planes): primero RPC,
+adaptador y HTTP de documentos/mensajes; después reservas/Storage/extracción;
+finalmente CAS de borrador, reportes y claim durable del turno. Se conservan los
+servicios puros. Migración reservada: `20261016001000_f4_persistence.sql`, sin
+editar C1–C4. Auth y `src/lib/supabase/**` pertenecen a la sesión #9; no se editan.
+La base local está reservada por esa sesión: no arrancar/resetear/parar Docker ni
+afirmar validación SQL real. Cada checkpoint se entrega parcial con `Refs`, sin
+automerge ni cierre de IDs. Los IDs permanecen `en_curso` hasta evidencia real.
+
+Checkpoint #10: las RPC de autor derivan identidad de `auth.uid()`; nunca del
+body. El canal de agente/auditoría interna queda limitado a `galcoa_executor`,
+sin grants directos a tablas ni uso de `service_role`. Su composición depende
+del transporte acotado de MVP-025, aún ausente en esta base. No se sustituye con
+el cliente privilegiado actual. Pruebas de contratos con dobles no acreditan
+aislamiento, atomicidad ni concurrencia en Postgres.
+
+Entrega de #10 en dos PR encadenados, sin merge automático: primero migración,
+adaptador y tests de persistencia (`flow/persistence-core`, base `develop`);
+después composición y HTTP (`flow/persistence-wiring`, base del primero).
+El contrato HTTP siguiente corresponde al segundo PR: no se declara disponible
+al integrar únicamente el núcleo. El segundo se retargetea a `develop` después
+del merge del primero, conservando ancestros y verificando su diff.
+
 Crear el servicio de documentos del propietario (crear, listar, reabrir), conservar los mensajes originales del chat con fecha real de carga y fecha declarada separadas, y ofrecer el servicio de auditoría solo-agregar que emiten las demás tareas.
 
-**Estado real verificado:** solo existen los contratos de resumen/dashboard ([`document.ts`](../../../../src/lib/contracts/document.ts), `dashboard.ts`), escenarios, preview y barreras. No existen Auth, SQL, `src/lib/documents/`, `src/lib/supabase/`, rutas de documento ni servicios. Nada de lo descrito abajo está implementado.
+**Estado de partida de esta conexión:** contratos, servicios puros, Auth y C1–C4 ya integrados; faltaban RPC/adaptadores/rutas. El checkpoint #10 agrega esos archivos, sin dar por verificadas su aplicación SQL ni las carreras reales hasta ejecutar la suite local con reserva. El transporte del ejecutor sigue pendiente en MVP-025; las rutas de autor no lo necesitan.
+
+### Contrato HTTP del checkpoint #10 (consumidor #16)
+
+Todos los endpoints son privados, `Cache-Control: private, no-store, max-age=0`.
+POST requiere `Content-Type: application/json`, `Origin` exactamente igual al
+lista de orígenes de `NEXT_PUBLIC_APP_URL` configurada (helper de Auth #70 ya
+integrado; no se deriva del Host del request),
+sesión verificada y body estricto de hasta 64 KiB de transporte. No se admite
+`ownerId`, `sender`, fechas de carga ni IDs de documento en el body.
+
+| Método/ruta | Body | `result` del éxito |
+| --- | --- | --- |
+| `GET /api/documents` | ninguno | `DocumentSummary[]` |
+| `POST /api/documents` | `{title, idempotencyKey}` (`CreateDocumentCommandSchema`) | `DocumentSummary` |
+| `GET /api/documents/[id]` | ninguno | `DocumentSummary` |
+| `GET /api/documents/[id]/messages` | ninguno | `Message[]`, orden de secuencia SQL |
+| `POST /api/documents/[id]/messages` | `{content, declaredEventDate, idempotencyKey}` (`RecordMessageCommandSchema` sin `documentId`) | `Message` del autor |
+
+Éxito HTTP 200: `{schemaVersion:1, outcome:"completed", result, replayed?}`;
+`replayed` solo acompaña escrituras. Error: `{error: TechnicalError}`, igual al
+handler de turnos existente. Estados: entrada inválida 400, sin sesión 401,
+origen rechazado 403, ajeno/inexistente/UUID inválido 404, clave divergente 409,
+body excesivo 413, fallo técnico reintentable 503. El texto original no se
+recorta. Se conserva `declaredEventDate` según el contrato, sin inferir zona.
+
+El cliente debe conservar la misma `idempotencyKey` al reintentar el mismo
+mensaje. Esta ruta de mensajes **no** genera IA ni sustituye el turno de chat:
+`clientMessageId`, cancelación y NDJSON siguen siendo el contrato de
+`turns/http.ts`, aún sin ruta productiva conectada en este checkpoint. Rutas de
+evidencia/extracción/contraste se documentarán en sus checkpoints, no se anuncian
+como disponibles por existir servicios con dobles.
+
+RPC de autor: `create_document`, `append_message`, `list_documents`,
+`get_document`, `list_messages`; identidad derivada de `auth.uid()`, sin DML
+directo. `append_agent_message` y `append_document_audit` son solo ejecutor.
+Los fingerprints SQL se derivan de los campos semánticos en la función: no se
+acepta un fingerprint aportado por el cliente como prueba de equivalencia.
+El rol no-login `galcoa_f4_writer` posee solo las funciones F4 y permisos sobre
+sus tablas/columnas necesarias; no se otorga membresía al ejecutor/API ni
+`BYPASSRLS`, propiedad de tablas o DML general a `galcoa_executor`.
+
+Prueba real preparada (no ejecutar hasta obtener reserva):
+`npx.cmd vitest run --config tests/server/persistence/vitest.local.config.ts`.
+Reutiliza setup y conexiones independientes de `tests/server/rls/`; el setup
+resetea la pila salvo `RLS_SKIP_RESET=1`, por eso no se invoca en paralelo a Auth.
+Incluye dos propietarios/anon, idempotencia concurrente, auditoría atómica ante
+fallo forzado, grants, canal de agente y rechazo de UPDATE/DELETE. No cubre aún
+cuotas de evidencias ni claims de turnos: pertenecen a los checkpoints pendientes.
 
 ## 2. Criterios del PRD y requisitos cubiertos
 
