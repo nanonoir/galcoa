@@ -4,7 +4,7 @@
 
 Tareas del maestro: `MVP-111`, `MVP-112`, `MVP-113`, `MVP-114`, `MVP-115`
 
-Producto: [PRD v1.5](../../GALCOA-PRD-v1.4.md) (REQ-01, REQ-02, REQ-03; PRD §5, §10, §11). Estructura y propiedad: [arquitectura](../../../architecture.md#condición-para-delegar-y-primeros-candidatos). Fundaciones: [mvp-shared-foundations](../../../design/mvp-shared-foundations.md) (SH-02, SH-03, SH-07, SH-09). Paquete previo: [`f11-frontend-delegation-package`](f11-frontend-delegation-package.md).
+Producto: [PRD v1.5](../../GALCOA-PRD-v1.4.md) (REQ-01, REQ-02, REQ-03; PRD §5, §10, §11). Estructura y propiedad: [arquitectura](../../../architecture.md#condición-para-delegar-y-primeros-candidatos). Fundaciones: [mvp-shared-foundations](../../../design/mvp-shared-foundations.md) (SH-02, SH-03, SH-07, SH-09). Paquete previo: [`f11-frontend-delegation-package`](../../completed/f11-frontend-delegation-package.md).
 
 ## 1. Objetivo y alcance
 
@@ -26,7 +26,7 @@ Fuera de alcance: rutas, containers, endpoints, Auth real, chat interactivo, con
 
 ## 3. Dependencias
 
-- Del maestro: las cinco dependen de `MVP-110` y de `MVP-007` (handle y permisos del colaborador, Externo). `MVP-110` ya no depende de `MVP-007`: el paquete se prepara sin ese acceso, pero ejecutar `MVP-111…115` requiere ambos más tickets con autorización posterior. Ver [paquete](f11-frontend-delegation-package.md).
+- Del maestro: las cinco dependen de `MVP-110` y de `MVP-007` (handle y permisos del colaborador, Externo). `MVP-110` ya no depende de `MVP-007`: el paquete se prepara sin ese acceso, pero ejecutar `MVP-111…115` requiere ambos más tickets con autorización posterior. Ver [paquete](../../completed/f11-frontend-delegation-package.md).
 - Entre entregas: ninguna. Un fallo o retraso de una no bloquea a las otras. Las integraciones que las consumen (`MVP-116`, `MVP-031`) dependen de su integración, no de su orden.
 - Por paso (cada entrega): E1 ← `MVP-110`; E2 ← E1; E3 ← E2; E4 ← E3 (revisión y validación del líder); E5 ← E4 (integración).
 

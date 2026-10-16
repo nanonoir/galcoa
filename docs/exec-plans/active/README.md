@@ -3,10 +3,15 @@
 | Plan | Estado |
 | --- | --- |
 | [Plan maestro del MVP P0](mvp-master-plan.md) | Activo. Tablero único de seguimiento del MVP (`MVP-NNN`) hasta el despliegue validado |
-| [Catálogo de planes derivados](mvp/README.md) | Índice (no es un ExecPlan) de los 36 planes derivados (35 activos bajo `mvp/` que cubren 67 IDs pendientes + 1 archivado en `completed/`) |
+| [Catálogo de planes derivados](mvp/README.md) | Índice (no es un ExecPlan) de los 36 planes derivados (31 activos bajo `mvp/` que cubren 60 IDs pendientes + 5 archivados en `completed/`) |
 | [Dependencias IA y `server-only`](../completed/deps-ai-sdk-server-only.md) | Cerrado y archivado. Instaló dependencias IA y `server-only`; entrega autorizada pendiente de commit en `develop`. No cambia estados del maestro |
 | [Preparación de los planes del MVP](../completed/mvp-planning-pack.md) | Cerrado y archivado. Trabajo documental completado; preparó los 36 planes derivados, specs y diseños |
 | [Integración de base y CI remoto](../completed/f00-integracion-base-ci.md) | Cerrado y archivado. Completó MVP-006: base integrada en `develop` y CI remoto en Linux verificado |
+| [Decisiones de ingesta y modelos](../completed/f01-decisiones-ingesta-y-modelos.md) | Cerrado y archivado. Completó MVP-010 y MVP-013: límites de ingesta, pipeline de extracción y parámetros de modelos/calidad |
+| [Decisiones de confirmación y sello](../completed/f01-decisiones-confirmacion-y-sello.md) | Cerrado y archivado. Completó MVP-011 y MVP-012: capacidades públicas, rate limit Postgres, perfil JCS y reconciliación HCS |
+| [Contratos de dominio](../completed/f02-contratos-dominio.md) | Cerrado y archivado. Completó MVP-020 y MVP-021: contratos del núcleo documental, revisión, confirmación, versión y DTO públicos integrados en `develop` local |
+| [Paquete de delegación frontend](../completed/f11-frontend-delegation-package.md) | Cerrado y archivado. Completó MVP-110: props, escenarios Zod, registro preview y allowlists integrados en `develop` local |
+| [Primera tanda de la hackathon](../completed/hackathon-team-first-wave.md) | Cerrado y archivado. Consolidó las bases de F1, contratos F2, paquete F11, guías de equipo y validación |
 
 Regla de actualización: el plan maestro se edita **solo por fila de ID** al completar una tarea con evidencia real (protocolo en §8 de ese plan). Por autorización del usuario se preparan todos los planes derivados por adelantado; viven bajo `mvp/` mientras estén pendientes/abiertos y se ejecutan solo al cumplir dependencias y permisos. Al cerrar se archivan en [`../completed/`](../completed/) y se actualizan sus enlaces. Si un ExecPlan derivado avanza, actualiza los IDs que cubre en el maestro; no se copia su estado aquí ni se marca completado por haberlo redactado.
 

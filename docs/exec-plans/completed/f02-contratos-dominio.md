@@ -1,12 +1,12 @@
 # ExecPlan F2 — Contratos de dominio: núcleo documental, revisión, confirmación, versión y DTO públicos
 
-**Estado: planificado; no implementado.** No cambia estados del [maestro](../mvp-master-plan.md).
+**Estado: completado y archivado.** Tareas cubiertas: `MVP-020`, `MVP-021`.
 
 Tareas del maestro: `MVP-020`, `MVP-021`
 
-Requisitos PRD: REQ-17 y REQ-15 (base de contratos); estados [§5](../../GALCOA-PRD-v1.4.md), datos [§8](../../GALCOA-PRD-v1.4.md); INV-05, INV-09, INV-11–15, INV-17. Cuatro selecciones (D-08, §12.9).
+Requisitos PRD: REQ-17 y REQ-15 (base de contratos); estados [§5](../GALCOA-PRD-v1.4.md), datos [§8](../GALCOA-PRD-v1.4.md); INV-05, INV-09, INV-11–15, INV-17. Cuatro selecciones (D-08, §12.9).
 
-Referencias: [fundaciones SH-01, SH-02, SH-03](../../../design/mvp-shared-foundations.md) · [arquitectura: contratos y barreras](../../../architecture.md) · [desarrollo](../../../development.md) · contratos actuales `src/lib/contracts/document.ts` y `dashboard.ts` · [manifest de barreras](../../../../tests/boundaries/manifest.mjs).
+Referencias: [fundaciones SH-01, SH-02, SH-03](../../design/mvp-shared-foundations.md) · [arquitectura: contratos y barreras](../../architecture.md) · [desarrollo](../../development.md) · contratos actuales `src/lib/contracts/document.ts` y `dashboard.ts` · [manifest de barreras](../../../tests/boundaries/manifest.mjs).
 
 ## Precondiciones y checkpoints
 
@@ -65,21 +65,48 @@ Sin secretos. Contrato público por allowlist evita filtración por `spread`. Ro
 
 ## Referencias a completar
 
-Ninguna adicional. La estructura de snapshot/DTO público ya está en SH-01/02; el perfil canónico (RQ-A4, [manifest-hcs](../../../design/manifest-hcs.md)) se consume después en `MVP-070/082`, no en este plan.
+Ninguna adicional. La estructura de snapshot/DTO público ya está en SH-01/02; el perfil canónico (RQ-A4, [manifest-hcs](../../design/manifest-hcs.md)) se consume después en `MVP-070/082`, no en este plan.
 
 ## Checklist
 
-- [ ] Inventario de entidades y campos mínimos revisado.
-- [ ] `MVP-020` implementada con tests válidos/ inválidos.
-- [ ] Checks de `MVP-020` ejecutados; checkpoint A integrado.
-- [ ] `MVP-021` implementada con DTO públicos estrictos y tests negativos.
-- [ ] Checks de `MVP-021` ejecutados; checkpoint B integrado.
-- [ ] Filas de `MVP-020` y `MVP-021` actualizadas.
+- [x] Inventario de entidades y campos mínimos revisado.
+- [x] `MVP-020` implementada con tests válidos/ inválidos.
+- [x] Checks de `MVP-020` ejecutados; checkpoint A integrado.
+- [x] `MVP-021` implementada con DTO públicos estrictos y tests negativos.
+- [x] Checks de `MVP-021` ejecutados; checkpoint B integrado.
+- [x] Filas de `MVP-020` y `MVP-021` actualizadas en el plan maestro.
 
 ## Progreso y evidencia
 
-No ejecutado.
+Completado e integrado en `develop` local (commit `fd3502c`, con env en `7db19b8`; publicación remota / push conjunto autorizado por el usuario pendiente). Checks completos en `sh_144a6cbea001J7f5tg0v8eGv5W`: exit 0 (lint, types, 222 Vitest incl. 66 tests de límites/boundaries, build de Next.js, 15 Playwright tests). Revisión independiente de dominio en sesión `ses_ebb5ebd15ffeV3cQsqGqt67xE9`: PASS.
 
 ## Cierre
 
-Actualizar **solo** las filas `MVP-020` y `MVP-021` (estado, evidencia con comandos reales, rama/PR) y recontar §3 tras integrar; no marcar `completada` por pasar en rama. Archivar en [`completed/`](../../completed/) con ambas integradas. Los mocks no cierran tareas de integración. **Al archivar:** mover el plan a `docs/exec-plans/completed/`, conservar su enlace en las filas de sus IDs actualizándolo a la nueva ubicación y corregir los relativos del propio plan (pierden un nivel: `../../../x` → `../../x`, `../../GALCOA-PRD-v1.4.md` → `../GALCOA-PRD-v1.4.md`; el maestro pasa a `../active/mvp-master-plan.md` y los planes hermanos aún activos a `../active/mvp/<plan>.md`). El cierre registra solo los IDs propios, el recuento del §3 del maestro y la evidencia de la integración en `develop` (hasta la transición de `MVP-006`, la base vigente). Se archiva únicamente al completar; ningún plan se archiva ahora.
+Plan completado y archivado. Las tareas `MVP-020` y `MVP-021` quedan marcadas como `completada` en el plan maestro [`mvp-master-plan.md`](../active/mvp-master-plan.md) con evidencia verificable.
+
+## Implementation Outcome
+
+### Implemented
+
+Se implementaron de forma completa y estricta los contratos de dominio del núcleo documental, revisión, confirmación, versión y DTOs públicos:
+- Esquemas Zod y tipos TypeScript inferidos para documento, mensajes de conversación, evidencias (con hash sha256 y ubicación privada), borradores con control de concurrencia y dimensiones de estado del PRD §5 (`src/lib/contracts/`).
+- Separación estricta entre la fecha declarada del hecho (con precisión, zona, texto original e instante solo si es suficiente, o desconocida explícita) y la fecha de carga del servidor, cumpliendo la invariante INV-09.
+- Esquemas de revisión, snapshot congelado, matriz canónica de selección de 4 combinaciones con autor obligatorio, comandos y resultados de confirmación (autor y tercero con nombre autodeclarado, rechazo atómico con casilla desmarcada y ratificación según INV-13) e idempotencia.
+- Esquemas de versión inmutable con antecedente, constancias y referencias privadas, separando explícitamente el sello HCS de la finalización de versión.
+- DTOs públicos mínimos estrictos (`z.strictObject`) construidos por allowlist para invitación pública y verificación pública (sin exposición de claves internas, chat ni tokens).
+- Envelope técnico estructurado para operaciones en curso y reporte de errores con correlación no sensible.
+
+### Deviations from Design
+
+None. La implementación se ajusta con exactitud al PRD §5, §8, las invariantes INV-05, INV-09, INV-11–15, INV-17 y las fundaciones compartidas SH-01…SH-03.
+
+### Validation
+
+- Suite completa de tests en `tests/contracts/` verificando casos válidos y rechazo estricto de fixtures inválidos (selecciones no autorizadas, rechazo sin ratificación, confirmación con casilla desmarcada, tercero sin nombre y claves espurias en DTO público).
+- Ejecución integral de checks del repositorio en runner local `sh_144a6cbea001J7f5tg0v8eGv5W` (exit 0): `npm run lint`, `npm run typecheck`, 222 tests en Vitest (incluyendo 66 tests de barreras de arquitectura en `tests/boundaries/`), `npm run build` y 15 tests E2E en Playwright.
+- Revisión técnica independiente (sesión `ses_ebb5ebd15ffeV3cQsqGqt67xE9`): PASS.
+
+### Follow-up
+
+- Código integrado en la rama local `develop` (commit `fd3502c`). Publicación remota / push conjunto autorizado directamente por el usuario (pendiente de envío conjunto; no se afirma push remoto sin SHA remoto).
+- Los contratos quedan listos para su consumo por el esquema SQL y migraciones (`MVP-022`), servicio de documentos (`MVP-040`) y motor de reglas determinista (`MVP-060`).

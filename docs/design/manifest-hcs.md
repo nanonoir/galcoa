@@ -204,7 +204,7 @@ Pendientes **sin resolver por esta propuesta**: aprobación del perfil, entropí
 
 ## 8. Registro de decisiones F1 — MVP-012
 
-**Estado:** aprobado por el usuario el 2026-10-16 (primera tanda, [`hackathon-team-first-wave`](../exec-plans/active/hackathon-team-first-wave.md)). **No cierra MVP-012**: faltan pruebas y elementos de aceptación (§8.3). El perfil v1 de §1–2 y los vectores calculados siguen vigentes como propuesta concretada.
+**Estado:** decisión documental de F1 (`MVP-012`) **completada y aprobada el 2026-10-16** (primera tanda, [`hackathon-team-first-wave`](../exec-plans/completed/hackathon-team-first-wave.md); plan [`f01-decisiones-confirmacion-y-sello`](../exec-plans/completed/f01-decisiones-confirmacion-y-sello.md) archivado). Perfil v1 de §1–2 alineado con contratos y vectores V0–V8 documentados; resoluciones técnicas locales aceptadas por el orquestador; pruebas corresponden a tareas consumidoras (`MVP-082/090/092/100`).
 
 ### 8.1 Valores aprobados
 

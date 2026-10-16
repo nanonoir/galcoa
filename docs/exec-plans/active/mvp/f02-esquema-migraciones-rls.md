@@ -6,7 +6,7 @@ Tareas del maestro: `MVP-022`, `MVP-023`, `MVP-024`
 
 Requisitos PRD: REQ-17 y REQ-01 (aislamiento), REQ-15 (auditoría); [§8 y §12.1](../../GALCOA-PRD-v1.4.md); INV-05, INV-08, INV-11–14, INV-18.
 
-Referencias: [fundaciones SH-01, SH-04, SH-05, SH-07, SH-09](../../../design/mvp-shared-foundations.md) · [arquitectura](../../../architecture.md) · [desarrollo](../../../development.md) · [plan de contratos](f02-contratos-dominio.md) · [decisiones de confirmación y sello](f01-decisiones-confirmacion-y-sello.md).
+Referencias: [fundaciones SH-01, SH-04, SH-05, SH-07, SH-09](../../../design/mvp-shared-foundations.md) · [arquitectura](../../../architecture.md) · [desarrollo](../../../development.md) · [plan de contratos](../../completed/f02-contratos-dominio.md) · [decisiones de confirmación y sello](../../completed/f01-decisiones-confirmacion-y-sello.md).
 
 ## Precondiciones y checkpoints
 

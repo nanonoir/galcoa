@@ -1,6 +1,6 @@
 # Fichas de delegación frontend
 
-Borradores locales; **no son Issues** y no hay números asignados. Cada ficha es una tarea completa, sin subdivisiones artificiales. Plan: [paquete](../exec-plans/active/mvp/f11-frontend-delegation-package.md) · [tickets](../exec-plans/active/mvp/f11-frontend-presentation-tickets.md). Carriles y orden: [team-ticket-order](../execution/team-ticket-order.md).
+Borradores locales; **no son Issues** y no hay números asignados. Cada ficha es una tarea completa, sin subdivisiones artificiales. Plan: [paquete](../exec-plans/completed/f11-frontend-delegation-package.md) · [tickets](../exec-plans/active/mvp/f11-frontend-presentation-tickets.md). Carriles y orden: [team-ticket-order](../execution/team-ticket-order.md).
 
 | ID | Ficha | Contrato / escenarios (verificados con Vitest) | Asignación propuesta (la decide el líder) |
 | --- | --- | --- | --- |
@@ -20,7 +20,7 @@ Gastón: handle de GitHub pendiente de confirmar (no se inventa). Tomás no tien
 
 ## Referencia visual (wireframe textual, propuesta técnica local)
 
-No está aprobada por una persona; sirve como punto de partida y se ajusta con la revisión visual. Reglas: tarjetas shadcn existentes, un solo acento, texto siempre junto al color, 360 px en una columna.
+Wireframes técnicos y layout local definidos por el líder orquestador aceptados como referencia operativa para las primeras entregas. De acuerdo con `AGENTS.md`, no existe aprobación humana obligatoria; la referencia visual es una pauta técnica interna que sirve de base directa a los implementadores, no un requisito exterior bloqueante. Reglas: tarjetas shadcn existentes, un solo acento, texto siempre junto al color, 360 px en una columna.
 
 - **Snapshot (112):** encabezado con título y cuatro insignias etiquetadas («Documento», «Control», «Confirmaciones», «Sello HCS»); debajo, bloque «Contenido» (texto completo, correcciones en lista); bloque «Advertencias» con una tarjeta por advertencia (etiqueta «Crítica» o «Advertencia» + mensaje + lista «Fuentes» con alias y descripción); pie con «Revisión»/«Snapshot» en texto pequeño. Sin botones salvo «Reintentar» en el error.
 - **Historial (113):** lista vertical, la más reciente arriba; cada fila: «v2», fecha, texto «Versión finalizada» y a la derecha «Sello: pendiente | registrado | fallido (pendiente de reintento)»; fila seleccionada con `aria-current`. Vacío: «Todavía no hay versiones finalizadas».
@@ -29,12 +29,10 @@ No está aprobada por una persona; sirve como punto de partida y se ajusta con l
 
 Copy definitivo: el de los escenarios (`src/mocks/*`); lenguaje conforme a PRD §5 y §11.
 
-## Huecos y pendientes (del lado del líder / humanos)
+## Estado de preparación y pendientes
 
-1. Aprobación humana de la referencia visual y del copy; la propuesta de arriba es técnica.
-2. Publicar los Issues (no se crearon) con las allowlists de cada ficha, y cerrar formalmente `MVP-110`.
-3. Handle de GitHub de Gastón.
-4. Cambiar las entradas del preview de placeholder a componente real al integrar cada presentación; ampliar `tests/e2e/preview.spec.ts` entonces (hoy el e2e solo cubre el dashboard).
-5. Los contratos de confirmación pública / verificador / chat no tienen ficha de presentación en F11.
-
-Ningún componente final de MVP-111…115 fue implementado al preparar el contrato y los escenarios.
+1. **Contratos y exports disponibles:** Los contratos, DTOs de vista y fixtures ya existen y están exportados en el repositorio (`src/lib/contracts/*` y `src/features/*/contracts/*`). Las referencias visuales y wireframes del líder quedan aceptados operativamente para el arranque de entregas.
+2. **Issues en GitHub:** La publicación o posting posterior de Issues autorizados es una acción de seguimiento que no bloquea el cierre del paquete de delegación `MVP-110` (según se especifica en su plan).
+3. **Control del Preview (`preview/registry.ts`):** Principio de un único escritor; el registro permanece bajo control exclusivo del líder, quien actualizará los entrypoints conforme se integren las entregas. `MVP-110` integra placeholders JSON y fixtures sin implementar los componentes de UI finales.
+4. **Identidades y roles:** Facu confirmado como `@jfacundoayala`; handle de GitHub de Gastón pendiente de confirmación externa; Tomás participa en pruebas y revisión sin cuenta de agente.
+5. **No implementación de UI final:** Ningún componente final de `MVP-111…115` ni runtime de Auth fue implementado en `MVP-110`, preservando la delimitación estricta de responsabilidades.

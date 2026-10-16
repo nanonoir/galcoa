@@ -82,11 +82,11 @@ No duplicar implementación de chat en MVP-116 ni trasladar su página a MVP-054
 
 Cada entrega aporta tests de escenarios/callbacks y capturas identificadas a los dos anchos; tras integrar se verifica navegación real y páginas, no solo preview. Los checks proporcionales y límites de evidencia se rigen por release-validation, sin afirmar que se ejecutaron en esta preparación.
 
-## 6. Registro operativo abierto
+## 6. Registro operativo y cierre de paquete
 
-| Tema | Default propuesto, NO APROBADO | Cómo se finaliza |
+| Tema | Estado operativo | Resolución técnica |
 | --- | --- | --- |
-| Acabado de 112…115 | Tema existente y referencia dashboard, sin nueva dependencia | Líder fija referencia visual por entrega en MVP-110 y valida escenarios antes de delegar |
-| Props/nombres concretos | DTO de vista y callbacks mínimos sin autoridad | Líder cierra contratos en MVP-020/021/110; no se inventa API desde presentación |
+| Acabado de 112…115 | Wireframes y layout técnico local del líder aceptados para primeras entregas | Definido por el líder técnico orquestador como base técnica interna directa para el arranque. Sin aprobación humana obligatoria (regla AGENTS.md); la referencia visual sirve de guía operativa sin constituir requisito externo bloqueante |
+| Props/nombres concretos | Cerrado e integrado en `develop` local (MVP-020, MVP-021, MVP-110) | Los contratos, DTOs de vista, fixtures y esquemas Zod ya existen y están exportados en `src/lib/contracts/` y `src/features/<dominio>/contracts/`. La presentación no define API por su cuenta |
 
-No hay decisión F1 nueva creada por esta spec. Los valores de MVP-010/011/013 que aparezcan en formularios/errores se consumen de sus registros aprobados, no se resuelven aquí. La preparación no completa MVP-110 ni habilita la ejecución de 111…115 sin sus dependencias.
+El archivo `preview/registry.ts` sigue el principio estricto de un único escritor (el líder); el paquete `MVP-110` aporta placeholders JSON validados sin implementar los componentes de UI finales ni el runtime de Auth, los cuales quedan reservados a las entregas de presentación delegadas (`MVP-111…115`) y a Auth real (`MVP-031`). La publicación posterior de Issues en GitHub es un paso operativo de seguimiento que no bloquea el cierre técnico del paquete `MVP-110`.

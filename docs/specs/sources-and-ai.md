@@ -88,7 +88,7 @@ Enviar solo material necesario/autorizado, nunca tokens, secretos o URLs firmada
 
 ## 7. Registro de decisiones F1 — MVP-010 / MVP-013
 
-**Estado:** estrategia y límites **aprobados por el usuario el 2026-10-16** (instrucción de la primera tanda, [`hackathon-team-first-wave`](../exec-plans/active/hackathon-team-first-wave.md)). **No cierra MVP-010 ni MVP-013**: faltan elementos de aceptación (§7.5). Los IDs exactos de modelo y los puntos marcados «derivado» **no** fueron elegidos por el usuario. Un cambio de P0 requiere decisión explícita y reconciliación con el PRD.
+**Estado:** decisiones documentales de F1 (`MVP-010`, `MVP-013`) **completadas y aprobadas el 2026-10-16** (primera tanda, [`hackathon-team-first-wave`](../exec-plans/completed/hackathon-team-first-wave.md); plan [`f01-decisiones-ingesta-y-modelos`](../exec-plans/completed/f01-decisiones-ingesta-y-modelos.md) archivado). Resoluciones técnicas locales aceptadas por el orquestador; pruebas de runtime y evaluación corresponden a tareas consumidoras (`MVP-042/043/050/053/122/123`).
 
 ### 7.1 Límites de ingesta (MVP-010) — aprobados
 

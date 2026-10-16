@@ -38,7 +38,7 @@ Instalar Chromium antes de la primera ejecución: `npx playwright install chromi
 
 El workflow `.github/workflows/ci.yml` define `npm ci`, lint, tipos, Vitest, barreras, build y Playwright en Ubuntu, sin secretos de aplicación. Descargas de npm, Chromium y fuentes de `next/font` requieren red pública; no son llamadas a Supabase, IA o Hedera con credenciales. Evidencia browser fallida tiene retención de siete días y debe contener únicamente datos ficticios.
 
-La ejecución base de Linux en GitHub Actions fue comprobada verde en el PR de integración y push a `develop` (ver [f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)). Un workflow y `CODEOWNERS` no activan protección de ramas ni otorgan permisos; la configuración de branch protection y el CI ampliado con pruebas de servidor/RLS corresponden a `MVP-131`.
+La ejecución base de Linux en GitHub Actions fue comprobada verde en el PR de integración y push a `develop` (ver [f00-integracion-base-ci](exec-plans/completed/f00-integracion-base-ci.md)). Un workflow y `CODEOWNERS` no activan protección de ramas ni otorgan permisos; la configuración de branch protection es opcional posthackathon y el CI ampliado con pruebas de servidor/RLS corresponde a `MVP-131`.
 
 ## Entorno y seguridad
 

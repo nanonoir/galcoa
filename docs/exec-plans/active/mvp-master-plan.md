@@ -10,7 +10,7 @@ Este plan **no repite** requisitos, invariantes ni decisiones: los referencia po
 
 **Hecho (base heredada, cerrada en [`team-workspace-readiness`](../completed/team-workspace-readiness.md)).** Contratos Zod y escenarios de dashboard, presentación de referencia, preview Vite aislado, Vitest, barreras de arquitectura, Playwright, workflow de CI definido y plantillas de Issue/PR. Los resultados numéricos de ese cierre (91 tests Vitest, 51 de barreras, 15 Playwright: 13 preview y 2 smoke Next, build, lint, tipos, 2026-10-16) son **evidencia histórica**: no se reutilizan como verificación actual. Cada tarea nueva ejecuta y registra sus propios checks.
 
-**No existe todavía** (verificado en el repositorio): Auth, base de datos y migraciones, Storage, IA (los paquetes `ai`, `@ai-sdk/react` y `groq-sdk` aún no están instalados), PDF, Hedera, rutas funcionales, `supabase/`. La base técnica y documental fue integrada en `develop` vía PR #1 y su CI base verificado en Linux (ver `MVP-006`). La protección de ramas y el CI ampliado con tests de servidor/RLS corresponden a `MVP-131`.
+**No existe todavía** (verificado en el repositorio): Auth, base de datos y migraciones, Storage, IA (los paquetes `ai`, `@ai-sdk/react` y `groq-sdk` aún no están instalados), PDF, Hedera, rutas funcionales, `supabase/`. La base técnica y documental fue integrada en `develop` vía PR #1 y su CI base verificado en Linux (ver `MVP-006`). Las pruebas ampliadas de servidor/RLS corresponden a `MVP-131`; la protección de ramas es opcional posthackathon.
 
 **Equipo.** Un líder (backend, contratos, integración, rutas, configuración) y un colaborador frontend para tareas de presentación simples y delegables. No se inventan personas ni handles. Una herramienta de agente concreta no es requisito.
 
@@ -53,19 +53,19 @@ node -e "const fs=require('node:fs');const counts={};for(const line of fs.readFi
 
 | Estado | Tareas |
 | --- | --- |
-| `completada` | 6 |
+| `completada` | 13 |
 | `en_curso` | 0 |
 | `bloqueada` | 0 |
-| `pendiente` | 67 |
+| `pendiente` | 60 |
 | **Total** | **73** |
 
-Avance: 6/73 (8,2 %), con F0=6/7 (base heredada e integración MVP-006 completadas). Actualizar esta tabla en la misma edición que cambie un estado.
+Avance: 13/73 (17,8 %), con F0=6/7, F1=4/5, F2=2/7 y F11=1/8 integradas en la base del equipo. Actualizar esta tabla en la misma edición que cambie un estado.
 
 | Fase | Completadas / total |
 | --- | --- |
 | F0 Integración y proceso | 6/7 |
-| F1 Decisiones abiertas | 0/5 |
-| F2 Contratos y datos | 0/7 |
+| F1 Decisiones abiertas | 4/5 |
+| F2 Contratos y datos | 2/7 |
 | F3 Autenticación | 0/2 |
 | F4 Documentos, chat y evidencias | 0/5 |
 | F5 Agentes de IA | 0/5 |
@@ -74,7 +74,7 @@ Avance: 6/73 (8,2 %), con F0=6/7 (base heredada e integración MVP-006 completad
 | F8 Finalización y versiones | 0/5 |
 | F9 Hedera HCS | 0/4 |
 | F10 Verificador público | 0/2 |
-| F11 Producto y UI | 0/8 |
+| F11 Producto y UI | 1/8 |
 | F12 Pruebas y evaluación | 0/4 |
 | F13 Seguridad, despliegue y validación | 0/7 |
 
@@ -100,18 +100,18 @@ Cada decisión se resuelve y documenta (en el ExecPlan consumidor o en un diseñ
 
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
-| MVP-010 | Decidir límites de adjuntos y pipeline de extracción | pendiente | — | Líder | Tipos, tamaños y páginas admitidos; tratamiento de texto/PDF/imagen y de discrepancias visuales no verificadas por GPT-OSS. Documentado y citado por `MVP-042/043` | [f01-decisiones-ingesta-y-modelos](mvp/f01-decisiones-ingesta-y-modelos.md) · — |
-| MVP-011 | Decidir vigencia de tokens, límite de abuso y reemisión segura | pendiente | — | Líder | Vigencia, rate limit y política de reemisión/revocación documentados; consumidos por `MVP-072/075` | [f01-decisiones-confirmacion-y-sello](mvp/f01-decisiones-confirmacion-y-sello.md) · — |
-| MVP-012 | Decidir canonicalización del manifiesto y reconciliación HCS | pendiente | — | Líder | Forma canónica versionada, identificador opaco y criterios de reconciliación vía Mirror Node (mismo PDF/hash); consumidos por `MVP-082/090/092` | [f01-decisiones-confirmacion-y-sello](mvp/f01-decisiones-confirmacion-y-sello.md) · — |
-| MVP-013 | Decidir parámetros de modelos, coste, tiempos máximos y calidad mínima | pendiente | — | Líder | Configuración, timeouts y umbral de calidad mínima antes de habilitar documentos reales, sin valores de rendimiento inventados | [f01-decisiones-ingesta-y-modelos](mvp/f01-decisiones-ingesta-y-modelos.md) · — |
+| MVP-010 | Decidir límites de adjuntos y pipeline de extracción | completada | — | Líder | Tipos, tamaños y páginas admitidos; tratamiento de texto/PDF/imagen y de discrepancias visuales no verificadas por GPT-OSS. Documentado y citado por `MVP-042/043` | [f01-decisiones-ingesta-y-modelos](../completed/f01-decisiones-ingesta-y-modelos.md) · 2026-10-16 · Decisión documental completada; límites aprobados (10 MiB, 20 MiB acumulados por documento, 3 archivos, PDF 10 págs, 20 MP, chat 8000 caracteres) y pipeline con Files API en servidor registrados en [sources-and-ai §7](../../specs/sources-and-ai.md); resoluciones técnicas aceptadas por el orquestador; pruebas de runtime y validación real diferidas a consumidores (MVP-042/043) |
+| MVP-011 | Decidir vigencia de tokens, límite de abuso y reemisión segura | completada | — | Líder | Vigencia, rate limit y política de reemisión/revocación documentados; consumidos por `MVP-072/075` | [f01-decisiones-confirmacion-y-sello](../completed/f01-decisiones-confirmacion-y-sello.md) · 2026-10-16 · Decisión documental completada; tokens base64url 32 bytes con hash, 72 h, rate limit Postgres (60 lecturas/10 escrituras por min, ventana fija 60 s, IP hash) y nombre autodeclarado máximo 200 codepoints (incorporado en esquema y tests) registrados en [public-capabilities §8](../../specs/public-capabilities.md); resoluciones técnicas aceptadas por el orquestador; pruebas diferidas a consumidores (MVP-072/075) |
+| MVP-012 | Decidir canonicalización del manifiesto y reconciliación HCS | completada | — | Líder | Forma canónica versionada, identificador opaco y criterios de reconciliación vía Mirror Node (mismo PDF/hash); consumidos por `MVP-082/090/092` | [f01-decisiones-confirmacion-y-sello](../completed/f01-decisiones-confirmacion-y-sello.md) · 2026-10-16 · Decisión documental completada; perfil JCS (RFC 8785) + SHA-256, nonce privado 32 bytes, reference opaca 16 bytes, validez de transacción 120 s persistida, plazos 5/20/10/30 s, ausencia concluyente estricta (expiración + recibo fallido) y vectores reproducibles V0–V8 documentados en [manifest-hcs §8](../../design/manifest-hcs.md); resoluciones técnicas aceptadas por el orquestador; tests de SDK/Mirror diferidos a consumidores (MVP-082/090/092) |
+| MVP-013 | Decidir parámetros de modelos, coste, tiempos máximos y calidad mínima | completada | — | Líder | Configuración, timeouts y umbral de calidad mínima antes de habilitar documentos reales, sin valores de rendimiento inventados | [f01-decisiones-ingesta-y-modelos](../completed/f01-decisiones-ingesta-y-modelos.md) · 2026-10-16 · Decisión documental completada; selección técnica configurable (Gemini 3.5 Flash-Lite y Groq GPT-OSS 120B), 30 s por etapa, razonamiento bajo / defaults del proveedor, y criterio de calidad demo (0 material inventado, 100 % contradicciones conocidas sobre subconjunto de 12 casos con veredicto del líder) registrados en [sources-and-ai §7](../../specs/sources-and-ai.md); dataset de 30 casos preservado para evaluación final; etiquetado concreto diferido a MVP-122 |
 | MVP-014 | Revisión jurídica del lenguaje de confirmación y la política de privacidad | pendiente | — | Externo | Dictamen externo recibido. **No bloquea** la demo con datos ficticios; bloquea el uso con documentos reales/comerciales | [f01-revision-juridica](mvp/f01-revision-juridica.md) · — |
 
 ### F2 — Contratos de dominio y datos (REQ-17, REQ-15)
 
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
-| MVP-020 | Contratos del núcleo documental | pendiente | MVP-003 | Líder | Zod + tipos para documento, mensaje, evidencia, borrador y las dimensiones de estado del PRD §5; fecha declarada y fecha de carga separadas (INV-09); sin React/SDK/env | [f02-contratos-dominio](mvp/f02-contratos-dominio.md) · — |
-| MVP-021 | Contratos de revisión, confirmación, versión, sello HCS y DTO públicos | pendiente | MVP-020 | Líder | Esquemas de revisión/snapshot, selección (4 combinaciones), invitación pública y verificador con DTO mínimo propio (sin chat ni evidencias); fixtures inválidos rechazados | [f02-contratos-dominio](mvp/f02-contratos-dominio.md) · — |
+| MVP-020 | Contratos del núcleo documental | completada | MVP-003 | Líder | Zod + tipos para documento, mensaje, evidencia, borrador y las dimensiones de estado del PRD §5; fecha declarada y fecha de carga separadas (INV-09); sin React/SDK/env | [f02-contratos-dominio](../completed/f02-contratos-dominio.md) · 2026-10-16 · Integrado en local develop (commit fd3502c; pending push conjunto autorizado) · Checks completos exit 0 (sh_144a6cbea001J7f5tg0v8eGv5W: lint, types, 222 Vitest incl. 66 boundaries, build, 15 Playwright) · Revisión independiente ses_ebb5ebd15ffeV3cQsqGqt67xE9 PASS |
+| MVP-021 | Contratos de revisión, confirmación, versión, sello HCS y DTO públicos | completada | MVP-020 | Líder | Esquemas de revisión/snapshot, selección (4 combinaciones), invitación pública y verificador con DTO mínimo propio (sin chat ni evidencias); fixtures inválidos rechazados | [f02-contratos-dominio](../completed/f02-contratos-dominio.md) · 2026-10-16 · Integrado en local develop (commit fd3502c; pending push conjunto autorizado) · Checks completos exit 0 (sh_144a6cbea001J7f5tg0v8eGv5W: lint, types, 222 Vitest incl. 66 boundaries, build, 15 Playwright) · Revisión independiente ses_ebb5ebd15ffeV3cQsqGqt67xE9 PASS |
 | MVP-022 | Diseño del esquema SQL | pendiente | MVP-021, MVP-011, MVP-012 | Líder | Tablas del PRD §8 con revisiones separadas de versiones, inmutabilidad de versiones finalizadas, auditoría solo-agregar y claves de idempotencia. Diseño breve solo si elimina ambigüedad | [f02-esquema-migraciones-rls](mvp/f02-esquema-migraciones-rls.md) · — |
 | MVP-023 | Migraciones SQL versionadas | pendiente | MVP-022 | Líder | `supabase/migrations/` aplicable desde cero en base local; constraints/triggers de inmutabilidad y append-only probados con casos negativos | [f02-esquema-migraciones-rls](mvp/f02-esquema-migraciones-rls.md) · — |
 | MVP-024 | RLS y buckets privados con prueba de dos usuarios | pendiente | MVP-023 | Líder | RLS en tablas expuestas y políticas de Storage privado; el usuario A no ve documentos, archivos ni respuestas de B (PRD §12.1) en base real local | [f02-esquema-migraciones-rls](mvp/f02-esquema-migraciones-rls.md) · — |
@@ -199,7 +199,7 @@ La presentación simple se delega al colaborador solo tras `MVP-110`; la integra
 
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
-| MVP-110 | Preparar el paquete de delegación frontend | pendiente | MVP-021, MVP-004 | Líder | Para `MVP-111…115`: contratos de props, escenarios validados con Zod, entrypoints de preview, allowlist por archivo y capturas esperadas; preparar paquetes no requiere acceso del colaborador. Issues solo al autorizar su delegación | [f11-frontend-delegation-package](mvp/f11-frontend-delegation-package.md) · — |
+| MVP-110 | Preparar el paquete de delegación frontend | completada | MVP-021, MVP-004 | Líder | Para `MVP-111…115`: contratos de props, escenarios validados con Zod, entrypoints de preview, allowlist por archivo y capturas esperadas; preparar paquetes no requiere acceso del colaborador. Issues solo al autorizar su delegación | [f11-frontend-delegation-package](../completed/f11-frontend-delegation-package.md) · 2026-10-16 · Integrado en local develop (commit 37a915f; env 7db19b8; pending push conjunto autorizado) · Contratos reales + fixtures + JSON placeholders en preview; wireframes técnicos aceptados por el líder para primeras entregas; sin UI final ni runtime Auth (deliberadamente fuera de MVP-110) · Checks completos exit 0 (sh_144a6cbea001J7f5tg0v8eGv5W: lint, types, 222 Vitest incl. 66 boundaries, build, 15 Playwright) · Revisión independiente ses_ebb5912acffeQaj7pkuSwfDolg PASS |
 | MVP-111 | Presentación del dashboard | pendiente | MVP-110, MVP-007 | Colaborador frontend | Lista, vacío, carga y error con responsive y accesibilidad dentro de la allowlist; borrador en [`dashboard-presentation`](../../tasks/dashboard-presentation.md); PR con checks y capturas; sin red ni SDK | [f11-frontend-presentation-tickets](mvp/f11-frontend-presentation-tickets.md) · — |
 | MVP-112 | Presentación del snapshot y advertencias | pendiente | MVP-110, MVP-007 | Colaborador frontend | Contenido completo y advertencias con fuentes; dimensiones de estado separadas; sin acciones de confirmar/finalizar | [f11-frontend-presentation-tickets](mvp/f11-frontend-presentation-tickets.md) · — |
 | MVP-113 | Presentación del historial de versiones | pendiente | MVP-110, MVP-007 | Colaborador frontend | Versiones, estado de finalización y sello como estados independientes; lectura y callback de selección | [f11-frontend-presentation-tickets](mvp/f11-frontend-presentation-tickets.md) · — |
@@ -222,7 +222,7 @@ La presentación simple se delega al colaborador solo tras `MVP-110`; la integra
 | ID | Tarea | Estado | Depende de | Owner | Resultado y aceptación | ExecPlan · evidencia |
 | --- | --- | --- | --- | --- | --- | --- |
 | MVP-130 | Seguridad y privacidad transversal | pendiente | MVP-054, MVP-073, MVP-101 | Líder | Límites de carga y rate limits en endpoints públicos y de upload; logs de acceso sin secretos ni contenido privado; auditoría de que ningún secreto llega al bundle; datos de demo ficticios | [f13-release-security-and-ci](mvp/f13-release-security-and-ci.md) · — |
-| MVP-131 | CI ampliado y protección de ramas | pendiente | MVP-006, MVP-120 | Líder | CI Linux ejecuta también los tests de servidor/RLS; branch protection y checks requeridos comprobados en GitHub. Requiere aprobación y permisos; si faltan, se bloquea solo esta tarea | [f13-release-security-and-ci](mvp/f13-release-security-and-ci.md) · — |
+| MVP-131 | CI ampliado y protección de ramas | pendiente | MVP-006, MVP-120 | Líder | CI Linux ejecuta también los tests de servidor/RLS; branch protection y checks requeridos son opcionales posthackathon (no obligatorios para el MVP según AGENTS.md y release-validation; workflow conservado como señal). Si se configuran, requiere aprobación y permisos | [f13-release-security-and-ci](mvp/f13-release-security-and-ci.md) · — |
 | MVP-132 | Despliegue en Vercel | pendiente | MVP-026, MVP-118, MVP-130, MVP-131 | Líder | Proyecto Vercel con nombres de variables de servidor y solo `NEXT_PUBLIC_*` públicas, redirecciones de Auth, migraciones aplicadas; requiere autorización y cuenta; sin secretos en el repo | [f13-deploy-and-demo](mvp/f13-deploy-and-demo.md) · — |
 | MVP-133 | Datos y cuentas de demo | pendiente | MVP-031, MVP-132 | Líder | Cuentas precreadas/autorizadas (el emisor de correo integrado es limitado y no se desactiva la confirmación por defecto), datos ficticios y guion de demo; credenciales fuera del repo | [f13-deploy-and-demo](mvp/f13-deploy-and-demo.md) · — |
 | MVP-134 | Smoke real integrado | pendiente | MVP-091, MVP-092, MVP-121, MVP-133 | Líder | Flujo completo en el entorno configurado con Supabase, proveedores de IA y Hedera Testnet reales, con autorización expresa; evidencia sin secretos. Incluye fallo/reintento de sello si es reproducible | [f13-live-validation-and-closure](mvp/f13-live-validation-and-closure.md) · — |
@@ -260,7 +260,7 @@ Deuda abierta relacionada ([tracker](../tech-debt-tracker.md)): #2 → `MVP-134`
 
 ## 6. Olas y paralelismo
 
-Las olas se derivan solo de las dependencias (nivel = 1 + máximo nivel de sus dependencias) y sirven para planificar paralelismo, no son fechas. Con dos implementadores, el líder conserva rutas, contratos compartidos, configuración y servidores; el colaborador solo toma presentación autorizada (`MVP-111…115`) cuando `MVP-110` y `MVP-007` lo permitan. Dos tareas del líder pueden avanzar en paralelo si no tocan los mismos archivos ni contratos. Antes de abrir una ola nueva, el líder integra las ramas pendientes de la anterior y actualiza este tablero.
+Las olas se derivan solo de las dependencias (nivel = 1 + máximo nivel de sus dependencias) y sirven para planificar paralelismo, no son fechas. La estrategia de ejecución aprobada por el usuario admite hasta **tres carriles paralelos disjuntos**: (1) núcleo (Nahuel, líder: rutas, contratos compartidos, configuración, migraciones y servidores), (2) un módulo funcional (Gastón: handle de GitHub pendiente de confirmación externa; toma documentos/IA al publicar contratos de F2) y (3) UI de presentación (Facu: `@jfacundoayala`; presentaciones autorizadas `MVP-111…115` cuando `MVP-110` y `MVP-007` lo permitan). Tomás participa en pruebas y revisión sin cuenta de agente / sin carril. Dos tareas pueden avanzar en paralelo solo si sus archivos son estrictamente disjuntos. Antes de abrir una ola nueva, el líder integra las ramas pendientes de la anterior y actualiza este tablero.
 
 Cada ola agrupa un rango de niveles de dependencia (calculados con la regla anterior). Dentro de una ola siguen mandando las dependencias entre sus tareas.
 

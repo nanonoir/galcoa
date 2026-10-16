@@ -87,7 +87,7 @@ No afirmar verdad factual, identidad verificada, firma digital ni permanencia de
 
 ## 8. Registro de decisiones F1 — MVP-011
 
-**Estado:** valores **aprobados por el usuario el 2026-10-16** (primera tanda, [`hackathon-team-first-wave`](../exec-plans/active/hackathon-team-first-wave.md)). **No cierra MVP-011**: faltan pruebas y elementos de aceptación (§8.2). Los puntos «derivado» no fueron elegidos por el usuario.
+**Estado:** decisión documental de F1 (`MVP-011`) **completada y aprobada el 2026-10-16** (primera tanda, [`hackathon-team-first-wave`](../exec-plans/completed/hackathon-team-first-wave.md); plan [`f01-decisiones-confirmacion-y-sello`](../exec-plans/completed/f01-decisiones-confirmacion-y-sello.md) archivado). Resoluciones técnicas locales aceptadas por el orquestador; nombre autodeclarado de 200 caracteres incorporado en contratos; pruebas corresponden a tareas consumidoras (`MVP-072…075`).
 
 ### 8.1 Valores aprobados
 

@@ -2,19 +2,19 @@
 
 Índice por plan de los ExecPlans preparados por adelantado, derivados del [plan maestro](../mvp-master-plan.md). **No es un ExecPlan** ni cuenta como tal. No guarda estados: el estado, las dependencias y la evidencia de cada tarea viven solo en el maestro. Que un plan exista no autoriza ejecutarlo; antes deben cumplirse sus dependencias y autorizaciones.
 
-Cobertura: **36 planes** preparados (35 activos bajo este directorio que cubren **67 IDs** pendientes + 1 completado y archivado en [`completed/`](../../completed/f00-integracion-base-ci.md) que cubre `MVP-006`; los índices y este catálogo no son ExecPlans). Cada plan declara sus IDs en la línea `Tareas del maestro:`.
+Cobertura: **36 planes** preparados (31 activos bajo este directorio que cubren **60 IDs** pendientes + 5 completados y archivados en [`completed/`](../../completed/) que cubren `MVP-006`, `MVP-010`, `MVP-011`, `MVP-012`, `MVP-013`, `MVP-020`, `MVP-021` y `MVP-110`; los índices y este catálogo no son ExecPlans). Cada plan declara sus IDs en la línea `Tareas del maestro:`.
 
-Grupos: A = F0–F3 (10 activos + 1 archivado), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (9 activos).
+Grupos: A = F0–F3 (7 activos + 4 archivados), B = F4–F6 (8 activos), C = F7–F10 (8 activos), D = F11–F13 (8 activos + 1 archivado).
 
 | Plan | Grupo | IDs del maestro | Título |
 | --- | --- | --- | --- |
 | [f00-acceso-colaborador](f00-acceso-colaborador.md) | A | MVP-007 | Acceso del colaborador al repositorio (acción externa) |
 | [f00-integracion-base-ci](../../completed/f00-integracion-base-ci.md) | A | MVP-006 | Integrar la base y obtener el primer run remoto de CI (completado y archivado) |
-| [f01-decisiones-confirmacion-y-sello](f01-decisiones-confirmacion-y-sello.md) | A | MVP-011…012 | Decisiones de capacidades públicas (tokens) y de manifiesto/reconciliación HCS |
-| [f01-decisiones-ingesta-y-modelos](f01-decisiones-ingesta-y-modelos.md) | A | MVP-010, MVP-013 | Decisiones de adjuntos/extracción y de modelos, coste y calidad |
+| [f01-decisiones-confirmacion-y-sello](../../completed/f01-decisiones-confirmacion-y-sello.md) | A | MVP-011…012 | Decisiones de capacidades públicas (tokens) y de manifiesto/reconciliación HCS (completado y archivado) |
+| [f01-decisiones-ingesta-y-modelos](../../completed/f01-decisiones-ingesta-y-modelos.md) | A | MVP-010, MVP-013 | Decisiones de adjuntos/extracción y de modelos, coste y calidad (completado y archivado) |
 | [f01-revision-juridica](f01-revision-juridica.md) | A | MVP-014 | Revisión jurídica externa del lenguaje de confirmación y la privacidad |
 | [f02-clientes-supabase](f02-clientes-supabase.md) | A | MVP-025 | Clientes Supabase de servidor y de sesión |
-| [f02-contratos-dominio](f02-contratos-dominio.md) | A | MVP-020…021 | Contratos de dominio: núcleo documental, revisión, confirmación, versión y DTO públicos |
+| [f02-contratos-dominio](../../completed/f02-contratos-dominio.md) | A | MVP-020…021 | Contratos de dominio: núcleo documental, revisión, confirmación, versión y DTO públicos (completado y archivado) |
 | [f02-entorno-supabase-remoto](f02-entorno-supabase-remoto.md) | A | MVP-026 | Entorno Supabase de desarrollo/demo con migraciones aplicadas (remoto) |
 | [f02-esquema-migraciones-rls](f02-esquema-migraciones-rls.md) | A | MVP-022…024 | Esquema SQL, migraciones y RLS/Storage con prueba de dos usuarios |
 | [f03-auth-flujos-reales](f03-auth-flujos-reales.md) | A | MVP-031 | Registro, login, logout y recuperación reales |
@@ -35,7 +35,7 @@ Grupos: A = F0–F3 (10 activos + 1 archivado), B = F4–F6 (8 activos), C = F7�
 | [f08-02-manifiesto-version-inmutable-y-nueva-version](f08-02-manifiesto-version-inmutable-y-nueva-version.md) | C | MVP-082…084 | Manifiesto, versión inmutable y nueva versión |
 | [f09-01-hedera-hcs-testnet](f09-01-hedera-hcs-testnet.md) | C | MVP-090…093 | Hedera HCS Testnet: cliente, sello, reconciliación y Mirror Node |
 | [f10-01-verificador-publico](f10-01-verificador-publico.md) | C | MVP-100…101 | Verificador público |
-| [f11-frontend-delegation-package](f11-frontend-delegation-package.md) | D | MVP-110 | Paquete de delegación frontend |
+| [f11-frontend-delegation-package](../../completed/f11-frontend-delegation-package.md) | D | MVP-110 | Paquete de delegación frontend (completado y archivado) |
 | [f11-frontend-presentation-tickets](f11-frontend-presentation-tickets.md) | D | MVP-111…115 | Presentación delegable: dashboard, snapshot, historial, landing y formularios de acceso |
 | [f11-product-ui-integration-and-review](f11-product-ui-integration-and-review.md) | D | MVP-116, MVP-118 | Integración de dashboard, historial y documento; revisión transversal de accesibilidad y responsive |
 | [f12-ai-evaluation-dataset-and-runner](f12-ai-evaluation-dataset-and-runner.md) | D | MVP-122…123 | Dataset de evaluación de IA y runner |
