@@ -70,9 +70,9 @@ Todos pendientes.
 
 **Checkpoint B — `MVP-131`**
 
-- [ ] **C1 · Jobs ampliados, parte local** (← `MVP-120`). Añadir al workflow la ejecución de los tests de servidor (dobles) y de la base local Supabase (requisitos de entorno de H3 del [harness](../../completed/f12-server-test-harness.md)); versiones de acciones y de Node fijadas igual que el resto; sin secretos de aplicación; sin llamadas a proveedores. Validar localmente que los mismos comandos pasan y que el YAML es válido.
-- [ ] **C2 · Equivalencia local/CI** (← C1). Documentar en `docs/development.md` (edición del líder, acotada) qué corre en CI y qué no (evaluación de IA y smoke real quedan fuera).
-- [ ] **C3 · Run remoto** (← C2, `MVP-006`; **requiere autorización de commit/push/PR**). Obtener un run en Linux; enlazarlo. Fallos se corrigen o se registran; no se declara verde sin run real.
+- [x] **C1 · Jobs ampliados** (← `MVP-120`). `validate` preservado; job `local-server-db` ejecuta RLS, servidor local, persistencia, executor, rutas y Auth real local en serie, reutilizando reset y seis migraciones. CLI instalada por lockfile, mismas acciones/Node, sin proveedores ni secretos configurados. YAML válido. DB de esta máquina reservada: suites con DB validadas en runner Linux exclusivo, no ejecutadas aquí.
+- [x] **C2 · Equivalencia local/CI** (← C1). Comandos, captura privada, limpieza y exclusiones documentados en `docs/development.md`.
+- [x] **C3 · Run remoto** (← C2, `MVP-006`). PR #83, commit `4c23db8`: [run Linux 38954022116](https://github.com/nanonoir/galcoa/actions/runs/38954022116) verde con ambos jobs y limpieza exitosa. Pendiente revisión/integración, sin merge desde este checkpoint.
 - [ ] **C4 · Protección de ramas** (opcional posthackathon; el usuario optó explícitamente por no exigirla durante la hackathon) (← C3; **requiere autorización y permisos de administración en GitHub**). Configurar checks requeridos y revisión; verificar que los nombres de los checks coinciden con los jobs reales y comprobar el resultado leyendo la configuración. Si faltan permisos, se registra el bloqueo en el §9 del maestro (edición del líder) y se bloquea **solo C3/C4**.
 
 ## 7. Validación
@@ -88,7 +88,9 @@ Comandos locales: `npm run lint`, `typecheck`, `test`, `test:boundaries`, `build
 
 ## 8. Evidencia
 
-No ejecutada. Se registrará: fecha · comandos y resultados reales · rama/PR/commit · URL del run remoto · captura/lectura de la regla de protección. Sin secretos.
+2026-10-16 · rama `flow/35-server-ci`, PR [#83](https://github.com/nanonoir/galcoa/pull/83), implementación `4c23db8`. Local: `npm ci`, lint, typecheck y build correctos; `npm test` **984/984**, barreras **69/69**, navegador **89/89**; `node --test scripts/ci-local.test.mjs` **4/4** (dobles de CLI, sin Docker), sintaxis Node y YAML con `js-yaml` correctos; diff sin errores. `npm ci` informa nueve vulnerabilidades high del lockfile previo, sin actualización de paquetes ni audit fix.
+
+[Run Linux 38954022116](https://github.com/nanonoir/galcoa/actions/runs/38954022116): **success**, `validate` 2m08s, `local-server-db` 5m24s. Arranque, cinco suites Vitest locales en serie, Auth real local y parada del proyecto exitosos. El job solo publica etiquetas/resultado, no conteos ni salida cruda de las suites; no se inventan conteos remotos ni se suman pruebas focales al total. Sin artefactos del job local ni secretos impresos. Autorrevisión local, sin revisión independiente: falta revisión/integración; MVP-131 permanece `en_curso` en el maestro hasta consolidación del líder. MVP-130 intacto; C4 opcional no ejecutado por opt-out, sin lectura/cambio de protecciones. No acredita MVP-121 completo, cloud, IA/HCS ni Vercel.
 
 ## 9. Referencias a completar
 
