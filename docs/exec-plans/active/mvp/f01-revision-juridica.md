@@ -1,6 +1,6 @@
 # ExecPlan F1 — Revisión jurídica externa del lenguaje de confirmación y la privacidad
 
-**Estado: planificado; no ejecutado.** Procedimiento de una acción **externa**; no es código ni automatizable. No cambia estados del [maestro](../mvp-master-plan.md).
+**Estado: checkpoint A preparado (2026-10-16, pendiente de integrar); checkpoint B pendiente de acción humana externa.** Procedimiento de una acción **externa**; no es código ni automatizable. Esta preparación no es un dictamen ni cierra `MVP-014`.
 
 Tareas del maestro: `MVP-014`
 
@@ -48,20 +48,68 @@ El material solo contiene datos ficticios y textos del producto; sin secretos, s
 
 ## Referencias a completar
 
-Ninguna.
+- Textos de pantalla de `MVP-076` (referencia RQ-C1 de [f07-03](f07-03-estado-agregado-y-pantalla-publica.md)) y `MVP-101`: **pendientes**; no existen pantallas integradas. Añadir sus textos reales cuando existan; mientras tanto vale el texto normativo del PRD citado abajo.
 
 ## Checklist
 
-- [ ] Material de revisión preparado (checkpoint A).
+- [x] Material de revisión preparado (checkpoint A): ver «Material de revisión (checkpoint A)».
 - [ ] Profesional definido por el usuario.
 - [ ] Material entregado fuera del repositorio.
 - [ ] Dictamen recibido y resumen no confidencial registrado.
 - [ ] Ajustes exigidos convertidos en tareas nuevas (si los hay).
 - [ ] Fila de `MVP-014` actualizada.
 
+## Material de revisión (checkpoint A)
+
+Solo referencias y textos ya existentes en el repositorio; no introduce políticas ni redacciones nuevas. Todo dato de ejemplo es ficticio. Este bloque se entrega al profesional por fuera del repositorio (acción del usuario).
+
+### 1. Preguntas para el profesional (alcance de `MVP-014`)
+
+1. Lenguaje de la confirmación electrónica por enlace y del rechazo: ¿es adecuado y no engañoso lo que el producto afirma y deja de afirmar?
+2. Límites de la afirmación sobre integridad y sello en HCS: ¿las frases de verificación pública describen correctamente lo que se comprueba?
+3. Privacidad aplicable al uso comercial real: tratamiento de datos con los proveedores listados y términos que corresponderían.
+
+### 2. Textos y reglas sujetos a revisión
+
+Fuente de verdad: PRD, sin copiar su contenido completo.
+
+| Tema | Fuente | Qué contiene |
+| --- | --- | --- |
+| Alcance de lo que acredita una confirmación | PRD §5 (viñeta «Una confirmación por link…») y §11 | Acredita una declaración realizada mediante ese enlace; no identidad presencial verificada ni verdad absoluta. Se muestra «Confirmado mediante enlace» |
+| Lenguaje prohibido | PRD §5 (cierre) y §11 | No «certificado», «validado regulatoriamente», «garantizado verdadero», «firma digital» ni «identidad certificada/verificada» |
+| Casilla, «Confirmar», «No coincide / Rechazar», modal | PRD §10 y D-09 | Casilla vacía; marcada habilita «Confirmar»; desmarcada permite «No coincide / Rechazar» con modal de ratificación; cancelar no registra ni consume; nombre autodeclarado sin login. Ejecución en `src/lib/contracts/confirmation.ts` y [data-transactions](../../../design/data-transactions.md) |
+| Token de invitación | PRD §11 | Alta entropía, solo hash en base, caducidad, un solo uso, revocación; GET no consume |
+| Mensajes de verificación pública | [manifest-hcs §6](../../../design/manifest-hcs.md) y PRD §9–§10 | «Integridad del archivo comprobada respecto del registro»; «El archivo o la prueba no coincide con el registro esperado»; «No es posible comprobar la integridad ahora; sello pendiente o evidencia de red no disponible»; sin PDF solo estado del registro, nunca «archivo verificado»; Testnet puede reiniciarse y la integridad no acredita verdad factual ni identidad |
+| Estado de sello | PRD §10 y manifest-hcs | «Versión finalizada; sello pendiente» (no «sellada») hasta registro comprobado |
+| Leyenda de extracción | `src/lib/ai/extraction/service.ts` (`VISUAL_LEGEND`) | «Interpretada por Gemini; sin verificación visual independiente.» |
+| Guía de lenguaje para la demo | [jury-runbook](../../../demo/jury-runbook.md) | Frases permitidas, p. ej. «sin inconsistencias críticas detectadas» |
+| Textos de pantalla de `MVP-076` y `MVP-101` | — | **Pendiente**: no hay pantallas integradas |
+
+### 3. Descripción de datos y proveedores (base para la revisión de privacidad)
+
+Según PRD §9 y §11; no sustituye una política de privacidad.
+
+| Servicio | Papel | Dato tratado |
+| --- | --- | --- |
+| Supabase (Auth, PostgreSQL, Storage) | Cuentas, documentos, chats, evidencias privadas, PDFs, confirmaciones | Datos del usuario y del contenido documental; accesos con autorización y RLS; sin URLs públicas permanentes de archivos privados |
+| Gemini (Agente 1, vía Vercel AI SDK) | Extracción y redacción | Mensajes y evidencias del usuario enviados al proveedor |
+| Groq (Agente 2) | Contraste de hechos | Mensajes originales y texto extraído |
+| Hedera Testnet (HCS) | Registro de huella | **Solo hashes e identificadores opacos**; nunca evidencias, PDFs, chats ni identidades. Testnet puede reiniciarse y no ofrece permanencia de producción |
+| Terceros invitados | Confirman sin cuenta | Nombre autodeclarado y contexto de respuesta; ven el documento de operación congelado, no chat ni evidencias privadas |
+
+Condiciones vigentes del PRD §11: sin datos reales regulados en servicios gratuitos sin revisar términos, retención, privacidad y permisos de cada proveedor; datos ficticios para el Ideatón.
+
+### 4. Condiciones de entrega (acciones humanas)
+
+- Elegir y contratar al profesional, entregar el material y recibir el dictamen: el usuario, fuera del repositorio.
+- Ningún agente contacta a terceros, envía material ni redacta conclusiones jurídicas.
+- Ejemplos o capturas, si se agregan, usan solo datos ficticios.
+
 ## Progreso y evidencia
 
-No ejecutado.
+- 2026-10-16 · Checkpoint A: material preparado en este plan (rama `flow/4-legal`, Issue [#4](https://github.com/nanonoir/galcoa/issues/4)); verificación documental de enlaces y coherencia; sin tests de aplicación ni llamadas reales. Pendiente de integrar en `develop`.
+- Checkpoint B: **no recibido**. Causa externa: depende de que el usuario encargue la revisión a un profesional y aporte el dictamen. No hay dictamen, fecha, alcance ni resumen que registrar.
+- Efecto: no bloquea desarrollo ni la demo con datos ficticios; sí bloquea el uso con documentos reales o comerciales (PRD §11).
 
 ## Cierre
 
