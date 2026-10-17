@@ -106,7 +106,7 @@ export function createMemoryRevisions(options: { now?: () => string } = {}) {
     async confirmAsAuthor(input): Promise<ConfirmAsAuthorResult> {
       if (failNext) throw ((failNext = false), new Error("base caída"));
       const row = rows.find((r) => r.bundle.revision.revisionId === input.revisionId);
-      if (!row || row.ownerId !== input.ownerId) return { status: "not_available" };
+      if (!row || row.ownerId !== input.ownerId || row.bundle.revision.documentId !== input.documentId) return { status: "not_available" };
       const rev = row.bundle.revision;
       const shape = (response: AuthorResponse, status: "created" | "replayed"): ConfirmAsAuthorResult => ({
         status,

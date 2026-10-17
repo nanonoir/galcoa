@@ -121,6 +121,12 @@ Documentos objetivo **disponibles** y enlazados; los parámetros operativos (ent
 - **PD-02 — Rechazo del autor.** El PRD solo define rechazo para terceros y [review-confirmation §4](../../../specs/review-confirmation.md) fija el mínimo P0 del autor que no acepta (no confirmar, seguir conversando, preparar otra revisión). No se implementa decisión «rechazar» del autor; solo si se solicita esa opción extra habría que definir su efecto (RQ-C1).
 - **PD-03 — Definición de «cambio material».** El servidor decide por comparación de snapshot/selección, no por IA (SH-01); el criterio base está en [review-confirmation §2](../../../specs/review-confirmation.md). Si hace falta criterio adicional, RQ-C1.
 
+### 9.1 Corrección de cierre — alcance de documento en la confirmación del autor
+
+Hallazgo de auditoría: `confirm_as_author` no comprobaba que la revisión perteneciera al documento de la ruta. Corregido con la migración aditiva `20261016002100_confirm_document_scope.sql` (nueva firma con `p_document_id`, validación atómica en SQL, sobrecarga anterior eliminada; propietario `galcoa_f7_writer` y `execute` solo para `authenticated`), el adaptador y el servicio. Ruta de otro documento, usuario ajeno e inexistente devuelven el mismo `NOT_AVAILABLE`. Plan global: [mvp-consolidated-closure](../mvp-consolidated-closure.md), etapa A.
+
+Evidencia: `typecheck`, ESLint de los archivos tocados, `test:boundaries` y Vitest de `tests/server/revisions` e `invitations` en verde (62 pruebas). **No ejecutado:** las pruebas con Supabase local (`tests/server/local/review-confirmation.test.ts`, catálogo RLS) por no contar con reserva de la base; quedan para el CI de GitHub. Esto no cierra MVP-070/071/077/078 por el resto de la brecha de finalización.
+
 ## 10. Rollback y recuperación
 
 - **Antes de integrar:** descartar la rama; sin remoto no hay otra consecuencia. La base local se recrea desde cero con las migraciones.

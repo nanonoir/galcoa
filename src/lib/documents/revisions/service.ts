@@ -120,6 +120,7 @@ export function createRevisionService(deps: RevisionDeps) {
       try {
         const result = await deps.revisions.confirmAsAuthor({
           ownerId,
+          documentId: cmd.documentId,
           revisionId: cmd.revisionId,
           snapshotId: cmd.snapshotId,
           snapshotHash: cmd.snapshotHash,

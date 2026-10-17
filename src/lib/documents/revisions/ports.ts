@@ -74,6 +74,8 @@ export type AuthorResponse = {
 
 export type ConfirmAsAuthorInput = {
   ownerId: string;
+  /** Documento de la ruta: la base exige que la revisión le pertenezca. */
+  documentId: string;
   revisionId: string;
   /** Snapshot y hash exactos que el autor vio; la base los compara con los de la revisión antes de escribir. */
   snapshotId: string;
