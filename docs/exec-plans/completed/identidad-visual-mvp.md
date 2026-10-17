@@ -9,7 +9,7 @@ Adaptar la interfaz existente a `design.md` sin rediseñar pantallas ni cambiar 
 - [x] Validar componentes, barreras, tipos, lint, build y navegador móvil/escritorio. Revisar diff y cerrar.
 
 ## Criterio de cierre
-Identidad coherente, controles legibles y navegación/estados intactos. No ampliar alcance por detalles secundarios. No commit/push ni despliegue en esta tarea.
+Identidad coherente, controles legibles y navegación/estados intactos. No ampliar alcance por detalles secundarios.
 
 ## Implementation Outcome
 
@@ -18,7 +18,7 @@ Identidad coherente, controles legibles y navegación/estados intactos. No ampli
 - Integración de marca: logo original `public/galcoa.svg` integrado y recortado con CSS en encabezado privado y navegación landing, sin modificar los SVG originales.
 - Preview: configuración de `publicDir` para servir `public/galcoa.svg`.
 - E2E: expectativa de radio en pruebas actualizada a `0`.
-- Sin alteraciones en lógica de negocio, layouts ni dependencias; sin commits ni push.
+- Sin alteraciones en lógica de negocio ni dependencias. El encabezado privado solo reemplaza su etiqueta textual por el logotipo.
 
 ### Deviations from Design
 - La fuente de diseño `design.md` conserva su estado original no versionado.
@@ -40,3 +40,6 @@ Validación ejecutada y aprobada por el agente principal:
 
 ### Follow-up
 - `public/galcoa.svg` ahora es dependencia de runtime que debe incluirse al empaquetar y entregar.
+- Se agrega `src/app/icon.svg` como icono de aplicación de Next.js, copiado del isotipo cuadrado `public/galcoa-logo.svg`; Next lo publica automáticamente como favicon/icono.
+- `design.md` se incluye en la entrega a petición expresa del usuario.
+- Entrega autorizada expresamente: commit/push a `develop` y PR nuevo a `main`; PR anterior #137 cancelado. Sin merge.
