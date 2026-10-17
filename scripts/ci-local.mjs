@@ -6,6 +6,7 @@ const root = path.resolve(import.meta.dirname, "..");
 const cli = path.join(root, "node_modules/supabase/dist/supabase.js");
 const vitest = path.join(root, "node_modules/vitest/vitest.mjs");
 const auth = path.join(root, "tests/server/auth-flow/run-local-auth.mjs");
+const confirm = path.join(root, "tests/e2e/confirm/run.mjs");
 
 function run(label, file, args, timeout) {
   console.log(`CI local: ${label}`);
@@ -19,6 +20,7 @@ function run(label, file, args, timeout) {
     maxBuffer: 32 * 1024 * 1024,
   });
   if (result.error || result.status !== 0) {
+    console.error(`CI local: status=${result.status ?? "null"}, signal=${result.signal ?? "none"}, timeout=${result.error?.code === "ETIMEDOUT"}`);
     console.error(`CI local: ${label} falló (salida privada descartada). Reproducir con la pila local exclusiva; no publicar logs sin revisión.`);
     process.exitCode = 1;
     return false;
@@ -46,11 +48,13 @@ if (process.env.GITHUB_ACTIONS !== "true" || process.env.RUNNER_OS !== "Linux") 
         ["persistencia", "tests/server/persistence/vitest.local.config.ts"],
         ["executor", "tests/server/persistence/executor/vitest.local.config.ts"],
         ["rutas", "tests/server/routes/vitest.local.config.ts"],
+        ["persistencia de evidencias", "tests/server/evidence-persistence/vitest.local.config.ts"],
       ];
       for (const [label, config] of suites) {
         if (!run(label, vitest, ["run", "--config", config], 480_000)) break;
       }
       if (!process.exitCode) run("Auth real local (3 casos, sin trazas)", auth, [], 480_000);
+      if (!process.exitCode) run("confirmaciones E2E reales locales (sin trazas)", confirm, [], 480_000);
       break;
     }
     default:
