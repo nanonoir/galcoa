@@ -199,6 +199,14 @@ describe("MVP-071 · confirmación del autor", () => {
     expect(r).toMatchObject({ ok: true, value: { confirmationStatus: "completa", actor: { role: "autor", declaredName: null }, outcome: { decision: "confirmar" }, replayed: false } });
   });
 
+  it("una revisión de otro documento no se confirma con la ruta equivocada", async () => {
+    const { service } = setup();
+    const f = await service.freeze(freeze({ selection: [] }));
+    if (!f.ok) throw new Error("freeze");
+    expect(await service.confirmAsAuthor(confirmCommand(f.value, { documentId: "otro-documento" }))).toMatchObject({ ok: false, error: { code: "NOT_AVAILABLE" } });
+    expect(await service.confirmAsAuthor(confirmCommand(f.value))).toMatchObject({ ok: true });
+  });
+
   it("con un tercero seleccionado queda parcial: aun con una advertencia crítica", async () => {
     const { service } = setup();
     const f = await service.freeze(freeze());

@@ -231,9 +231,37 @@ describe("MVP-071 · confirmación del autor", () => {
     expect(await svc.confirmAsAuthor(authorCmd(b, w.documentId, { snapshotHash: "0".repeat(64) }))).toMatchObject({ ok: false, error: { code: "SNAPSHOT_MISMATCH" } });
     expect(await svc.confirmAsAuthor(authorCmd(b, w.documentId, { snapshotId: randomUUID() }))).toMatchObject({ ok: false, error: { code: "SNAPSHOT_MISMATCH" } });
     expect(await services(luis).revisions.confirmAsAuthor(authorCmd(b, w.documentId))).toMatchObject({ ok: false, error: { code: "NOT_AVAILABLE" } });
-    const anon = await anonClient(stack).rpc("confirm_as_author", { p_revision_id: b.revision.revisionId, p_snapshot_id: b.revision.snapshotId, p_snapshot_hash: b.revision.snapshotHash, p_key: key("a"), p_fingerprint: sha("z"), p_correlation_id: "c" });
+    const anon = await anonClient(stack).rpc("confirm_as_author", { p_document_id: w.documentId, p_revision_id: b.revision.revisionId, p_snapshot_id: b.revision.snapshotId, p_snapshot_hash: b.revision.snapshotHash, p_key: key("a"), p_fingerprint: sha("z"), p_correlation_id: "c" });
     expect(anon.error).not.toBeNull();
     expect((await sql(`select count(*) from public.corroboration_responses where revision_id = '${b.revision.revisionId}';`))[0][0]).toBe("0");
+  });
+});
+
+describe("MVP-071 · la revisión debe pertenecer al documento de la ruta", () => {
+  it("mismo propietario, documentos A/B: la ruta de A no confirma la revisión de B; la ruta correcta sí", async () => {
+    const wa = await world(ana);
+    const wb = await world(ana);
+    const bb = await frozen(ana, wb);
+    const svc = services(ana).revisions;
+    const count = async () => (await sql(`select count(*) from public.corroboration_responses where revision_id = '${bb.revision.revisionId}';`))[0][0];
+    expect(await svc.confirmAsAuthor(authorCmd(bb, wa.documentId))).toMatchObject({ ok: false, error: { code: "NOT_AVAILABLE" } });
+    expect(await svc.confirmAsAuthor(authorCmd(bb, randomUUID()))).toMatchObject({ ok: false, error: { code: "NOT_AVAILABLE" } });
+    expect(await count()).toBe("0");
+    expect(await svc.confirmAsAuthor(authorCmd(bb, wb.documentId))).toMatchObject({ ok: true, value: { replayed: false } });
+    expect(await count()).toBe("1");
+  });
+
+  it("usuario ajeno o revisión inexistente: la misma respuesta; sin sobrecarga heredada ejecutable", async () => {
+    const w = await world(ana);
+    const b = await frozen(ana, w);
+    const ajeno = await services(luis).revisions.confirmAsAuthor(authorCmd(b, w.documentId));
+    const inexistente = await services(ana).revisions.confirmAsAuthor(authorCmd({ revision: { ...b.revision, revisionId: randomUUID() } }, w.documentId));
+    expect(ajeno).toMatchObject({ ok: false, error: { code: "NOT_AVAILABLE" } });
+    expect(inexistente).toMatchObject({ ok: false, error: { code: "NOT_AVAILABLE" } });
+    expect(await sql("select pg_get_function_identity_arguments(p.oid) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'confirm_as_author';"))
+      .toEqual([["p_document_id uuid, p_revision_id uuid, p_snapshot_id uuid, p_snapshot_hash text, p_key text, p_fingerprint text, p_correlation_id text"]]);
+    const legacy = await ana.client.rpc("confirm_as_author", { p_revision_id: b.revision.revisionId, p_snapshot_id: b.revision.snapshotId, p_snapshot_hash: b.revision.snapshotHash, p_key: key("legacy"), p_fingerprint: sha("l"), p_correlation_id: "c" });
+    expect(legacy.error).not.toBeNull();
   });
 });
 

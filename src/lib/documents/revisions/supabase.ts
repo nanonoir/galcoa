@@ -127,6 +127,7 @@ export function createSupabaseRevisionAdapters(context: { verifiedUserId: string
       requireOwner(input.audit.actorScope);
       const result = AuthorResultSchema.parse(
         await call("confirm_as_author", {
+          p_document_id: input.documentId,
           p_revision_id: input.revisionId,
           p_snapshot_id: input.snapshotId,
           p_snapshot_hash: input.snapshotHash,
