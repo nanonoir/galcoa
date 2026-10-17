@@ -1,5 +1,9 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
+
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { DocumentHistoryContainer } from "@/features/documents/containers/document-history-container";
 import { failureKind } from "@/features/documents/containers/failure-kind";
@@ -31,6 +35,9 @@ export default async function DocumentPage({ params }: PageProps<"/documents/[id
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">{result.value.title}</h1>
+      <Link href={`/documents/${id}/review`} className={cn(buttonVariants({ variant: "outline" }), "self-start")}>
+        Revisar y compartir con los participantes
+      </Link>
       <DocumentHistoryContainer state={history} />
     </main>
   );

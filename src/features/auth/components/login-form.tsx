@@ -77,9 +77,9 @@ export function LoginForm({ state, onSubmit }: LoginFormProps) {
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
         <CardTitle>
-          <h2 id={`${ID}-title`} className="text-lg font-medium">
+          <h1 id={`${ID}-title`} className="text-lg font-medium">
             Iniciar sesión
-          </h2>
+          </h1>
         </CardTitle>
         <CardDescription>Ingresa con el correo y la contraseña de tu cuenta.</CardDescription>
       </CardHeader>

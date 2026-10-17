@@ -19,7 +19,7 @@ Nota dedicada de MVP-031. Contenido listo para trasladarse a una sección de [`d
 - Errores neutrales: acceso incorrecto, correo sin confirmar y cuenta inexistente dan el mismo mensaje; alta repetida y recuperación responden igual exista o no la cuenta. Los límites de envío (429) y la indisponibilidad (503) se informan como tales, nunca como éxito.
 - `/nueva-contrasena` sin Auth disponible (o sin configuración) muestra un aviso técnico neutral; sin sesión, redirige a pedir otro enlace.
 - Tras una nueva contraseña se cierra la sesión de recuperación y se pide acceso de nuevo. Tras confirmar el alta también.
-- Después del acceso se navega a `/` (`AUTH_PATHS.afterLogin`); `MVP-116` lo apuntará a la ruta privada real.
+- Después del acceso se navega a `/dashboard` (`AUTH_PATHS.afterLogin`), la ruta privada real integrada en PR 88. El montaje del cierre de sesión (`MVP-116`) sigue pendiente de cierre formal.
 
 ## Limitaciones conocidas (no inventadas ni ocultas)
 

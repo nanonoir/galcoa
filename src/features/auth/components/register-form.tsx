@@ -77,9 +77,9 @@ export function RegisterForm({ state, onSubmit }: RegisterFormProps) {
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
         <CardTitle>
-          <h2 id={`${ID}-title`} className="text-lg font-medium">
+          <h1 id={`${ID}-title`} className="text-lg font-medium">
             Crear cuenta
-          </h2>
+          </h1>
         </CardTitle>
         <CardDescription>Ingresa un correo y elige una contraseña.</CardDescription>
       </CardHeader>

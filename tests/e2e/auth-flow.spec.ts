@@ -84,7 +84,7 @@ test.describe("Auth local real (MVP-031)", () => {
     // Acceso y guarda de sesión.
     await fill(page, { "Correo electrónico": EMAIL, "Contraseña": PASSWORD });
     await page.getByRole("button", { name: "Ingresar" }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
     expect(await hasSessionCookie(page)).toBe(true);
     await page.goto("/nueva-contrasena");
     await expect(page).toHaveURL(/\/nueva-contrasena$/);
@@ -116,7 +116,7 @@ test.describe("Auth local real (MVP-031)", () => {
 
     await fill(page, { "Correo electrónico": EMAIL, "Contraseña": NEW_PASSWORD });
     await page.getByRole("button", { name: "Ingresar" }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
     expect(await hasSessionCookie(page)).toBe(true);
 
     expect(consoleText.join("\n")).not.toContain(PASSWORD);
@@ -131,7 +131,7 @@ test.describe("Auth local real (MVP-031)", () => {
     // Con sesión: el panel arranca vacío, crea un documento real y lo reabre.
     await fill(page, { "Correo electrónico": EMAIL, "Contraseña": NEW_PASSWORD });
     await page.getByRole("button", { name: "Ingresar" }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { level: 1, name: "Mis documentos" })).toBeAttached();
     await expect(page.getByText("Crea el primero con «Crear documento».")).toBeVisible();
