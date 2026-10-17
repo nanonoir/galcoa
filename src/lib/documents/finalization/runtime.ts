@@ -6,8 +6,10 @@ import { getSessionClient } from "@/lib/supabase/session";
 
 import { createExecutorRpc } from "../persistence/executor-rpc";
 
+import { createArtifactStorage } from "./artifact-storage";
 import type { FinalizationHttpDeps } from "./http";
 import { createManifestService, createSupabaseManifestStore } from "./manifest";
+import { createSupabaseVersionPublishStore, createVersionPublishService } from "./publish";
 import { createFinalizationAdvancer } from "./resume";
 import { createPdfStagingService, createSupabasePdfStagingStore } from "./staging";
 
@@ -27,6 +29,10 @@ export const finalizationHttpDeps: FinalizationHttpDeps = {
     return createFinalizationAdvancer({
       staging: createPdfStagingService({ store: createSupabasePdfStagingStore({ verifiedUserId: userId, executor }) }),
       manifest: createManifestService({ store: createSupabaseManifestStore({ verifiedUserId: userId, executor }) }),
+      publisher: createVersionPublishService({
+        store: createSupabaseVersionPublishStore({ verifiedUserId: userId, executor }),
+        storage: createArtifactStorage({ verifiedUserId: userId }),
+      }),
     });
   },
 };
