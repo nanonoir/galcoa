@@ -3,12 +3,14 @@ import "server-only";
 import { Pool, type PoolConfig } from "pg";
 
 import type { DocumentRpc } from "./store";
+import { contrastRpcCommands } from "../contrast/rpc-commands";
 import { evidenceRpcCommands } from "../evidence/rpc-commands";
 import { turnRpcCommands } from "../turns/rpc-commands";
 
 const commands = {
   ...evidenceRpcCommands,
   ...turnRpcCommands,
+  ...contrastRpcCommands,
   append_agent_message: ["p_actor_id", "p_document_id", "p_content", "p_declared_event_date", "p_key", "p_correlation_id"],
   append_document_audit: ["p_actor_id", "p_document_id", "p_type", "p_resource_id", "p_outcome", "p_correlation_id", "p_key"],
 } as const;

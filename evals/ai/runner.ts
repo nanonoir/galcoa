@@ -142,7 +142,7 @@ export function buildCasePorts(evalCase: EvalCase, ids: { ownerId: string; docum
       getCurrentDraft: async (ownerId, documentId) => (own(ownerId, documentId) ? saved.draft : null),
       async saveReport(input) {
         saved.report = input;
-        return { reportId: ids.newId(), createdAt: new Date().toISOString() };
+        return { status: "created", reportId: ids.newId(), createdAt: new Date().toISOString() };
       },
     },
   };

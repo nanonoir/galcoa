@@ -98,4 +98,12 @@ Implementado el lado SQL; el adaptador `ContrastStore` real y el cambio de `get_
 
 **Evidencia previa:** `npm run typecheck` y ESLint de los tests nuevos: OK. Las pruebas `tests/server/local/contrast-report-persistence.test.ts` y el catálogo RLS **no se ejecutaron localmente** (Supabase local no reservado); pendientes de CI Linux.
 
+## 11. Adaptador `ContrastStore` (rama `feat/contrast-store-adapter`, base `feat/contrast-report-persistence`)
+
+- `src/lib/documents/contrast/persistence.ts` (`createContrastStore`) y `rpc-commands.ts`: llama solo a `persist_contrast_report` con los 12 argumentos exactos, `p_actor_id` = usuario verificado (comprobado antes de toda E/S), jsonb ya serializado con `JSON.stringify`, esquemas cerrados de entrada y respuesta (`created|stale_draft|not_available`), errores opacos (`ContrastPersistenceError`: `NO_SESSION|INVALID_INPUT|UNAVAILABLE|INVALID_RESPONSE`). La RPC se agregó a la allowlist de `executor-rpc.ts`.
+- `SaveReportInput` incorpora `draftContent` (contenido exacto de `b1` evaluado, tomado del borrador que leyó el servicio; no se relee tras generar) y `correlationId`. `saveReport` devuelve `SaveReportResult`.
+- `contrastDraft`: `stale_draft` → `STALE_DRAFT` y `not_available` → `NOT_AVAILABLE` (etapa `persistencia`, `retryable: false`); no hay éxito, no se reintenta la IA y el llamador conserva las advertencias previas.
+- **Pendiente:** `getCurrentDraft` no tiene RPC de lectura (no se tocó SQL). El adaptador recibe un `readDraft` inyectado; la fuente real de lectura se define con el cableado/F7 (`get_freeze_source`). No hay rutas ni runtime todavía.
+- Evidencia: typecheck, ESLint de lo tocado, `tests/server/ai/contrast` (53) y `test:boundaries` (69) OK localmente. SQL real y CI pendientes.
+
 [Maestro](../mvp-master-plan.md) · [Fundaciones](../../../design/mvp-shared-foundations.md) · Previo: [Evidencias](f04-evidence-upload-extraction.md) y [Agente 1](f05-agent1-drafting.md) · Siguiente: [Reglas y advertencias](f06-rules-and-warnings.md)
