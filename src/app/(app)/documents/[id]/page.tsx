@@ -5,6 +5,7 @@ import { z } from "zod";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { ChatContainer } from "@/features/chat/containers/chat-container";
 import { DocumentHistoryContainer } from "@/features/documents/containers/document-history-container";
 import { failureKind } from "@/features/documents/containers/failure-kind";
 import type { VersionHistoryViewState } from "@/lib/contracts/version-history-view";
@@ -15,8 +16,8 @@ import { documentServiceForRequest } from "../../_lib/documents";
 /**
  * Documento del propietario (MVP-116/I3). Ajeno e inexistente responden igual
  * (404). Aún no hay servicio de versiones (MVP-083/084): el historial se
- * entrega vacío, sin rellenar con fixtures. El chat (MVP-054) se monta aquí
- * cuando exista su container.
+ * entrega vacío, sin rellenar con fixtures. El chat (MVP-054) consume las rutas
+ * reales de chat y contraste.
  */
 export default async function DocumentPage({ params }: PageProps<"/documents/[id]">) {
   const { id } = await params;
@@ -38,6 +39,7 @@ export default async function DocumentPage({ params }: PageProps<"/documents/[id
       <Link href={`/documents/${id}/review`} className={cn(buttonVariants({ variant: "outline" }), "self-start")}>
         Revisar y compartir con los participantes
       </Link>
+      <ChatContainer documentId={id} />
       <DocumentHistoryContainer state={history} />
     </main>
   );

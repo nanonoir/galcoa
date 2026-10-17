@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Paperclip, RotateCcw, Send, Square } from "lucide-react";
+import { AlertTriangle, FileText, Info, Paperclip, RotateCcw, Send, Square } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -30,6 +30,7 @@ const errorTitles: Record<ChatErrorKind, string> = {
   provider: "El proveedor de IA no respondió",
   storage: "No se pudo guardar el archivo",
   permissions: "No tenés permiso para esta acción",
+  cancelled: "Respuesta cancelada",
   other: "Ocurrió un problema técnico",
 };
 
@@ -38,6 +39,7 @@ const errorDetails: Record<ChatErrorKind, string> = {
   provider: "No se generó la respuesta del asistente. Tu mensaje original se conserva.",
   storage: "El almacenamiento no confirmó la operación.",
   permissions: "Tu sesión no puede realizar esta operación en este documento.",
+  cancelled: "Tu mensaje se conserva. Podés reintentar la respuesta.",
   other: "La operación no se completó.",
 };
 
@@ -216,10 +218,40 @@ export function ChatReference({
         </Alert>
       ) : null}
 
+      {state.draft ? (
+        <Alert role="status">
+          <FileText aria-hidden="true" />
+          <AlertTitle>Borrador «{state.draft.title}» actualizado (revisión {state.draft.draftRevision})</AlertTitle>
+          {state.draft.warnings !== undefined || state.draft.notInformed !== undefined ? (
+            <AlertDescription>
+              {state.draft.warnings !== undefined ? <p>Advertencias para revisar: {state.draft.warnings}. No bloquean el avance.</p> : null}
+              {state.draft.notInformed !== undefined ? <p>Datos «no informados»: {state.draft.notInformed}.</p> : null}
+            </AlertDescription>
+          ) : null}
+        </Alert>
+      ) : null}
+
+      {state.contrastFindings && state.contrastFindings.length > 0 ? (
+        <Alert role="status">
+          <Info aria-hidden="true" />
+          <AlertTitle>Avisos del contraste (no bloquean)</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4">
+              {state.contrastFindings.map((finding, index) => (
+                <li key={index}>
+                  {finding.severity === "critical" ? "Posible contradicción: " : "Advertencia: "}
+                  {finding.message}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {state.attachments.length > 0 ? (
         <ul aria-label="Adjuntos" className="flex flex-col gap-2">
           {state.attachments.map((attachment) => (
-            <Attachment key={attachment.attachmentId} attachment={attachment} onRetry={onRetryAttachment} />
+            <Attachment key={attachment.attachmentId} attachment={attachment} onRetry={(id) => onRetryAttachment?.(id)} />
           ))}
         </ul>
       ) : null}
@@ -251,14 +283,16 @@ export function ChatReference({
             data-testid="chat-file-input"
             onChange={(event) => {
               const files = Array.from(event.target.files ?? []);
-              if (files.length > 0) onAttach(files);
+              if (files.length > 0) onAttach?.(files);
               event.target.value = "";
             }}
           />
-          <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
-            <Paperclip aria-hidden="true" />
-            Adjuntar archivo
-          </Button>
+          {onAttach ? (
+            <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
+              <Paperclip aria-hidden="true" />
+              Adjuntar archivo
+            </Button>
+          ) : null}
           {busy ? (
             <Button type="button" variant="outline" onClick={cancel}>
               <Square aria-hidden="true" />

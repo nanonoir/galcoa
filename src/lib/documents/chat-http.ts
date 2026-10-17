@@ -57,9 +57,7 @@ export function createChatHttpHandler(deps: ChatHttpDeps, action: "turn" | "cont
 
       if (action === "turn") return await createChatTurnHandler(async () => services.turns)(request, documentId);
 
-      const abort = new AbortController();
-      request.signal.addEventListener("abort", () => abort.abort(), { once: true });
-      const result = await services.contrast.contrastDraft({ documentId, abortSignal: abort.signal });
+      const result = await services.contrast.contrastDraft({ documentId, abortSignal: request.signal });
       if (!result.ok) {
         return Response.json({ error: result.error }, {
           status: STATUS[result.error.code] ?? (result.error.retryable ? 503 : result.error.stage === "validacion" ? 422 : 500),
