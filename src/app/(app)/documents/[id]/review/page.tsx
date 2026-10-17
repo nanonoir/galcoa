@@ -64,7 +64,7 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Revisión de «{result.value.title}»</h1>
       {bundle || source ? (
-        <ReviewContainer documentId={id} draftRevision={source ? source.draft.draftRevision : bundle!.revision.frozenFromDraftRevision} hcsStatus={hcsStatus} active={active} />
+        <ReviewContainer documentId={id} draftRevision={source ? source.draft.draftRevision : bundle!.revision.frozenFromDraftRevision} hcsStatus={hcsStatus} active={active} documentFinalized={result.value.documentStatus === "finalizado"} />
       ) : (
         <p className="text-sm text-muted-foreground">Todavía no hay un borrador para revisar. Conversá en el documento y volvé cuando esté listo.</p>
       )}

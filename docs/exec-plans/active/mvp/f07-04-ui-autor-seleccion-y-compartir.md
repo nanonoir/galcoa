@@ -120,8 +120,10 @@ Documentos objetivo **disponibles** y enlazados; los parámetros operativos (ent
 
 - UI explícita para modificar participantes o incorporar el borrador actual tras congelar: la revisión vigente sigue visible con sus enlaces hasta que `POST` congela y crea otra; cancelar no hace peticiones. La página lee también el borrador actual (si falla esa lectura, degrada a la revisión vigente).
 - «unchanged» no reemite enlaces ni sustituye el estado. Clave de idempotencia por selección+`draftRevision`, conservada en reintentos.
+- Una confirmación **completa no es finalización** (INV-14): el autor puede abrir otra revisión (cambio material o de selección, sin heredar confirmaciones) mientras el documento no esté finalizado. La página pasa `documentFinalized` desde el `documentStatus` de `getDocument` (contrato existente) y la UI no ofrece reabrir si es `finalizado`; el servidor/SQL conserva las guardas. Si la consulta indica `sustituida`, se ofrece recargar la revisión vigente y se deshabilitan confirmar y reemitir sobre la vieja. No se bloquea por advertencias.
+- Integración futura (F8): cuando exista el estado de finalización/claim técnico, reemplazar `documentFinalized` por esa señal; hoy no se inventa. No se sustituye un claim existente ni se habilita v2 antes de F8.
 - Brecha de backend (no resuelta aquí): `freeze_revision` devuelve `unchanged` si el hash coincide con la revisión activa aunque esté rechazada, por lo que una revisión rechazada solo se puede reabrir cambiando selección o borrador. La UI lo explica y exige cambio material.
-- Ejecutado: Vitest de `corroborations` (71 tests), `typecheck`, `eslint` focal. No ejecutado: Playwright ni base real. MVP-077/078 siguen abiertas.
+- Ejecutado: Vitest de `corroborations` (75 tests), `typecheck`, `eslint` focal. No ejecutado: Playwright ni base real. MVP-077/078 siguen abiertas.
 
 ## 11. Cierre
 

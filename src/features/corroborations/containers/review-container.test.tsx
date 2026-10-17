@@ -253,6 +253,51 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       expect(screen.getByText(/tu confirmación/i)).toBeInTheDocument();
     });
 
+    it("con confirmación completa y documento sin finalizar permite editar; cancelar no muta", async () => {
+      fetchMock.mockImplementation(async () => json({ confirmationStatus: "completa", missingRoles: [], confirmed: 2, rejected: 0 }));
+      const user = userEvent.setup();
+      render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
+      await openEditor(user);
+      await user.click(screen.getByRole("checkbox", { name: "Intermediario" }));
+      await user.click(screen.getByRole("button", { name: /cancelar y conservar/i }));
+      expect(calls().filter((c) => c.method !== "GET")).toEqual([]);
+      expect(screen.getByRole("checkbox", { name: "Comprador" })).toBeChecked();
+    });
+
+    it("con confirmación completa, cambiar la selección congela solo la selección nueva y no hereda confirmaciones", async () => {
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (init?.method === "POST" && String(url).endsWith("/revisions")) return json({ revision: NEW_REVISION, snapshot: NEW_SNAPSHOT, unchanged: false }, 201);
+        if (String(url).endsWith("/invitations")) return json({ token: "tok-n" }, 201);
+        if (String(url).endsWith("/rev-2/confirmations")) return json({ confirmationStatus: "pendiente", missingRoles: ["autor", "comprador", "intermediario"], confirmed: 0, rejected: 0 });
+        return json({ confirmationStatus: "completa", missingRoles: [], confirmed: 2, rejected: 0 });
+      });
+      const user = userEvent.setup();
+      render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={{ ...ACTIVE, frozenFromDraftRevision: 3 }} />);
+      await openEditor(user);
+      await user.click(screen.getByRole("checkbox", { name: "Intermediario" }));
+      await user.click(screen.getByRole("button", { name: /crear nueva revisión/i }));
+      await screen.findAllByText(/\/confirm\/tok-n/);
+      const freeze = calls().find((c) => c.method === "POST" && c.url.endsWith("/revisions"))!;
+      expect(freeze.body).toEqual({ expectedDraftRevision: 3, selection: ["intermediario", "comprador"], idempotencyKey: expect.any(String) });
+      expect(await screen.findByRole("button", { name: "Confirmar como autor" })).toBeDisabled();
+      expect(screen.queryByText("Ya confirmaste")).not.toBeInTheDocument();
+    });
+
+    it("con documento finalizado no ofrece reabrir", async () => {
+      fetchMock.mockImplementation(async () => json({ confirmationStatus: "completa", missingRoles: [], confirmed: 2, rejected: 0 }));
+      render(<ReviewContainer documentId="doc-1" draftRevision={4} hcsStatus="pendiente" active={{ ...ACTIVE, frozenFromDraftRevision: 3 }} documentFinalized />);
+      await screen.findByText(/tu confirmación/i);
+      expect(screen.queryByRole("button", { name: /modificar participantes|incorporar el borrador/i })).not.toBeInTheDocument();
+    });
+
+    it("una revisión sustituida ofrece recargar y deshabilita acciones sobre la vieja", async () => {
+      fetchMock.mockImplementation(async () => json({ confirmationStatus: "sustituida", missingRoles: ["autor"], confirmed: 0, rejected: 0 }));
+      render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
+      expect(await screen.findByRole("button", { name: /recargar la revisión vigente/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /modificar participantes|incorporar el borrador/i })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Confirmar como autor" })).toBeDisabled();
+    });
+
     it("una revisión rechazada ofrece editar", async () => {
       fetchMock.mockImplementation(async () => json({ confirmationStatus: "rechazada", missingRoles: [], confirmed: 1, rejected: 1 }));
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);

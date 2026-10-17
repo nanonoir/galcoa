@@ -58,6 +58,8 @@ export interface ReviewContainerProps {
   hcsStatus: HcsStatus;
   /** Revisión vigente ya congelada (recarga): se muestra sin congelar de nuevo. */
   active?: Frozen | null;
+  /** El documento ya está finalizado según el servidor: no se ofrece abrir otra revisión (el servidor lo revalida). */
+  documentFinalized?: boolean;
 }
 
 const roleNames: Record<ThirdPartyRole, string> = { intermediario: "Intermediario", comprador: "Comprador" };
@@ -88,7 +90,7 @@ function thirdParties(selection: readonly ParticipantRole[]): ThirdPartyRole[] {
   return selection.filter((r): r is ThirdPartyRole => r !== "autor");
 }
 
-export function ReviewContainer({ documentId, draftRevision, hcsStatus, active = null }: ReviewContainerProps) {
+export function ReviewContainer({ documentId, draftRevision, hcsStatus, active = null, documentFinalized = false }: ReviewContainerProps) {
   const [selection, setSelection] = useState<ParticipantSelection>(active?.selection ?? ["autor"]);
   const [frozen, setFrozen] = useState<Frozen | null>(active);
   const [links, setLinks] = useState<ShareLinkItem[]>(() => (active ? thirdParties(active.selection).map((role) => toLink(role, null)) : []));
@@ -204,7 +206,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
   }
 
   async function reissue(role: ThirdPartyRole) {
-    if (!frozen) return;
+    if (!frozen || superseded) return;
     setError(null);
     try {
       const token = await issue(frozen.revisionId, role);
@@ -254,8 +256,10 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
   const sameSelection = frozen !== null && frozen.selection.join("+") === selection.join("+");
   const draftChanged = frozen !== null && draftRevision !== (frozen.frozenFromDraftRevision ?? draftRevision);
   const materialChange = !sameSelection || draftChanged;
-  // Con la confirmación completa o la revisión sustituida no se ofrece reabrir desde aquí.
-  const canReopen = frozen !== null && progress?.confirmationStatus !== "completa" && progress?.confirmationStatus !== "sustituida";
+  // Una confirmación completa no es la finalización: el autor puede seguir abriendo otra revisión (INV-14)
+  // mientras el documento no esté finalizado. Si la vista quedó sustituida, no se actúa sobre ella: se recarga.
+  const superseded = progress?.confirmationStatus === "sustituida";
+  const canReopen = frozen !== null && !superseded && !documentFinalized;
 
   function startEditing() {
     if (!frozen) return;
@@ -313,7 +317,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
 
       <ParticipantSelector value={frozen && !editing ? frozen.selection : selection} locked={frozen !== null && !editing} onChange={setSelection} />
 
-      {frozen !== null && editing && (
+      {frozen !== null && editing && !superseded && (
         <section aria-labelledby="reopen-title" className="flex flex-col gap-3 rounded-xl border p-4">
           <h2 id="reopen-title" className="text-lg font-semibold">
             Abrir una nueva revisión
@@ -340,6 +344,14 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
         </Button>
       ) : (
         <>
+          {superseded && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm">Esta revisión fue sustituida por otra. Recargá para ver la revisión vigente.</p>
+              <Button type="button" variant="outline" onClick={() => window.location.reload()} className="self-start">
+                Recargar la revisión vigente
+              </Button>
+            </div>
+          )}
           {canReopen && !editing && (
             <div className="flex flex-col gap-2">
               {draftChanged && <p className="text-sm">El borrador cambió después de congelar esta revisión.</p>}
@@ -358,7 +370,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} disabled={progress?.authorConfirmed} className="size-4" />
               Revisé la operación y las advertencias, y confirmo esta versión.
             </label>
-            <Button type="button" onClick={() => void confirmAsAuthor()} disabled={!agreed || busy || progress?.authorConfirmed} className="self-start">
+            <Button type="button" onClick={() => void confirmAsAuthor()} disabled={!agreed || busy || superseded || progress?.authorConfirmed} className="self-start">
               {progress?.authorConfirmed ? "Ya confirmaste" : "Confirmar como autor"}
             </Button>
           </section>
