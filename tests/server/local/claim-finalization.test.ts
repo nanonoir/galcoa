@@ -2,10 +2,12 @@ import { randomUUID } from "node:crypto";
 
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { createInvitationService } from "@/lib/documents/invitations/service";
+import { createSupabaseInvitationStore } from "@/lib/documents/invitations/supabase";
 import { createRevisionService } from "@/lib/documents/revisions/service";
 import { createSupabaseRevisionAdapters } from "@/lib/documents/revisions/supabase";
 
-import { createTestUser, psqlOk, readLocalStack, type TestUser } from "../rls/harness";
+import { anonClient, createTestUser, psqlOk, readLocalStack, type LocalStack, type TestUser } from "../rls/harness";
 
 import { runIndependent } from "./concurrency";
 
@@ -16,11 +18,12 @@ import { runIndependent } from "./concurrency";
  * Datos ficticios; no hay PDF, Storage ni HCS.
  */
 
+let stack: LocalStack;
 let ana: TestUser;
 let luis: TestUser;
 
 beforeAll(async () => {
-  const stack = readLocalStack();
+  stack = readLocalStack();
   ana = await createTestUser(stack, "clm-a");
   luis = await createTestUser(stack, "clm-b");
 });
@@ -108,6 +111,28 @@ describe("MVP-080 · claim_finalization sobre la base real", () => {
     expect(await claim(ana, w.documentId, revisionId)).toEqual({ status: "revision_not_active" });
   });
 
+  it("con una respuesta rechazada real no reclama ni crea operación", async () => {
+    const w = await world(ana);
+    const b = await revisions(ana).freeze({ documentId: w.documentId, expectedDraftRevision: 1, selection: ["autor", "comprador"], idempotencyKey: key("freeze") });
+    if (!b.ok) throw new Error("freeze");
+    const { revisionId, snapshotId, snapshotHash } = b.value.revision;
+    const own = await revisions(ana).confirmAsAuthor({
+      schemaVersion: 1, actor: "autor", documentId: w.documentId, revisionId, snapshotId, snapshotHash, idempotencyKey: key("author"), decision: "confirmar", checkboxChecked: true,
+    });
+    expect(own.ok).toBe(true);
+    const store = createSupabaseInvitationStore({ verifiedUserId: ana.id, rpc: ana.client });
+    const issued = await createInvitationService({ session: { currentUserId: async () => ana.id }, invitations: store }).issue({ revisionId, role: "comprador", idempotencyKey: key("issue") });
+    if (!issued.ok) throw new Error("issue");
+    const pub = createInvitationService({ session: { currentUserId: async () => null }, invitations: createSupabaseInvitationStore({ verifiedUserId: null, rpc: anonClient(stack) }) });
+    expect(await pub.respond({
+      schemaVersion: 1, actor: "tercero", token: issued.value.token, revisionId, snapshotId, snapshotHash, idempotencyKey: key("respond"),
+      declaredName: "Juan Pérez", decision: "rechazar", checkboxChecked: false, rejectionRatified: true,
+    })).toMatchObject({ ok: true, value: { confirmationStatus: "rechazada" } });
+    expect(await claim(ana, w.documentId, revisionId)).toEqual({ status: "rejected" });
+    expect(await operations(w.documentId)).toEqual([]);
+    expect(await psqlOk(`select count(*) from public.finalization_operations where revision_id = '${revisionId}';`)).toEqual([["0"]]);
+  });
+
   it("dos reclamos simultáneos: un ganador y la misma operación para el resto, sin fencing", async () => {
     const w = await world(ana);
     const revisionId = await confirmed(ana, w.documentId);
@@ -139,7 +164,9 @@ describe("MVP-080 · claim_finalization sobre la base real", () => {
     const revisionId = await confirmed(ana, w.documentId);
     await claim(ana, w.documentId, revisionId);
     await changeDraft(w.documentId, 2);
-    await revisions(ana).freeze({ documentId: w.documentId, expectedDraftRevision: 2, selection: ["autor"], idempotencyKey: key("freeze") }).catch(() => undefined);
+    // El restrict_violation del respaldo sale como resultado controlado, no como fallo técnico genérico.
+    expect(await revisions(ana).freeze({ documentId: w.documentId, expectedDraftRevision: 2, selection: ["autor"], idempotencyKey: key("freeze") }))
+      .toMatchObject({ ok: false, error: { code: "FINALIZATION_IN_PROGRESS", retryable: false } });
     expect(await psqlOk(`select lifecycle, (select active_revision_id::text from public.documents where id = '${w.documentId}') from public.document_revisions where id = '${revisionId}';`))
       .toEqual([["activa", revisionId]]);
     expect(await psqlOk(`select count(*) from public.document_revisions where document_id = '${w.documentId}';`)).toEqual([["1"]]);
