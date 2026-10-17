@@ -56,7 +56,7 @@ export const ChatAttachmentViewSchema = z.strictObject({
   }
 });
 
-export const ChatErrorKindSchema = z.enum(["network", "provider", "storage", "permissions", "other"]);
+export const ChatErrorKindSchema = z.enum(["network", "provider", "storage", "permissions", "cancelled", "other"]);
 
 /** Impedimento técnico de una etapa. Nunca se muestra como éxito ni como advertencia de contenido. */
 export const ChatErrorViewSchema = z.strictObject({
@@ -68,6 +68,24 @@ export const ChatErrorViewSchema = z.strictObject({
 
 export const ChatContrastStatusSchema = z.enum(["idle", "running", "done", "unavailable"]);
 
+/**
+ * Borrador publicado por el turno. `warnings` y `notInformed` solo existen si el servidor los
+ * informó (en un replay faltan): la presentación no los sustituye por cero.
+ */
+export const ChatDraftNoticeSchema = z.strictObject({
+  draftId: IdSchema,
+  draftRevision: z.number().int().nonnegative(),
+  title: z.string(),
+  warnings: z.number().int().nonnegative().optional(),
+  notInformed: z.number().int().nonnegative().optional(),
+});
+
+/** Hallazgo del contraste: aviso no bloqueante, nunca un impedimento. */
+export const ChatContrastFindingSchema = z.strictObject({
+  message: z.string().min(1),
+  severity: z.enum(["warning", "critical"]),
+});
+
 export const ChatViewStateSchema = z.strictObject({
   messages: z.array(ChatMessageViewSchema),
   /** `null` si no hay respuesta en curso. */
@@ -77,6 +95,10 @@ export const ChatViewStateSchema = z.strictObject({
   contrast: ChatContrastStatusSchema,
   /** Error del último turno; `null` si no hubo. */
   turnError: ChatErrorViewSchema.nullable(),
+  /** Último borrador publicado por el turno, si lo hay. */
+  draft: ChatDraftNoticeSchema.nullable().optional(),
+  /** Hallazgos del último contraste; ausente si no corrió. */
+  contrastFindings: z.array(ChatContrastFindingSchema).optional(),
 });
 
 export type ChatMessageView = z.infer<typeof ChatMessageViewSchema>;
@@ -85,6 +107,7 @@ export type ChatAttachmentView = z.infer<typeof ChatAttachmentViewSchema>;
 export type ChatErrorKind = z.infer<typeof ChatErrorKindSchema>;
 export type ChatErrorView = z.infer<typeof ChatErrorViewSchema>;
 export type ChatContrastStatus = z.infer<typeof ChatContrastStatusSchema>;
+export type ChatDraftNotice = z.infer<typeof ChatDraftNoticeSchema>;
 export type ChatViewState = z.infer<typeof ChatViewStateSchema>;
 
 /** Props de la presentación: datos serializables y callbacks originados en cliente. */
@@ -95,6 +118,7 @@ export interface ChatViewProps {
   onSend: (content: string) => void;
   onCancel: () => void;
   onRetryTurn: () => void;
-  onAttach: (files: File[]) => void;
-  onRetryAttachment: (attachmentId: string) => void;
+  /** Sin callbacks de adjuntos la presentación no ofrece la carga (aún sin ruta conectada). */
+  onAttach?: (files: File[]) => void;
+  onRetryAttachment?: (attachmentId: string) => void;
 }

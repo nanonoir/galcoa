@@ -64,6 +64,14 @@ describe("rutas de chat y contraste (dobles; sin proveedores ni Postgres)", () =
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ outcome: "completed", result: { reportId: "r1" } });
     expect(contrastDraft).toHaveBeenCalledWith(expect.objectContaining({ documentId: doc }));
+    const controller = new AbortController();
+    await createChatHttpHandler(deps, "contrast")(
+      new Request("https://galcoa.test/x", { method: "POST", headers: { Origin: "https://galcoa.test" }, signal: controller.signal }),
+      doc,
+    );
+    expect((contrastDraft.mock.calls.at(-1) as unknown as [{ abortSignal: AbortSignal }])[0].abortSignal.aborted).toBe(false);
+    controller.abort();
+    expect((contrastDraft.mock.calls.at(-1) as unknown as [{ abortSignal: AbortSignal }])[0].abortSignal.aborted).toBe(true);
     for (const [code, status] of [["NO_DRAFT", 409], ["STALE_DRAFT", 409], ["AI_PROVIDER_ERROR", 503]] as const) {
       contrastDraft.mockResolvedValueOnce({ ok: false, error: { code, stage: "ia", retryable: status === 503, correlationId: "c" } } as never);
       expect((await createChatHttpHandler(deps, "contrast")(post(), doc)).status).toBe(status);
