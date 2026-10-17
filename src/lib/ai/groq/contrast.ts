@@ -149,6 +149,8 @@ export function createContrastService(deps: ContrastDeps) {
           documentId: command.documentId,
           draftId: draft.draftId,
           draftRevision: draft.draftRevision,
+          draftContent: draft.content,
+          correlationId,
           result: output.result,
           findings: output.findings,
           inputs,
@@ -156,11 +158,15 @@ export function createContrastService(deps: ContrastDeps) {
           promptVersion: CONTRAST_PROMPT_VERSION,
           limitations,
         });
+        // Borrador cambiado durante la generación: sin éxito ni reintento de IA; el llamador decide.
+        if (saved.status === "stale_draft") return fail("STALE_DRAFT", "persistencia", false, correlationId);
+        if (saved.status === "not_available") return fail("NOT_AVAILABLE", "persistencia", false, correlationId);
         return {
           ok: true,
           value: {
             ...output,
-            ...saved,
+            reportId: saved.reportId,
+            createdAt: saved.createdAt,
             draftId: draft.draftId,
             draftRevision: draft.draftRevision,
             modelId: generated.modelId,
