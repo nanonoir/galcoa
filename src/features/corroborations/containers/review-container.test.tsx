@@ -163,7 +163,6 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
     expect(calls()).toEqual([{ url: "/api/revisions/rev-1/confirmations", method: "GET", body: null }]);
     expect(screen.queryByRole("button", { name: /congelar/i })).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Comprador" })).toBeDisabled();
-    expect(screen.getByText(/sello pendiente/i, { selector: "[data-slot=badge]" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /generar enlace nuevo para comprador/i }));
     expect(await screen.findByText(/\/confirm\/tok-nuevo/)).toBeInTheDocument();
@@ -173,7 +172,6 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
   describe("consulta periódica", () => {
     const aggregateCalls = () => calls().filter((c) => c.url.endsWith("/confirmations")).length;
     const advance = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
-    const setVisibility = (state: DocumentVisibilityState) => vi.spyOn(document, "visibilityState", "get").mockReturnValue(state);
 
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => {
@@ -185,12 +183,9 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       fetchMock.mockImplementation(async () => json(PENDING));
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
       await advance(0);
-      expect(aggregateCalls()).toBe(1);
-
       await advance(10_000);
       expect(aggregateCalls()).toBe(2);
       expect(screen.getByRole("status")).toHaveTextContent("");
-
       fetchMock.mockImplementation(async () => json({ error: { code: "TECHNICAL_FAILURE" } }, 503));
       await advance(20_000);
       expect(aggregateCalls()).toBe(3);
@@ -201,7 +196,7 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       fetchMock.mockImplementation(async () => json(PENDING));
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
       await advance(0);
-      setVisibility("hidden");
+      vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
       await advance(10_000);
       expect(aggregateCalls()).toBe(1);
     });

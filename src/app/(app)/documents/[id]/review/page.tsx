@@ -34,7 +34,6 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
   if (context.session.status === "unavailable") throw new Error("No se pudo verificar la sesión.");
   const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: context.session.user.id, session: context.rpc });
   const hcsStatus = result.value.hcsStatus;
-  // Revisión vigente: se hidrata tal cual está congelada (sin congelar ni emitir enlaces al cargar).
   const bundle = await store.getActiveRevision(context.session.user.id, id);
   const source = bundle ? null : await reader.getFreezeSource(context.session.user.id, id);
   const active: Frozen | null = bundle

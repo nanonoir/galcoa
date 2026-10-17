@@ -109,10 +109,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
     return token;
   }
 
-  /**
-   * `manual` (botón, carga inicial, tras una acción) muestra «Actualizando» y errores.
-   * `automatic` (consulta periódica) es silenciosa: no anuncia ni muestra fallos.
-   */
+  /** `automatic` (consulta periódica) es silenciosa: no anuncia «Actualizando» ni muestra fallos. */
   async function refresh(revisionId: string, mode: "manual" | "automatic" = "manual") {
     if (mode === "manual") {
       setRefreshing(true);
@@ -161,7 +158,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
       };
       setFrozen(next);
       const thirds = thirdParties(selection);
-      // Todos los espacios existen desde el congelado: un fallo de un rol no pierde los enlaces ya emitidos.
+      // Todos los espacios existen desde el congelado: un fallo de un rol conserva los demás enlaces.
       setLinks(thirds.map((role) => toLink(role, null)));
       setProgress({ confirmationStatus: "pendiente", missingRoles: selection, confirmed: 0, rejected: 0, authorConfirmed: false });
       const failed: string[] = [];
@@ -233,7 +230,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
   const settled = progress ? SETTLED.includes(progress.confirmationStatus) : true;
   const revisionId = frozen?.revisionId;
 
-  // Carga inicial del avance de una revisión hidratada (solo lectura; no emite enlaces).
+  // Carga inicial del avance de la revisión hidratada (solo lectura).
   useEffect(() => {
     if (!revisionId || active?.revisionId !== revisionId) return;
     const timer = setTimeout(() => void refresh(revisionId), 0);
