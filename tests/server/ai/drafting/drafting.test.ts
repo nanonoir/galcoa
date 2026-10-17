@@ -3,12 +3,11 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { DraftSchema, type Draft } from "@/lib/contracts/core";
 import type { DraftOutput } from "@/lib/ai/drafting/schema";
 import { createDraftingService, VISUAL_LIMITATION } from "@/lib/ai/drafting/service";
 import type { GeminiStructuredPort, GeminiStructuredInput } from "@/lib/ai/gemini/structured";
 import { DRAFTING_PROMPT_VERSION } from "@/lib/ai/prompts/drafting/v1";
-import type { DraftStore, SaveProposalInput } from "@/lib/documents/drafting/ports";
+import type { DraftStager, StageProposalInput } from "@/lib/documents/drafting/ports";
 import { createMessageService } from "@/lib/documents/messages";
 import type { SessionPort } from "@/lib/documents/ports";
 
@@ -41,28 +40,28 @@ function fakeGemini(output: DraftOutput | { error: string }) {
   return { port, calls };
 }
 
-/** Doble del puerto de borradores con concurrencia optimista y propuestas que no se pisan. */
-function memoryDrafts() {
-  const saved: SaveProposalInput[] = [];
-  let revision = 0;
-  const store: DraftStore = {
-    async saveProposal(input) {
+/** Doble del stager: valida el claim y la revisión esperada, y nunca produce un borrador oficial. */
+function memoryStager() {
+  const staged: StageProposalInput[] = [];
+  const store: DraftStager = {
+    async stageProposal(input) {
       if (input.ownerId !== ANA) return { status: "not_available" };
+      if (input.claim.attempt !== currentAttempt) return { status: "stale" };
       if (input.expectedDraftRevision !== revision) return { status: "stale_draft" };
-      revision += 1;
-      saved.push(structuredClone(input));
-      const draft: Draft = {
-        draftId: "draft-1",
-        documentId: input.documentId,
-        draftRevision: revision,
-        content: input.content,
-        updatedAt: "2026-10-16T15:00:00Z",
+      staged.push(structuredClone(input));
+      return {
+        status: "staged",
+        replayed: false,
+        turn: { turnId: input.claim.turnId, documentId: input.documentId, clientMessageId: "msg-cliente-0001", attempt: input.claim.attempt, state: "en_curso", userMessageId: null, agentMessageId: null, leaseExpiresAt: "2026-10-16T15:01:30Z" },
+        staged: { proposalId: `prop-${staged.length}`, draftId: "draft-1", expectedDraftRevision: revision, nextDraftRevision: revision + 1 },
       };
-      return { status: "created", draft: DraftSchema.parse(draft), proposalId: `prop-${revision}` };
     },
   };
-  return { store, saved };
+  let revision = 0;
+  let currentAttempt = 1;
+  return { store, staged, setRevision: (n: number) => (revision = n), setAttempt: (n: number) => (currentAttempt = n) };
 }
+const CLAIM = { turnId: "33333333-3333-4333-8333-333333333333", attempt: 1 };
 
 async function setup(messages: string[], output: DraftOutput | { error: string }) {
   const mem = createMemoryStore();
@@ -87,8 +86,8 @@ async function setup(messages: string[], output: DraftOutput | { error: string }
     if (!r.ok) throw new Error(r.error.code);
   }
   const gemini = fakeGemini(output);
-  const drafts = memoryDrafts();
-  const service = createDraftingService({ session, messages: msgs, drafts: drafts.store, gemini: gemini.port });
+  const drafts = memoryStager();
+  const service = createDraftingService({ session, messages: msgs, stager: drafts.store, gemini: gemini.port });
   return { service, documentId, gemini, drafts, mem, as: (id: string | null) => (user = id) };
 }
 
@@ -106,15 +105,18 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
     const t = await setup(["Hoy entregamos 10 cajas de yerba en el deposito."], base);
     const before = t.mem.inspect().messages.map((m) => m.content);
 
-    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 });
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
 
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.proposal.facts[0]).toMatchObject({ sourceRef: "m1", value: "10 cajas" });
-    expect(r.value.draft.content.corrections).toEqual(["deposito → depósito (m1)"]);
+    expect(r.value.staged).toMatchObject({ proposalId: "prop-1", expectedDraftRevision: 0, nextDraftRevision: 1 });
+    expect("draft" in r.value).toBe(false);
     expect(r.value.proposal.warnings).toEqual([]);
-    const saved = t.drafts.saved[0];
-    expect(saved).toMatchObject({ modelId: MODEL, promptVersion: DRAFTING_PROMPT_VERSION, expectedDraftRevision: 0 });
+    const saved = t.drafts.staged[0];
+    expect(saved.content.corrections).toEqual(["deposito → depósito (m1)"]);
+    expect(saved).toMatchObject({ claim: CLAIM, audit: { actorScope: ANA } });
+    expect(saved).toMatchObject({ modelId: MODEL, promptVersion: DRAFTING_PROMPT_VERSION, expectedDraftRevision: 0, claim: CLAIM });
     expect(saved.inputs).toEqual([{ ref: "m1", kind: "mensaje", id: t.mem.inspect().messages[0].messageId }]);
     // Los originales no cambian.
     expect(t.mem.inspect().messages.map((m) => m.content)).toEqual(before);
@@ -122,7 +124,7 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
 
   it("envía las fuentes delimitadas, sin la fecha de carga, y sin herramientas", async () => {
     const t = await setup(["Hoy entregamos 10 cajas de yerba en el deposito."], base);
-    await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 });
+    await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
 
     const input = t.gemini.calls[0];
     expect(input.sources).toEqual([
@@ -145,7 +147,7 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
     };
     const t = await setup(["Entregamos 10 cajas de yerba.", "El remito dice 12 cajas."], output);
 
-    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 });
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
 
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -163,7 +165,7 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
     };
     const t = await setup(["Control de la cámara 3: dio 7."], output);
 
-    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 });
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
 
     expect(r.ok && r.value.proposal.notInformed).toEqual(["unidad"]);
     expect(r.ok && r.value.proposal.facts[0].value).toBe("7");
@@ -177,7 +179,7 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
     };
     const t = await setup(["Entregamos 10 cajas de yerba."], output);
 
-    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 });
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
 
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -194,23 +196,28 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
   ])("%s: error técnico sin borrador", async (_, output) => {
     const t = await setup(["Hoy entregamos 10 cajas de yerba en el deposito."], output);
 
-    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 });
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
 
     expect(r).toMatchObject({ ok: false, error: { code: "AI_INVALID_PROVENANCE", stage: "ia", retryable: true } });
-    expect(t.drafts.saved).toHaveLength(0);
+    expect(t.drafts.staged).toHaveLength(0);
   });
 
   it("reejecutar crea otra propuesta; una revisión esperada vieja da conflicto sin pisar", async () => {
     const t = await setup(["Hoy entregamos 10 cajas de yerba en el deposito."], base);
 
-    const first = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 });
-    const second = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 1 });
-    const stale = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 1 });
+    const first = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
+    t.drafts.setRevision(1);
+    const second = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 1, claim: CLAIM });
+    const stale = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
+    t.drafts.setAttempt(2);
+    const old = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 1, claim: CLAIM });
 
-    expect(first.ok && first.value.proposalId).toBe("prop-1");
-    expect(second.ok && second.value.proposalId).toBe("prop-2");
+    expect(first.ok && first.value.staged.proposalId).toBe("prop-1");
+    expect(second.ok && second.value.staged.proposalId).toBe("prop-2");
     expect(stale).toMatchObject({ ok: false, error: { code: "STALE_DRAFT" } });
-    expect(t.drafts.saved).toHaveLength(2);
+    // Un intento reemplazado no queda como éxito.
+    expect(old).toMatchObject({ ok: false, error: { code: "TURN_SUPERSEDED" } });
+    expect(t.drafts.staged).toHaveLength(2);
   });
 
   it("una instrucción inyectada no produce acciones: solo una propuesta más", async () => {
@@ -219,7 +226,7 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
       corrections: [],
       facts: [{ field: "cantidad", value: "10 cajas", sourceRef: "m1", quote: "10 cajas de yerba" }],
     });
-    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 });
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
 
     expect(r.ok).toBe(true);
     expect(Object.keys(t.service)).toEqual(["generateDraft"]);
@@ -230,21 +237,21 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
     const t = await setup(["Entregamos 10 cajas."], { error: "AI_PROVIDER_ERROR" });
     const before = t.mem.inspect().messages;
 
-    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 });
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
 
     expect(r).toMatchObject({ ok: false, error: { code: "AI_PROVIDER_ERROR" } });
-    expect(t.drafts.saved).toHaveLength(0);
+    expect(t.drafts.staged).toHaveLength(0);
     expect(t.mem.inspect().messages).toEqual(before);
   });
 
   it("sin sesión o con documento ajeno no llama al modelo", async () => {
     const t = await setup(["Entregamos 10 cajas."], base);
     t.as(null);
-    expect(await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 })).toMatchObject({
+    expect(await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM })).toMatchObject({
       ok: false, error: { code: "NO_SESSION" },
     });
     t.as(LUIS);
-    expect(await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0 })).toMatchObject({
+    expect(await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM })).toMatchObject({
       ok: false, error: { code: "NOT_AVAILABLE" },
     });
     expect(t.gemini.calls).toHaveLength(0);
@@ -271,15 +278,15 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
       ],
       warnings: [{ message: "10 frente a 12", severity: "critical", sourceRefs: ["m1", "e1"] }],
     });
-    const drafts = memoryDrafts();
+    const drafts = memoryStager();
     const listExtractions = vi.fn(async () => [{ extractionId: "ext-1", origin: "pdf" as const, text: "REMITO: 12 cajas yerba" }]);
-    const service = createDraftingService({ session, messages: msgs, drafts: drafts.store, gemini: gemini.port, extractions: { listExtractions } });
+    const service = createDraftingService({ session, messages: msgs, stager: drafts.store, gemini: gemini.port, extractions: { listExtractions } });
 
-    const r = await service.generateDraft({ documentId: doc.value.documentId, expectedDraftRevision: 0 });
+    const r = await service.generateDraft({ documentId: doc.value.documentId, expectedDraftRevision: 0, claim: CLAIM });
 
     expect(r.ok).toBe(true);
-    expect(drafts.saved[0].inputs.map((i) => i.ref)).toEqual(["m1", "e1"]);
-    expect(drafts.saved[0].limitations).toEqual([VISUAL_LIMITATION]);
+    expect(drafts.staged[0].inputs.map((i) => i.ref)).toEqual(["m1", "e1"]);
+    expect(drafts.staged[0].limitations).toEqual([VISUAL_LIMITATION]);
   });
 });
 
