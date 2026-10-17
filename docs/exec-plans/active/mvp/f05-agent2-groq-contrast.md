@@ -80,4 +80,17 @@ Tras integrar y repetir checks: actualizar solo `MVP-053` (y recuento) y archiva
 
 **Decisiones pendientes:** `MVP-013` (contexto excedido y calidad mínima). Las demás partes avanzan sin ella.
 
+## 10. Persistencia SQL del reporte (migración `20261016002502`, rama `feat/contrast-report-persistence`)
+
+Implementado el lado SQL; el adaptador `ContrastStore` real y el cambio de `get_freeze_source` (discriminar `kind`, consolidar Agente 1 + Agente 2 + reglas) quedan para la siguiente entrega. Contrato para el adaptador, vía `galcoa_executor` (actor explícito):
+
+`public.persist_contrast_report(p_actor_id uuid, p_document_id uuid, p_draft_id uuid, p_draft_revision int, p_draft_content jsonb, p_result text, p_findings jsonb, p_inputs jsonb, p_model_id text, p_prompt_version text, p_limitations jsonb, p_correlation_id text) → jsonb`
+
+- `p_draft_*` = borrador `b1` evaluado (`Draft.draftId/draftRevision/content` tal como los leyó `getCurrentDraft`); `p_inputs` = `SaveReportInput.inputs` (con `b1` de `kind: "borrador"` y `id = draftId`); `p_findings` con claves `message/severity/sourceRefs`.
+- Estados: `{status:"created", reportId, createdAt}`; `{status:"stale_draft"}` (id, revisión o contenido distintos del vigente, o sin borrador; cero escrituras); `{status:"not_available"}` (ajeno o inexistente). Forma o referencias inválidas (resultado incoherente con hallazgos, ref no enviada, mensaje/extracción de otro documento o de evidencia no aceptada) lanzan `22023`; sin actor, `42501`.
+- Formato en `verification_reports`: `input = {kind:"contraste", schemaVersion:1, inputs, draft:{draftId, draftRevision, content}}`, `output = {kind:"contraste", schemaVersion:1, draftId, draftRevision, result, findings}`, `rules_version = "contraste-v1"` (nombra el formato; no afirma reglas ejecutadas). `report_sources` solo mensajes y extracciones. Auditoría `contrast_report.created` sin contenido. Cada llamada exitosa crea otro reporte; no cambia estado, confirmaciones ni snapshots.
+- Límites propios de la RPC (no están en el servicio): hallazgo ≤ 4000 caracteres, ≤ 200 hallazgos, ≤ 50 limitaciones.
+
+**Evidencia:** `npm run typecheck` y ESLint de los tests nuevos: OK. Las pruebas `tests/server/local/contrast-report-persistence.test.ts` y el catálogo RLS **no se ejecutaron localmente** (Supabase local no reservado); pendientes de CI Linux.
+
 [Maestro](../mvp-master-plan.md) · [Fundaciones](../../../design/mvp-shared-foundations.md) · Previo: [Evidencias](f04-evidence-upload-extraction.md) y [Agente 1](f05-agent1-drafting.md) · Siguiente: [Reglas y advertencias](f06-rules-and-warnings.md)
