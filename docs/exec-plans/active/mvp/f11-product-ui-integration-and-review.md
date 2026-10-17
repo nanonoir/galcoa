@@ -87,6 +87,8 @@ Checkpoint A en curso; B no iniciado. Las casillas marcadas tienen evidencia en 
 
 ## 8. Evidencia
 
+Los checkpoints A/B iniciales siguientes son históricos: sus inventarios y pendientes corresponden a aquella entrega, no al estado actual. Los checkpoints finales de PR #98/#99/#104 superseden las notas antiguas de Auth, navegación y pruebas. `confirm/[token]` ya existe y tiene E2E reales en PR #87/#90; `verify/[reference]` sigue pendiente.
+
 **Checkpoint B (parcial, `MVP-118`) · 2026-10-16.**
 
 - **A1 `[x]` inventario (PRD §10) y estado:** `/` landing (integrada, probada) · `/acceso`, `/registro`, `/recuperar` (integradas, probadas) · `/nueva-contrasena` (requiere sesión; no probada aquí) · `/dashboard` y `/documents/[id]` (integradas; requieren Auth local, **no probadas en navegador**) · `confirm/[token]` (MVP-076) y `verify/[reference]` (MVP-101): **aún no existen**. Chat y snapshot no montados (MVP-054, MVP-077/112).
@@ -108,7 +110,7 @@ Checkpoint A en curso; B no iniciado. Las casillas marcadas tienen evidencia en 
 - **Checkpoint de accesibilidad de producto (PR #99, merge `2e79478afde2ef92ffb523a9d03e10229d568cc6`):** `lang="es"` y metadatos «GALCOA+» en el layout raíz; `--font-sans` apunta a la variable Geist con pila de reserva; los cuatro formularios de Auth usan `h1` (se retiró el `test.skip` de `responsive-a11y.spec.ts`); `AUTH_PATHS.afterLogin` pasa a `/dashboard`. Sin cambios en PKCE, cookies ni sesión. **Corrección de expectativas E2E (commit `064da13`):** `tests/e2e/auth-flow.spec.ts` actualizado a `/\/dashboard$/` en las tres expectativas posteriores al login (callback, signup y recuperación no cambian). **Re-revisión independiente:** PASS sobre commit `064da13`. **CI remoto:** run 38991143179 SUCCESS (`validate` 2m37s, `local-server-db` 6m14s) con Auth real local y confirmaciones. Locales: 1099 unitarios, 69 barreras, 51 responsive 360/1280 px.
 - **Navegación documento → revisión (PR #98, merge `066e33b3228ec26320e46f6a0029fe662d13d2c8`):** enlace de navegación montado desde la vista de documento hacia `/documents/[id]/review`.
 - **E2E real del autor (PR #104, merge `1f2eea43d2d61d0778e034056d0cbd4d4aa70a41`):** navegación documento → revisión y login a `/dashboard` verificados en flujo real de navegador con datos persistidos en Supabase local.
-- **Estado de cierre:** No marca `MVP-116` ni `MVP-118` como completados. `MVP-116` mantiene pendiente el montaje del container de chat (`MVP-054`) en `documents/[id]/page.tsx` y el servicio de versiones para historial (`MVP-083/084`). `MVP-118` mantiene pendientes las pantallas públicas (`confirm/[token]` de `MVP-076` y `verify/[reference]` de `MVP-101`) y la revisión manual transversal final. Issue [#31](https://github.com/nanonoir/galcoa/issues/31) permanece abierta.
+- **Estado de cierre:** No marca `MVP-116` ni `MVP-118` como completados. `MVP-116` mantiene pendiente montar el chat (`MVP-054`) y el historial persistido (`MVP-083/084`). `confirm/[token]` ya está implementada y probada; falta la revisión transversal final del producto, incluida esa pantalla. `verify/[reference]` aún debe implementarse. Issue [#31](https://github.com/nanonoir/galcoa/issues/31) permanece abierta.
 
 ## 9. Referencias a completar
 
