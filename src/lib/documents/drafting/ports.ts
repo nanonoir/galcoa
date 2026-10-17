@@ -2,11 +2,10 @@ import "server-only";
 
 import type { Draft } from "@/lib/contracts/core";
 
-/**
- * Persistencia de propuestas del Agente 1 (MVP-051; RPC `save_draft` de
- * docs/design/data-transactions.md, migración aditiva pendiente con F4).
- * Solo existe el puerto; el adaptador Supabase depende de MVP-025.
- */
+import type { AuditContext } from "../ports";
+import type { TurnClaimRef, TurnRecord } from "../turns/ports";
+
+/** Staging de propuestas del Agente 1 (MVP-051/052); el adaptador SQL es `DurableChatStore`. */
 
 export type DraftInputRef = {
   /** Ref enviada al modelo (m1, e1…). */
@@ -19,7 +18,7 @@ export type DraftInputRef = {
 export type SaveProposalInput = {
   ownerId: string;
   documentId: string;
-  /** Concurrencia optimista (SH-01): si la base tiene otra revisión, conflicto. */
+  /** Concurrencia optimista (SH-01): se compara al completar el turno. */
   expectedDraftRevision: number;
   content: Draft["content"];
   /** Salida estructurada validada y verificada (hechos, correcciones, advertencias). */
@@ -31,18 +30,21 @@ export type SaveProposalInput = {
   limitations: string[];
 };
 
-export type SaveProposalResult =
-  | { status: "created"; draft: Draft; proposalId: string }
-  | { status: "stale_draft" }
-  | { status: "not_available" };
+export type StagedRef = { proposalId: string; draftId: string; expectedDraftRevision: number; nextDraftRevision: number };
+
+export type StageProposalInput = SaveProposalInput & { claim: TurnClaimRef; audit: AuditContext };
+
+export type StageProposalResult =
+  | { status: "staged"; replayed: boolean; turn: TurnRecord; staged: StagedRef }
+  | { status: "stale" | "user_message_required" | "stage_conflict" | "stale_draft" | "not_available" };
 
 /**
- * Cada guardado crea una propuesta nueva (no sobrescribe las anteriores) y
- * avanza `draftRevision`. El tiempo es el del servidor de base. No toca
- * mensajes ni revisiones congeladas.
+ * Prepara la propuesta ligada a un intento (`TurnClaimRef`) sin tocar el borrador
+ * oficial ni crear mensajes: solo completar el turno publica (docs/design/durable-chat-turns.md).
+ * Devuelve referencias de staging, nunca un `Draft`.
  */
-export type DraftStore = {
-  saveProposal(input: SaveProposalInput): Promise<SaveProposalResult>;
+export type DraftStager = {
+  stageProposal(input: StageProposalInput): Promise<StageProposalResult>;
 };
 
 /** Extracciones persistidas de evidencias (MVP-043, opcional hasta que exista). */

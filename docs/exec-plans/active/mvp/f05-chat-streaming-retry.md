@@ -59,6 +59,16 @@ Migración `20261016002500_chat_turn_claims.sql`: tabla técnica `chat_turns` y 
 
 Migración `20261016002501_chat_turn_publication.sql`: columnas de staging y `completion_result` en `chat_turns` (sin tabla de borrador duplicada; se limpian al recuperar el lease o cerrar como fallido/cancelado), y RPC `stage_chat_turn_proposal` y `complete_chat_turn` para `galcoa_executor` (mismo propietario `galcoa_turn_writer`; el mensaje del agente se crea con `append_agent_message` mediante EXECUTE exacto). Completar publica en un solo commit el borrador oficial (mismo ID, revisión + 1, CAS contra la revisión esperada), el historial `verification_reports` (`kind: redaccion`) con sus fuentes, el mensaje del agente, el cierre y la auditoría; el replay devuelve el resultado original. Pruebas: `tests/server/local/chat-turn-publication.test.ts` y el catálogo RLS. **Alcance:** sin adaptador TS, ruta ni UI. `get_freeze_source` (F7) aún no distingue tipos de reporte: debe corregirse antes de montar el flujo (el historial de redacción no lleva `draftRevision`/`result` en la raíz para no confundirse con un contraste). Finalizar (F8) debe exigir que la revisión activa provenga del borrador vigente. Evidencia: ver el PR; sin chat funcional acreditado.
 
+### Checkpoint 3 — orquestación sobre `DurableChatStore` (entrega en tres PR encadenados)
+
+La orquestación revisada en el PR #110 (≈865 de churn authored) supera el tope de 600 por PR del diseño; se entrega en tres PR encadenados, cada uno con typecheck y tests propios, y #110 queda como original superado hasta que estén listos.
+
+- **3a · staging en el Agente 1** (`feat/chat-staging-contracts`, base `develop`): `DraftStager` reemplaza a `DraftStore` (`stageProposal` ligado a `TurnClaimRef`, devuelve `StagedRef`, nunca un `Draft`); el servicio de redacción y el runner de evals lo usan (`publishStaged` equivale a completar solo en memoria). `TurnStore` y el servicio de turnos legacy no cambian (compatibilidad transitoria; no hay runtime que los monte).
+- **3b · doble de test durable** (base 3a): `createMemoryDurableStore` con la semántica de 02500/02501 y su propia prueba.
+- **3c · orquestación y retiro legacy** (base 3b): `createTurnService` usa solo `DurableChatStore`; se retira `TurnStore`.
+
+**Alcance de 3a:** sin ruta, factoría de runtime ni UI; no acredita chat funcional.
+
 ## 6. Casos de test por aceptación
 
 | Aceptación | Caso |

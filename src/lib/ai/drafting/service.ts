@@ -2,11 +2,12 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
-import type { Draft, Message } from "@/lib/contracts/core";
+import type { Message } from "@/lib/contracts/core";
 import type { TechnicalError } from "@/lib/contracts/technical";
-import type { DraftInputRef, DraftStore, ExtractionReader } from "@/lib/documents/drafting/ports";
+import type { DraftInputRef, DraftStager, ExtractionReader, StagedRef } from "@/lib/documents/drafting/ports";
 import type { SessionPort } from "@/lib/documents/ports";
 import type { ServiceResult } from "@/lib/documents/result";
+import type { TurnClaimRef } from "@/lib/documents/turns/ports";
 
 import type { GeminiStructuredPort, GeminiTextSource } from "../gemini/structured";
 import { DRAFTING_INSTRUCTIONS_V1, DRAFTING_PROMPT_VERSION } from "../prompts/drafting/v1";
@@ -20,7 +21,8 @@ import { DraftOutputSchema, type DraftOutput } from "./schema";
  * Lee los mensajes originales con el servicio de MVP-041 (y extracciones si
  * hay lector), los envía como datos no confiables al puerto Gemini (MVP-050),
  * verifica la procedencia de forma determinista y guarda una propuesta nueva
- * con modelo, versión de prompt, entradas exactas y limitaciones. No pregunta
+ * en staging (ligada al intento) con modelo, versión de prompt, entradas exactas y
+ * limitaciones; no publica borrador oficial: eso lo hace completar el turno. No pregunta
  * ni bloquea por datos faltantes; no modifica mensajes. Un fallo no crea
  * borrador ni éxito ficticio. El turno de chat y el streaming son de MVP-052.
  */
@@ -31,7 +33,7 @@ export const VISUAL_LIMITATION =
 export type DraftingDeps = {
   session: SessionPort;
   messages: { listMessages(documentId: string): Promise<ServiceResult<Message[]>> };
-  drafts: DraftStore;
+  stager: DraftStager;
   gemini: GeminiStructuredPort;
   /** Opcional hasta que exista MVP-043. */
   extractions?: ExtractionReader;
@@ -40,13 +42,15 @@ export type DraftingDeps = {
 export type GenerateDraftCommand = {
   documentId: string;
   expectedDraftRevision: number;
+  /** Intento reclamado al que queda ligado el staging (fencing explícito). */
+  claim: TurnClaimRef;
   abortSignal?: AbortSignal;
   correlationId?: string;
 };
 
 export type GeneratedDraft = {
-  draft: Draft;
-  proposalId: string;
+  /** Referencias de staging: aún no hay borrador oficial. */
+  staged: StagedRef;
   proposal: DraftOutput;
   modelId: string;
   promptVersion: string;
@@ -128,7 +132,9 @@ export function createDraftingService(deps: DraftingDeps) {
       };
 
       try {
-        const saved = await deps.drafts.saveProposal({
+        const staged = await deps.stager.stageProposal({
+          claim: command.claim,
+          audit: { actorScope: ownerId, correlationId },
           ownerId,
           documentId: command.documentId,
           expectedDraftRevision: command.expectedDraftRevision,
@@ -143,13 +149,14 @@ export function createDraftingService(deps: DraftingDeps) {
           promptVersion: DRAFTING_PROMPT_VERSION,
           limitations,
         });
-        if (saved.status === "stale_draft") return fail("STALE_DRAFT", "persistencia", false, correlationId);
-        if (saved.status === "not_available") return fail("NOT_AVAILABLE", "persistencia", false, correlationId);
+        if (staged.status === "stale") return fail("TURN_SUPERSEDED", "ia", false, correlationId);
+        if (staged.status === "stale_draft") return fail("STALE_DRAFT", "persistencia", false, correlationId);
+        if (staged.status === "not_available") return fail("NOT_AVAILABLE", "persistencia", false, correlationId);
+        if (staged.status !== "staged") return fail("TECHNICAL_FAILURE", "persistencia", staged.status === "user_message_required", correlationId);
         return {
           ok: true,
           value: {
-            draft: saved.draft,
-            proposalId: saved.proposalId,
+            staged: staged.staged,
             proposal,
             modelId: generated.modelId,
             promptVersion: DRAFTING_PROMPT_VERSION,

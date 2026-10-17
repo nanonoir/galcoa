@@ -7,21 +7,20 @@ import { InstantSchema } from "@/lib/contracts/common";
 
 import type { DocumentRpc } from "../persistence/store";
 import type { AuditContext } from "../ports";
-import type { DraftInputRef, SaveProposalInput } from "../drafting/ports";
+import type { DraftInputRef, DraftStager } from "../drafting/ports";
 
-import type { TurnRecord } from "./ports";
+import type { TurnClaimRef, TurnRecord } from "./ports";
+
+export type { TurnClaimRef };
 
 /**
  * Adaptador SQL de los turnos durables (migraciones 02500/02501; docs/design/durable-chat-turns.md).
- * Puerto `DurableChatStore` NUEVO: no reemplaza todavía a `TurnStore`/`DraftStore`
+ * Puerto `DurableChatStore` NUEVO: no reemplaza todavía a `TurnStore`
  * (legacy, sin fencing ni staging). No hay ruta ni orquestador que lo use aún, y la
  * auditoría TS de `chat_turn.*` queda pendiente: SQL ya emite la crítica de forma atómica.
- * Diferencia clave: `stageProposal` NO devuelve un `Draft` oficial (solo referencias de
- * staging); `completeTurn` es el único punto que publica y devuelve el resultado original.
+ * Diferencia clave: `stageProposal` (`DraftStager`) NO devuelve un `Draft` oficial (solo
+ * referencias de staging); `completeTurn` es el único punto que publica y devuelve el resultado original.
  */
-
-/** Intento reclamado: fencing explícito en cada operación posterior. */
-export type TurnClaimRef = { turnId: string; attempt: number };
 
 export type DurableClaimResult =
   | { status: "claimed"; turn: TurnRecord; retried: boolean }
@@ -30,19 +29,11 @@ export type DurableClaimResult =
   | { status: "idempotency_conflict" }
   | { status: "not_available" };
 
-export type StagedRef = { proposalId: string; draftId: string; expectedDraftRevision: number; nextDraftRevision: number };
-
-export type StageProposalResult =
-  | { status: "staged"; replayed: boolean; turn: TurnRecord; staged: StagedRef }
-  | { status: "stale" | "user_message_required" | "stage_conflict" | "stale_draft" | "not_available" };
-
 export type CompleteTurnResult =
   | { status: "completed" | "replayed"; turn: TurnRecord; draft: Draft; proposalId: string; agentMessage: Message }
   | { status: "stale" | "not_staged" | "user_message_required" | "document_finalized" | "stale_draft" | "not_available" };
 
-export type StageProposalInput = SaveProposalInput & { claim: TurnClaimRef; audit: AuditContext };
-
-export type DurableChatStore = {
+export type DurableChatStore = DraftStager & {
   claimTurn(input: {
     ownerId: string;
     documentId: string;
@@ -57,7 +48,6 @@ export type DurableChatStore = {
     userMessageId: string;
     audit: AuditContext;
   }): Promise<{ status: "attached"; turn: TurnRecord } | { status: "stale" | "not_available" }>;
-  stageProposal(input: StageProposalInput): Promise<StageProposalResult>;
   completeTurn(input: { ownerId: string; claim: TurnClaimRef; agentContent: string; audit: AuditContext }): Promise<CompleteTurnResult>;
   closeAttempt(input: {
     ownerId: string;
