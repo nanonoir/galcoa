@@ -27,10 +27,14 @@ Qué hace el harness, siempre igual:
 ---
 
 ## 1. La frase de una línea
-> **GALCOA+ convierte una conversación de trabajo en un registro que nadie puede cambiar sin que se note: se habla por chat, las partes confirman y la prueba queda en Hedera.**
+> **GALCOA+ es un harness que ayuda a que la información que una empresa declara llegue a la auditoría con su evidencia, confirmada en el momento y con una huella pública, para que el auditor pueda verificarla.**
+
+**Qué es y qué no es:** no es un sistema de registro, ni de trazabilidad, ni de control. Es un harness: un proceso que la empresa aplica **antes** de la auditoría para sumar **confianza y transparencia**. **El auditor queda afuera del harness**: no lo usa para cargar, solo verifica lo que la empresa declaró, con las pruebas adjuntas y la huella.
+
+**Cómo funciona la confirmación:** la información se confirma **en el momento en que se carga** (contemporánea), con hora del servidor. Las personas elegidas confirman el mismo documento congelado; el sistema deja constancia de quién, cuándo y con qué evidencia.
 
 Plantilla del workshop completada:
-> Nos dirigimos a **empresas de sectores regulados (cannabis medicinal, farma, alimentos, agro)**. Resolvemos **el registro manual, tardío y difícil de probar de cada lote** mediante **un chat con IA, confirmación de las partes y una huella pública en Hedera**. Generamos valor porque **se pierde menos tiempo cargando, hay menos lotes rechazados y las auditorías son más tranquilas**. Nuestro modelo de ingresos podría ser **una suscripción por volumen de operaciones selladas**, y llegaremos a nuestros clientes mediante **nuestra red del sector y el ecosistema de mentores**.
+> Nos dirigimos a **empresas de sectores regulados (cannabis medicinal, farma, alimentos, agro)**. Resolvemos **la información declarada que llega a la auditoría sin respaldo verificable** mediante **un chat con IA, confirmación de las partes y una huella pública en Hedera**. Generamos valor porque **se pierde menos tiempo cargando, hay menos lotes rechazados y las auditorías son más tranquilas**. Nuestro modelo de ingresos podría ser **una suscripción por volumen de operaciones selladas**, y llegaremos a nuestros clientes mediante **nuestra red del sector y el ecosistema de mentores**.
 
 ## 2. Las 5 preguntas
 
