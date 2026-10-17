@@ -188,7 +188,7 @@ export function PublicVerifier({ verification, isVerifying = false, errorMessage
           ) : null}
 
           <div role="status" aria-live="polite" className="flex flex-col gap-2">
-            {state === "sin_archivo" ? (
+            {state === "sin_archivo" && !selected ? (
               <p className="text-muted-foreground text-sm">Aún no se ha elegido ningún archivo: solo se informa el estado del registro.</p>
             ) : null}
             {state === "verificando" ? (

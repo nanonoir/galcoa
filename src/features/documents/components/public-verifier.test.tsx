@@ -44,6 +44,13 @@ describe("PublicVerifier", () => {
     expect(screen.queryByText(/coincide con el registro/)).toBeNull();
   });
 
+  it("oculta la leyenda de «ningún archivo» cuando hay uno elegido aunque aún no haya resultado", async () => {
+    const { user } = setup(build({}), { errorMessage: "Fallo de red" });
+    expect(screen.getByText(/ningún archivo/)).toBeTruthy();
+    await user.upload(input() as HTMLInputElement, pdf());
+    expect(screen.queryByText(/ningún archivo/)).toBeNull();
+  });
+
   it("sin prueba no muestra manifest, topic ni secuencia", () => {
     setup(build({ registrationStatus: "pendiente", proof: null }));
     expect(screen.getByText("Registro pendiente")).toBeTruthy();
