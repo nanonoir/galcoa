@@ -41,13 +41,13 @@ const ContrastResponseSchema = z.object({
 
 export type ContrastFinding = z.infer<typeof ContrastResponseSchema>["result"]["findings"][number];
 
-const NETWORK: TechnicalError = { code: "NETWORK_ERROR", stage: "validacion", retryable: true, correlationId: "sin-referencia" };
+export const NETWORK: TechnicalError = { code: "NETWORK_ERROR", stage: "validacion", retryable: true, correlationId: "sin-referencia" };
 
 export type ClientResult<T> = { ok: true; value: T } | { ok: false; error: TechnicalError; status: number };
 
-const base = (documentId: string) => `/api/documents/${encodeURIComponent(documentId)}`;
+export const base = (documentId: string) => `/api/documents/${encodeURIComponent(documentId)}`;
 
-async function errorFrom(response: Response): Promise<TechnicalError> {
+export async function errorFrom(response: Response): Promise<TechnicalError> {
   const parsed = z.object({ error: TechnicalErrorSchema }).safeParse(await response.json().catch(() => null));
   return parsed.success ? parsed.data.error : { ...NETWORK, code: "UNEXPECTED_RESPONSE", retryable: response.status >= 500 };
 }
