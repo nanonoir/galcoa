@@ -1,6 +1,6 @@
 # F7-04 — UI de revisión del autor y compartir manual
 
-**Estado: en curso (2026-10-16, etapa A del [cierre consolidado](mvp-consolidated-closure.md)); `MVP-077`/`MVP-078` NO completadas.** Recuperada la entrega de #21 (Facu) y corregida su integración; ruta `/documents/[id]/review` montada. Pendiente: QR (PD-03, requiere autorización de dependencia), Playwright del flujo, integración con la navegación del documento y la carrera con F8.
+**Estado: en curso (2026-10-16, checkpoint autor integrado en develop vía PR #93, #94, #98, #100, #104; `MVP-077`/`MVP-078` NO completadas, aceptación parcial).** Recuperada y ampliada la entrega de #21 (Facu / Nahuel): ruta `/documents/[id]/review` montada, navegación desde documento integrada, QR SVG local (`react-qr-code@2.2.0`, PD-03 resuelta), reapertura de revisión tras congelar con cambio de selección o borrador, y suite real Playwright (`npm run test:e2e:review`, 6 casos sobre Supabase local determinista con 12 migraciones). Pendiente para aceptación final: decodificación óptica de QR en navegador (hoy verificado como SVG rendered en DOM), flujo interactivo de cambio de borrador por chat en navegador (hoy verificado con semilla SQL), e integración con estados finales de F8 (finalización/PDF inmutable) y F9 (Hedera HCS); Issue [#21](https://github.com/nanonoir/galcoa/issues/21) permanece abierta.
 
 Tareas del maestro: `MVP-077`, `MVP-078`
 
@@ -74,16 +74,27 @@ REQ-12, REQ-14, REQ-08. INV-02, INV-11, INV-14, INV-17. PRD §10: «¿Quiénes v
 8. **C078-1 QR y copiar.** Tras la decisión PD-03; QR con etiqueta accesible y alternativa textual (el enlace).
 9. **C078-2 Verificación sin envío.** Test de navegador que intercepta la red y confirma que no hay peticiones del servidor para enviar mensajes y que el token no sale a hosts de terceros (el abrir de `wa.me`/`mailto:` es acción local del usuario).
 
-## 7. Validación (ejecución pendiente — no ejecutado)
+## 7. Validación (ejecutada con evidencia real — integración en develop)
 
 | Check | Cobertura | Estado |
 | --- | --- | --- |
-| `lint`, `typecheck`, `test`, `test:boundaries`, `build` | Barreras de presentación y containers | no ejecutado |
-| Vitest jsdom + user-event | Selector 4 combinaciones, indicadores separados, texto sin términos prohibidos | no ejecutado |
-| Vitest Node | Constructores de URL `wa.me`/`mailto:` | no ejecutado |
-| Playwright (`npm run test:e2e`) | Flujo del autor con las 4 selecciones, nueva revisión sin herencia, compartir sin envío backend, viewports móvil/escritorio | no ejecutado |
+| `lint`, `typecheck`, `test`, `test:boundaries`, `build` | Barreras de presentación y containers | **Verificado**: 1115 tests unitarios (incluyendo los 75 focales de corroborations), 69 barreras de arquitectura/imports, 11 launchers, lint, typecheck y build sin errores |
+| Vitest jsdom + user-event | Selector 4 combinaciones, indicadores separados, texto sin términos prohibidos | **Verificado**: 75 tests focales en `src/features/corroborations/`; selector con autor no removible, 3 indicadores independientes de avance, estados honestos de rechazo, reapertura mientras no esté finalizado, y textos sin términos prohibidos |
+| Vitest Node | Constructores de URL `wa.me`/`mailto:` | **Verificado**: constructores de URL con codificación segura, enlace individual por tercero, sin datos privados de la operación ni hashes en claro |
+| Playwright (`npm run test:e2e:review`, `tests/e2e/responsive-a11y.spec.ts`) | Flujo del autor con las 4 selecciones, nueva revisión sin herencia, compartir sin envío backend, viewports móvil/escritorio | **Verificado**: 6 tests reales en `tests/e2e/review/review-author-flow.spec.ts` (puerto 3219, Supabase local real con 12 migraciones aplicadas) cubriendo las 4 selecciones, confirmación del autor persistida, enlace individual por tercero, portapapeles y QR SVG local rendered, `wa.me` y `mailto:` prearmados sin peticiones externas (0 peticiones no loopback), recarga sin reemisión (`unchanged`), y nueva revisión sin herencia ante cambio de selección. 51 tests de responsive/a11y a 360 px y 1280 px |
 
-La integración con proveedores externos no aplica: el compartir lo hace el usuario fuera de la aplicación. La cobertura transversal de las cuatro selecciones con flujo completo hasta HCS corresponde a `MVP-121`.
+**Revisión independiente y CI:**
+- PR #93 / PR #94: revisión independiente PASS (fix reload / no auto-emit / partial links / estados honestos; 69 barreras, 1090 tests unitarios históricos).
+- PR #98: revisión independiente PASS WITH FINDINGS (corrección documental de tamaño de paquete `1004f56`: tamaño desempaquetado del wrapper vs bundle cliente; `npm audit --omit=dev` 0 vulnerabilidades en producción, 9 altas en dev tooling preexistentes); CI run 38990770148 SUCCESS (`validate` 3m36s, `local-server-db` 5m57s).
+- PR #100: revisión independiente PASS sobre commit `074d284` (reabrir con confirmación completa mientras no esté finalizado, unchanged sin reemisión de enlaces, prevención de reabrir sobre revisión sustituida o finalizada); CI run 38991108633 SUCCESS (`validate` 3m50s, `local-server-db` 6m17s; 75 tests focales, 69 barreras).
+- PR #104: revisión independiente PASS para integración sobre commit `1f2eea4` (6 E2E reales del autor sobre Supabase local propia, 0 fugas de red externa, privacidad de tokens comprobada); CI run 38992254864 SUCCESS (`validate` 3m23s, `local-server-db` 7m11s; repetidos 1115 unitarios, 69 barreras, 11 launchers, lint, typecheck).
+- Nota de review a nivel f07 (sin requerir nueva infra): sugerencia menor sobre captura de señales (`SIGINT`/`SIGTERM`) para cleanup del proceso Playwright en caso de terminación forzada del runner (`runner kill`), y compatibilidad con `DOCKER_HOST`. Se mantiene como hallazgo menor de robustez local sin inventar garantías irreales ante kill abrupto.
+
+**Límites vigentes y causas de no cierre total de MVP-077 / MVP-078:**
+1. El QR se comprueba como elemento SVG renderizado en DOM; no hay verificación de decodificación óptica mediante cámara/escáner en navegador.
+2. Los 6 casos E2E se ejecutan con semilla SQL determinista ficticia real; no se ejercita generación interactiva de chat con modelos de IA en vivo (F5), ni estados durables de finalización (F8) o Hedera HCS (F9) integrados.
+3. El cambio de borrador (`draftRevision`) por conversación vía chat en el navegador aún no está disponible como flujo E2E integrado; las 4 selecciones y reaperturas sobre persistencia SQL real sí están completamente acreditadas.
+4. `MVP-077` y `MVP-078` permanecen en estado `en_curso`, con Issue [#21](https://github.com/nanonoir/galcoa/issues/21) abierta. La cobertura transversal con flujo íntegro hasta HCS corresponde a `MVP-121`.
 
 ## 8. Referencias a completar
 
@@ -131,6 +142,15 @@ Documentos objetivo **disponibles** y enlazados; los parámetros operativos (ent
 - Cubre: las **4 selecciones** (solo autor; +intermediario; +comprador; ambos) con revisión, selección canónica, participantes e invitaciones persistidos (SQL); un enlace distinto por tercero; copiar (portapapeles), QR SVG local, `wa.me` y `mailto:` prearmados sin contenido de la operación ni enlaces de otro tercero (los `href` no se abren); confirmación del autor persistida; recarga sin ninguna mutación ni reemisión (enlaces «ya no se puede mostrar»); cambio de selección ⇒ otra revisión, cancelar sin POST, enlaces vivos de la anterior revocados, sin herencia de respuestas y enlace viejo sin efecto; repetir el congelado ⇒ `unchanged` sin revisión ni enlaces nuevos.
 - Toda petición no loopback se bloquea y se registra (solo el host): ninguna salió. Sin trazas, capturas ni video; el runner borra la semilla efímera y `test-results/review/`; las aserciones sobre enlaces comparan booleanos para no imprimir tokens.
 - Límites: el QR se verifica como SVG local presente (no se decodifica su contenido); el cambio de borrador (`draftRevision`) como causa de nueva revisión no se ejercita en navegador; no acredita IA real, Hedera ni F8. `MVP-077`/`MVP-078` siguen abiertas hasta decidir su aceptación completa.
+
+## 10 quinquies. Reconciliación de integración en develop (PRs #93, #94, #98, #100, #104)
+
+- **PR #93** (merge `f7b59bda717639e6c7edb0a99b0dcbe10f481344`): recuperación de #21, contratos cliente, idempotencia y consulta acotada de avance.
+- **PR #94** (merge `7853776a1f8ba029e61ed9903bb8b92845966830`): presentación pura de revisión del autor y separación honesta de indicadores.
+- **PR #98** (merge `066e33b3228ec26320e46f6a0029fe662d13d2c8`): QR SVG local (`react-qr-code@2.2.0`), navegación `/documents/[id]` → `/documents/[id]/review`; CI run 38990770148 SUCCESS (`validate` 3m36s, `local-server-db` 5m57s).
+- **PR #100** (merge `1d45442ba20c7f6eb6915d5807cac585c1b99950`): reapertura de revisión con selección o borrador actual mientras el documento no esté finalizado (commit `074d284`), 75 tests focales; CI run 38991108633 SUCCESS (`validate` 3m50s, `local-server-db` 6m17s).
+- **PR #104** (merge `1f2eea43d2d61d0778e034056d0cbd4d4aa70a41`): suite E2E real del autor `npm run test:e2e:review` (6 tests deterministas en Supabase local con 12 migraciones), sin peticiones externas, sin logs de PII/tokens; CI run 38992254864 SUCCESS (`validate` 3m23s, `local-server-db` 7m11s); reviewer repetido 1115 unitarios, 69 barreras, 11 launchers, lint y types.
+- **Estado consolidado**: integración de código y tests aprobada; `MVP-077` y `MVP-078` continúan como `en_curso` en el maestro (aceptación parcial documentada, sin cierre apresurado). Issue [#21](https://github.com/nanonoir/galcoa/issues/21) permanece abierta.
 
 ## 11. Cierre
 
