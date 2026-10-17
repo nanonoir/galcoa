@@ -55,6 +55,10 @@ Antes de implementar leer `node_modules/next/dist/docs/01-app/01-getting-started
 
 Migración `20261016002500_chat_turn_claims.sql`: tabla técnica `chat_turns` y RPC `claim_chat_turn`, `attach_chat_turn_message` y `close_chat_turn`, solo para `galcoa_executor` (propietario `galcoa_turn_writer`, sin login ni bypass, `search_path` vacío), con actor explícito, lease de SQL, fencing por `attempt` y auditoría (`chat_turn.claimed`/`chat_turn.closed`) en la misma transacción. Pruebas: `tests/server/local/chat-turn-claims.test.ts` y el catálogo RLS. **Alcance:** no hay staging, completar turno, adaptador TS ni ruta; el catálogo TS de auditoría no se extiende hasta que un adaptador emita esos eventos. `complete_chat_turn` y la limpieza de staging al recuperar el lease pertenecen a `02501` ([diseño](../../../design/durable-chat-turns.md)). Evidencia: ver el PR; sin chat funcional acreditado.
 
+### Checkpoint 2 — staging y publicación atómica en SQL (`02501`)
+
+Migración `20261016002501_chat_turn_publication.sql`: columnas de staging y `completion_result` en `chat_turns` (sin tabla de borrador duplicada; se limpian al recuperar el lease o cerrar como fallido/cancelado), y RPC `stage_chat_turn_proposal` y `complete_chat_turn` para `galcoa_executor` (mismo propietario `galcoa_turn_writer`; el mensaje del agente se crea con `append_agent_message` mediante EXECUTE exacto). Completar publica en un solo commit el borrador oficial (mismo ID, revisión + 1, CAS contra la revisión esperada), el historial `verification_reports` (`kind: redaccion`) con sus fuentes, el mensaje del agente, el cierre y la auditoría; el replay devuelve el resultado original. Pruebas: `tests/server/local/chat-turn-publication.test.ts` y el catálogo RLS. **Alcance:** sin adaptador TS, ruta ni UI. `get_freeze_source` (F7) aún no distingue tipos de reporte: debe corregirse antes de montar el flujo (el historial de redacción no lleva `draftRevision`/`result` en la raíz para no confundirse con un contraste). Finalizar (F8) debe exigir que la revisión activa provenga del borrador vigente. Evidencia: ver el PR; sin chat funcional acreditado.
+
 ## 6. Casos de test por aceptación
 
 | Aceptación | Caso |
@@ -82,6 +86,8 @@ Tras integrar y repetir checks: actualizar solo `MVP-052` (y recuento) y archiva
 **Referencias:** `RQ-B1` — [sources-and-ai](../../../specs/sources-and-ai.md) (§2 y §4): cancelación, reintento y fallos; timeouts y tamaños del turno son de `MVP-013` (propuestos, no aprobados); `RQ-B2` — [data-transactions](../../../design/data-transactions.md): operación de turno, claim/vencimiento y unicidad de respuesta completada.
 
 **Solicitudes:** a `MVP-020/021` (mensaje del asistente con referencias a artefactos, operación técnica y error estable); a `MVP-022/023` (operación durable de turno y restricción de unicidad); a `MVP-054` (consumir este protocolo con `@ai-sdk/react`); a `MVP-130` (límites de uso y rate limit del endpoint).
+
+**Hallazgo de revisión PR103 (prueba añadida, pendiente de ejecución en CI):** `complete_chat_turn` sobre un documento en estado técnico `finalizado` devuelve `document_finalized` sin crear borrador, mensaje, reporte ni auditoría de completion, y conserva el borrador existente (`tests/server/local/chat-turn-publication.test.ts`). La semilla de finalización del harness ya deja el documento finalizado antes del `stage` (el SQL de `stage` no lo rechaza); no se probó el orden literal stage→finalizar. La guarda temprana en claim/stage y el discriminante F7 son entregas posteriores; no se añadió bloqueo global.
 
 **Decisiones pendientes:** valores de `MVP-013`; tratamiento del texto parcial (propuesta arriba, a confirmar con `MVP-020`).
 
