@@ -31,6 +31,24 @@ async function tick() {
 }
 
 describe("FinalizationContainer", () => {
+  it("ofrece descarga publicada y verificador con referencia real, nunca antes de publicar", async () => {
+    fetchMock.mockResolvedValueOnce(json(op("published", 7)))
+      .mockResolvedValueOnce(json({ versionNumber: 7, publicReference: "ref/public" }));
+    render(<FinalizationContainer documentId="doc-1" revisionId="rev-1" />);
+    expect(screen.queryByRole("link", { name: /descargar/i })).not.toBeInTheDocument();
+    await click(/^finalizar$/i);
+    expect(screen.getByRole("link", { name: /descargar PDF/i })).toHaveAttribute("href", "/api/documents/doc-1/versions/7/pdf");
+    expect(screen.getByRole("link", { name: /verificar PDF/i })).toHaveAttribute("href", "/verify/ref%2Fpublic");
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/documents/doc-1/versions/7");
+  });
+
+  it("no fabrica referencia pública si falla la lectura privada", async () => {
+    fetchMock.mockResolvedValueOnce(json(op("published", 7))).mockResolvedValueOnce(json({}, 404));
+    render(<FinalizationContainer documentId="doc-1" revisionId="rev-1" />);
+    await click(/^finalizar$/i);
+    expect(screen.queryByRole("link", { name: /verificar/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /descargar/i })).toBeInTheDocument();
+  });
   it("reclama con POST, sondea el GET y muestra la versión publicada", async () => {
     const onPublished = vi.fn();
     fetchMock.mockResolvedValueOnce(json({ outcome: "claimed", ...op("manifest_ready") }, 201)).mockResolvedValueOnce(json(op("object_checked"))).mockResolvedValueOnce(json(op("published", 2)));
@@ -46,7 +64,7 @@ describe("FinalizationContainer", () => {
     expect(screen.getByText(/versión 2 publicada/i)).toBeInTheDocument();
     expect(onPublished).toHaveBeenCalledWith(2);
     expect(screen.queryByRole("button", { name: /finalizar/i })).not.toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it.each([

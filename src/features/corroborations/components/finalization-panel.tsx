@@ -22,6 +22,8 @@ export interface FinalizationPanelProps {
   state: FinalizationPanelState;
   onFinalize: () => void;
   onRefresh: () => void;
+  downloadHref?: string;
+  verificationHref?: string;
 }
 
 export const phaseLabels: Record<FinalizationPhase, string> = {
@@ -45,7 +47,7 @@ export const errorTexts: Record<string, string> = {
 
 const FALLBACK_ERROR = "No se pudo finalizar por un problema técnico. Podés reintentar.";
 
-export function FinalizationPanel({ state, onFinalize, onRefresh }: FinalizationPanelProps) {
+export function FinalizationPanel({ state, onFinalize, onRefresh, downloadHref, verificationHref }: FinalizationPanelProps) {
   const working = state.status === "starting" || state.status === "in_progress";
   return (
     <section aria-labelledby="finalization-title" className="flex flex-col gap-3 rounded-xl border p-4">
@@ -60,6 +62,13 @@ export function FinalizationPanel({ state, onFinalize, onRefresh }: Finalization
           <AlertTitle>Versión {state.versionNumber} publicada</AlertTitle>
           <AlertDescription>La versión quedó finalizada y ya no se puede modificar. El sello puede seguir pendiente: se informa por separado.</AlertDescription>
         </Alert>
+      )}
+
+      {state.status === "published" && (
+        <div className="flex flex-wrap gap-3 text-sm">
+          {downloadHref && <a className="underline" href={downloadHref}>Descargar PDF</a>}
+          {verificationHref && <a className="underline" href={verificationHref}>Verificar PDF</a>}
+        </div>
       )}
 
       {state.status === "failed" && (
