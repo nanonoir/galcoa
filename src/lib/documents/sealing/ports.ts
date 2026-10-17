@@ -11,7 +11,7 @@ import type { createMirrorReader } from "@/lib/hedera/mirror";
  */
 
 export type HcsClientPort = Pick<ReturnType<typeof createHcsClient>, "prepareSubmission" | "submitPrepared">;
-export type MirrorReaderPort = Pick<ReturnType<typeof createMirrorReader>, "checkMessage">;
+export type MirrorReaderPort = Pick<ReturnType<typeof createMirrorReader>, "checkMessage" | "locateTransaction">;
 
 /** Versión finalizada: lo único que el sello necesita de ella. */
 export type SealableVersion = {

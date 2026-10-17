@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createSealingService } from "@/lib/documents/sealing/service";
 import type { SealableVersion } from "@/lib/documents/sealing/ports";
 import { createHcsClient } from "@/lib/hedera/client";
-import { createMirrorReader } from "@/lib/hedera/mirror";
+import { createMirrorReader, toMirrorTransactionId } from "@/lib/hedera/mirror";
 
 import { hcsStatusError, hcsTimeoutError, mirrorMessageBody, scriptedHcsTransport, type HcsReceipt } from "../doubles/hedera";
 import type { Step } from "../doubles/scripted";
@@ -23,8 +23,8 @@ const CONSENSUS = "1792173605.123456789";
 
 type MirrorMode = "coincide" | "404" | "5xx" | "payload_distinto";
 
-function setup(hcs: Step<HcsReceipt>[], mirrorMode: () => MirrorMode = () => "404") {
-  const mem = memorySealingStore(VERSION);
+function setup(hcs: Step<HcsReceipt>[], mirrorMode: () => MirrorMode = () => "404", version: SealableVersion = VERSION, override?: typeof fetch) {
+  const mem = memorySealingStore(version);
   const { transport, behavior } = scriptedHcsTransport(hcs);
   let tick = 0;
   // Un ID distinto por preparación: el tiempo de inicio avanza un segundo.
@@ -45,8 +45,8 @@ function setup(hcs: Step<HcsReceipt>[], mirrorMode: () => MirrorMode = () => "40
       }),
     );
   });
-  const mirror = createMirrorReader({ fetch: mirrorFetch as never });
-  return { ...mem, behavior, mirrorFetch, service: createSealingService({ store: mem.store, client, mirror }) };
+  const mirror = createMirrorReader({ fetch: (override ?? mirrorFetch) as never });
+  return { ...mem, behavior, mirrorFetch, service: createSealingService({ store: mem.store, client, mirror }), attempts: mem.attempts };
 }
 
 const ok = (sequenceNumber = "42"): Step<HcsReceipt> => ({ kind: "ok", value: { status: "SUCCESS", sequenceNumber } });
@@ -108,11 +108,12 @@ describe("MVP-091 · sello", () => {
 });
 
 describe("MVP-092 · reconciliación y reintento", () => {
-  it("resultado incierto: no reenvía; sin localizador no hay qué consultar", async () => {
+  it("resultado incierto: no reenvía; sin secuencia se consulta por ID y el 404 no es ausencia", async () => {
     const t = setup([timeout, ok()]);
     expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente", reason: "envio_incierto" });
     expect(t.attempts[0].outcome).toBe("incierto");
-    expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente", reason: "sin_localizador" });
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente", reason: "esperando_mirror" });
+    expect(t.attempts[0].outcome).toBe("incierto");
     expect(t.behavior.calls).toHaveLength(1);
     expect(t.attempts).toHaveLength(1);
   });
@@ -166,7 +167,87 @@ describe("MVP-092 · reconciliación y reintento", () => {
     t.failures.outcome = true;
     expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente", reason: "resultado_no_persistido" });
     t.failures.outcome = false;
-    expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente", reason: "sin_localizador" });
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente", reason: "esperando_mirror" });
     expect(t.behavior.calls).toHaveLength(1);
+  });
+
+  it("payload inválido: fallido tipado, sin persistir ni enviar", async () => {
+    const t = setup([ok()], () => "404", { ...VERSION, manifestHash: "no-es-hash" });
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "fallido", sent: false, code: "HCS_PAYLOAD_INVALID" });
+    expect(t.attempts).toHaveLength(0);
+    expect(t.behavior.calls).toHaveLength(0);
+  });
+
+  it("discrepancia: deja la observación en el intento antes de devolver pendiente", async () => {
+    const t = setup([ok()], () => "payload_distinto");
+    await t.service.seal("v-1");
+    expect(t.attempts[0].observation).toMatchObject({ sequenceNumber: "42", reason: "discrepancia_mirror:payload" });
+    expect(t.events).toContain("outcome:pendiente");
+    expect(t.attempts[0].outcome).toBe("pendiente");
+  });
+});
+
+describe("MVP-092 · localización por ID de transacción", () => {
+  const txBody = (id: string, result: string, topic = "0.0.5005") => ({
+    transactions: [{ result, name: "CONSENSUSSUBMITMESSAGE", entity_id: topic, consensus_timestamp: CONSENSUS, transaction_id: toMirrorTransactionId(id), nonce: 0 }],
+  });
+  function routed(route: (url: string) => Response) {
+    return vi.fn(async (input: RequestInfo | URL) => route(String(input))) as unknown as typeof fetch;
+  }
+
+  it("incierto sin secuencia: el Mirror localiza topic y secuencia y se registra sin reenviar", async () => {
+    let txId = "";
+    const fetchDouble = routed((url) => {
+      if (url.includes("/transactions/")) return Response.json(txBody(txId, "SUCCESS"));
+      if (url.includes("?timestamp=eq:")) return Response.json({ messages: [{ sequence_number: 9 }] });
+      return Response.json(mirrorMessageBody({ topicId: "0.0.5005", sequenceNumber: "9", consensusTimestamp: CONSENSUS, payload: VERSION, transactionId: txId }));
+    });
+    const t = setup([timeout], () => "404", VERSION, fetchDouble);
+    await t.service.seal("v-1");
+    txId = t.attempts[0].transactionId;
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "registrado", registration: { sequenceNumber: "9", topicId: "0.0.5005" } });
+    expect(t.behavior.calls).toHaveLength(1);
+  });
+
+  it("fracaso terminal del ID: fallido persistido y el siguiente intento reenvía el mismo payload", async () => {
+    let txId = "";
+    const fetchDouble = routed((url) => {
+      if (url.includes("/transactions/")) return Response.json(txBody(txId, "INVALID_TOPIC_ID"));
+      return new Response(null, { status: 404 });
+    });
+    const t = setup([timeout, ok()], () => "404", VERSION, fetchDouble);
+    await t.service.seal("v-1");
+    txId = t.attempts[0].transactionId;
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "fallido", sent: true, code: "INVALID_TOPIC_ID" });
+    expect(t.attempts[0].outcome).toBe("fallido");
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente" });
+    expect(t.attempts).toHaveLength(2);
+    expect(t.attempts[1].payloadHash).toBe(t.attempts[0].payloadHash);
+  });
+
+  it("DUPLICATE_TRANSACTION: se trata como indisponible, no marca fallido ni reenvía", async () => {
+    let txId = "";
+    const fetchDouble = routed((url) => {
+      if (url.includes("/transactions/")) return Response.json(txBody(txId, "DUPLICATE_TRANSACTION"));
+      return new Response(null, { status: 404 });
+    });
+    const t = setup([timeout, ok()], () => "404", VERSION, fetchDouble);
+    await t.service.seal("v-1");
+    txId = t.attempts[0].transactionId;
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente", reason: "mirror_indisponible" });
+    expect(t.attempts[0].outcome).toBe("incierto");
+    expect(t.attempts).toHaveLength(1);
+    expect(t.behavior.calls).toHaveLength(1);
+  });
+
+  it("404, 5xx o respuesta inválida del Mirror nunca cuentan como ausencia", async () => {
+    for (const response of [() => new Response(null, { status: 404 }), () => new Response(null, { status: 503 }), () => Response.json({ x: 1 })]) {
+      const t = setup([timeout, ok()], () => "404", VERSION, routed(response));
+      await t.service.seal("v-1");
+      expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente" });
+      expect(t.attempts[0].outcome).toBe("incierto");
+      expect(t.attempts).toHaveLength(1);
+      expect(t.behavior.calls).toHaveLength(1);
+    }
   });
 });

@@ -33,7 +33,6 @@ export type SealStatus = "no_iniciado" | "pendiente" | "registrado" | "fallido";
 
 export type PendingReason =
   | "esperando_mirror"
-  | "sin_localizador"
   | "mirror_indisponible"
   | "posible_reinicio_de_red"
   | "envio_incierto"
@@ -59,8 +58,35 @@ export type SealingDeps = {
 export function createSealingService(deps: SealingDeps) {
   const { store, client, mirror } = deps;
 
+  /** Intento sin secuencia: se localiza por su ID de transacción en el Mirror. */
+  async function locate(version: SealableVersion, attempt: AttemptRecord): Promise<SealResult> {
+    const lookup = await mirror.locateTransaction(attempt.transactionId, attempt.observation.topicId);
+    switch (lookup.result) {
+      case "exitoso":
+        return reconcile(version, attempt, lookup.sequenceNumber);
+      case "fallo_terminal": {
+        // Consenso con fracaso: el ID no tuvo efecto en el topic, así que habilita un intento nuevo.
+        try {
+          await store.recordOutcome({
+            attemptId: attempt.id,
+            claimFencing: attempt.claimFencing,
+            outcome: "fallido",
+            observation: { ...attempt.observation, hederaStatus: lookup.status },
+          });
+        } catch {
+          return { status: "pendiente", reason: "resultado_no_persistido", attemptId: attempt.id };
+        }
+        return { status: "fallido", retryable: true, sent: true, code: lookup.status, attemptId: attempt.id };
+      }
+      case "indisponible":
+        return { status: "pendiente", reason: "mirror_indisponible", attemptId: attempt.id };
+      case "aun_no_disponible":
+        return { status: "pendiente", reason: "esperando_mirror", attemptId: attempt.id };
+    }
+  }
+
   async function reconcile(version: SealableVersion, attempt: AttemptRecord, sequenceNumber: string | undefined): Promise<SealResult> {
-    if (!sequenceNumber) return { status: "pendiente", reason: "sin_localizador", attemptId: attempt.id };
+    if (!sequenceNumber) return locate(version, attempt);
     const check = await mirror.checkMessage({
       topicId: attempt.observation.topicId,
       sequenceNumber,
@@ -88,9 +114,20 @@ export function createSealingService(deps: SealingDeps) {
         }
         return { status: "registrado", registration };
       }
-      case "no_coincide":
-        // Discrepancia técnica: no registrado y sin reenvío automático.
+      case "no_coincide": {
+        // Discrepancia técnica: se deja constancia en el intento; no registrado y sin reenvío automático.
+        try {
+          await store.recordOutcome({
+            attemptId: attempt.id,
+            claimFencing: attempt.claimFencing,
+            outcome: attempt.outcome === "incierto" ? "incierto" : "pendiente",
+            observation: { ...attempt.observation, sequenceNumber, reason: `discrepancia_mirror:${check.reason}` },
+          });
+        } catch {
+          return { status: "pendiente", reason: "resultado_no_persistido", attemptId: attempt.id };
+        }
         return { status: "pendiente", reason: "discrepancia_mirror", attemptId: attempt.id };
+      }
       case "posible_reinicio_de_red":
         return { status: "pendiente", reason: "posible_reinicio_de_red", attemptId: attempt.id };
       case "indisponible":
@@ -101,7 +138,13 @@ export function createSealingService(deps: SealingDeps) {
   }
 
   async function send(version: SealableVersion, previous: AttemptRecord | null): Promise<SealResult> {
-    const payload = buildHcsPayload({ reference: version.reference, manifestHash: version.manifestHash });
+    let payload;
+    try {
+      payload = buildHcsPayload({ reference: version.reference, manifestHash: version.manifestHash });
+    } catch (error) {
+      // Payload inválido: fallo técnico previo a cualquier persistencia o envío.
+      return { status: "fallido", retryable: true, sent: false, code: (error as { code?: string }).code ?? "HCS_PAYLOAD_INVALID" };
+    }
     // Un reintento reutiliza exactamente el payload del intento anterior.
     if (previous && previous.payloadHash !== payload.payloadHash) {
       return { status: "fallido", retryable: true, sent: false, code: "PAYLOAD_DISTINTO_AL_INTENTO" };
