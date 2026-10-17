@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { ReviewContainer, type Frozen } from "@/features/corroborations/containers/review-container";
 import { failureKind } from "@/features/documents/containers/failure-kind";
+import { createExecutorRpc } from "@/lib/documents/persistence/executor-rpc";
 import { createSupabaseRevisionAdapters } from "@/lib/documents/revisions/supabase";
 import { reviewHttpDeps } from "@/lib/documents/review-runtime";
 import { LOGIN_PATH } from "@/lib/supabase/auth";
@@ -32,7 +33,11 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
   const context = await reviewHttpDeps.getContext();
   if (context.session.status === "anonymous") redirect(LOGIN_PATH);
   if (context.session.status === "unavailable") throw new Error("No se pudo verificar la sesión.");
-  const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: context.session.user.id, session: context.rpc });
+  const { store, reader } = createSupabaseRevisionAdapters({
+    verifiedUserId: context.session.user.id,
+    session: context.rpc,
+    executor: createExecutorRpc(context.session.user.id),
+  });
   const hcsStatus = result.value.hcsStatus;
   const bundle = await store.getActiveRevision(context.session.user.id, id);
   // Con revisión vigente también se lee el borrador actual: así se detecta si cambió desde el congelado.

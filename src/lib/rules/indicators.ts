@@ -4,11 +4,19 @@ import type { DeclaredEventDate } from "@/lib/contracts/core";
  * Señales ALCOA+ deterministas (MVP-061; sources-and-ai §3, INV-09/16).
  *
  * Son **señales de revisión**, no pruebas de fraude ni de falsedad: el texto
- * es neutro y la severidad máxima es `warning`. Los umbrales no están
- * aprobados (MVP-013): entran como configuración y, si falta, la señal
- * responde «no evaluado», sin valores ocultos. Una fecha sin instante
- * declarado no se completa con la de carga.
+ * es neutro y la severidad máxima es `warning`. Los umbrales entran como
+ * configuración y, si falta, la señal responde «no evaluado», sin valores
+ * ocultos. Una fecha sin instante declarado no se completa con la de carga.
+ *
+ * Decisión de producto (líder, 2026-10-17, MVP-013): solo `repeatedValues`
+ * está habilitado, con umbral 4 (`repeated-values.ts`). `lateUpload`,
+ * `retroactiveBatch` y `pdfMetadata` quedan **descartados**: se conservan
+ * como código inerte, no se invocan desde ninguna orquestación y no deben
+ * cablearse sin una nueva decisión.
  */
+
+/** Códigos de hallazgo habilitados por decisión de producto. */
+export const ENABLED_INDICATORS: readonly RuleFinding["code"][] = ["valores_repetidos"];
 
 export type IndicatorThresholds = {
   /** Horas entre el hecho declarado y la carga a partir de las que se señala carga tardía. */
@@ -49,7 +57,7 @@ const notEvaluated = (code: RuleFinding["code"], reason: NonNullable<RuleFinding
 
 const declaredInstant = (d: DeclaredEventDate): number | null => (d.kind === "declared" && d.instant ? Date.parse(d.instant) : null);
 
-/** Carga tardía: hecho declarado con instante vs. fecha real de carga del servidor. */
+/** Carga tardía: hecho declarado con instante vs. fecha real de carga del servidor. No habilitado por decisión de producto. */
 export function lateUpload(
   source: { ref: string; declaredEventDate: DeclaredEventDate; uploadedAt: string },
   thresholds: IndicatorThresholds,
@@ -71,7 +79,7 @@ export function lateUpload(
     : { code: "carga_tardia", outcome: "sin_senal", message: "Sin señal de carga tardía.", severity: "warning", sources: [source.ref], params };
 }
 
-/** Lote retroactivo: varias cargas en una ventana corta que declaran hechos en momentos distintos. */
+/** Lote retroactivo: varias cargas en una ventana corta que declaran hechos en momentos distintos. No habilitado por decisión de producto. */
 export function retroactiveBatch(
   sources: readonly { ref: string; declaredEventDate: DeclaredEventDate; uploadedAt: string }[],
   thresholds: IndicatorThresholds,
@@ -124,7 +132,7 @@ export function repeatedValues(values: readonly { ref: string; value: number }[]
   return { code: "valores_repetidos", outcome: "sin_senal", message: "Sin valores repetidos.", severity: "warning", sources: [], params };
 }
 
-/** Metadatos del PDF: modificación posterior a la creación. Sin metadatos no se presume nada. */
+/** Metadatos del PDF: modificación posterior a la creación. Sin metadatos no se presume nada. No habilitado por decisión de producto. */
 export function pdfMetadata(
   source: { ref: string; metadata: { createdAt: string | null; modifiedAt: string | null; producer: string | null } | null },
   thresholds: IndicatorThresholds,

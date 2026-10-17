@@ -14,6 +14,7 @@ import { createAuthorConfirmationHandler, createFreezeHandler } from "./revision
 import { createRevisionService } from "./revisions/service";
 import { createSupabaseRevisionAdapters } from "./revisions/supabase";
 import { createIssueInvitationHandler, createRevokeInvitationHandler } from "./invitations/http";
+import { createExecutorRpc } from "./persistence/executor-rpc";
 import type { DocumentRpc } from "./persistence/store";
 
 /**
@@ -68,7 +69,7 @@ export function createReviewOwnerHandler(deps: ReviewHttpDeps, action: ReviewAct
       const session = { currentUserId: async () => userId };
 
       if (action === "freeze" || action === "confirm") {
-        const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: userId, session: context.rpc });
+        const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: userId, session: context.rpc, executor: createExecutorRpc(userId) });
         const service = createRevisionService({ session, source: reader, revisions: store });
         return (action === "freeze" ? createFreezeHandler : createAuthorConfirmationHandler)(async () => service)(request, id);
       }
