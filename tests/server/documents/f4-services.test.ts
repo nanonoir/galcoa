@@ -297,3 +297,34 @@ describe("Solo servidor (F4)", () => {
     }
   });
 });
+
+describe("renameDocument (demo P3)", () => {
+  it("renombra, recorta, actualiza y audita; mismo título no cambia", async () => {
+    const t = setup();
+    const created = await t.docs.createDocument({ title: "Original", idempotencyKey: "rename_key_1" });
+    if (!created.ok) throw new Error("setup");
+    const renamed = await t.docs.renameDocument(created.value.id, { title: "  Nuevo título  " });
+    expect(renamed).toMatchObject({ ok: true, value: { id: created.value.id, title: "Nuevo título" } });
+    expect(await t.docs.renameDocument(created.value.id, { title: "Nuevo título" })).toMatchObject({ ok: true, value: { title: "Nuevo título" } });
+  });
+  it.each([{}, { title: " " }, { title: "x".repeat(201) }, { title: "ok", extra: 1 }])("rechaza comando %j", async (command) => {
+    const t = setup();
+    const created = await t.docs.createDocument({ title: "Original", idempotencyKey: "rename_key_2" });
+    if (!created.ok) throw new Error("setup");
+    expect(await t.docs.renameDocument(created.value.id, command)).toMatchObject({ ok: false, error: { code: "INVALID_INPUT" } });
+  });
+  it("documento inexistente: NOT_AVAILABLE", async () => {
+    expect(await setup().docs.renameDocument("no-existe", { title: "x" })).toMatchObject({ ok: false, error: { code: "NOT_AVAILABLE" } });
+  });
+  it("finalizado: DOCUMENT_FINALIZED; fallo del store: TECHNICAL_FAILURE reintentable", async () => {
+    const t = setup();
+    const store = {
+      renameDocument: async () => ({ status: "finalized" as const }),
+    } as never;
+    const svc = createDocumentService({ currentUserId: async () => "u1" }, store);
+    expect(await svc.renameDocument("d1", { title: "x" })).toMatchObject({ ok: false, error: { code: "DOCUMENT_FINALIZED", retryable: false } });
+    const broken = createDocumentService({ currentUserId: async () => "u1" }, { renameDocument: async () => { throw new Error("x"); } } as never);
+    expect(await broken.renameDocument("d1", { title: "x" })).toMatchObject({ ok: false, error: { code: "TECHNICAL_FAILURE", retryable: true } });
+    void t;
+  });
+});

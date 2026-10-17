@@ -8,7 +8,7 @@ import type { TechnicalError } from "@/lib/contracts/technical";
 import { PRIVATE_RESPONSE_HEADERS, type SessionCheck } from "@/lib/supabase/auth";
 import { trustedOrigin } from "@/lib/supabase/auth-http";
 
-import { createDocumentService, CreateDocumentCommandSchema } from "./documents";
+import { createDocumentService, CreateDocumentCommandSchema, RenameDocumentCommandSchema } from "./documents";
 import { createMessageService, RecordMessageCommandSchema } from "./messages";
 import type { DocumentStore } from "./ports";
 import { DocumentPersistenceError } from "./persistence/store";
@@ -27,14 +27,14 @@ export interface DocumentHttpDeps {
 }
 
 const ACTION = {
-  LIST: "list", CREATE: "create", GET: "get", MESSAGES: "messages", APPEND: "append",
+  LIST: "list", CREATE: "create", GET: "get", MESSAGES: "messages", APPEND: "append", RENAME: "rename",
 } as const;
 export type DocumentHttpAction = (typeof ACTION)[keyof typeof ACTION];
 const MessageBodySchema = RecordMessageCommandSchema.omit({ documentId: true });
 const UUID = z.uuid();
 const HTTP_STATUS: Record<string, number> = {
   NO_SESSION: 401, AUTH_UNAVAILABLE: 503, INVALID_INPUT: 400, FORBIDDEN: 403,
-  NOT_AVAILABLE: 404, IDEMPOTENCY_CONFLICT: 409, PAYLOAD_TOO_LARGE: 413,
+  NOT_AVAILABLE: 404, IDEMPOTENCY_CONFLICT: 409, DOCUMENT_FINALIZED: 409, PAYLOAD_TOO_LARGE: 413,
 };
 
 function error(code: string, retryable = false): Response {
@@ -76,9 +76,10 @@ async function readJson(request: Request): Promise<unknown> {
 /** Factory compartida por Next y pruebas; sin proveedores ni identidad inventada. */
 export function createDocumentHttpHandler(deps: DocumentHttpDeps, action: DocumentHttpAction) {
   return async (request: Request, documentId?: string): Promise<Response> => {
-    const mutation = action === ACTION.CREATE || action === ACTION.APPEND;
-    if (request.method !== (mutation ? "POST" : "GET")) {
-      return new Response(null, { status: 405, headers: { ...PRIVATE_RESPONSE_HEADERS, Allow: mutation ? "POST" : "GET" } });
+    const mutation = action === ACTION.CREATE || action === ACTION.APPEND || action === ACTION.RENAME;
+    const method = action === ACTION.RENAME ? "PATCH" : mutation ? "POST" : "GET";
+    if (request.method !== method) {
+      return new Response(null, { status: 405, headers: { ...PRIVATE_RESPONSE_HEADERS, Allow: method } });
     }
     try {
       if (mutation) {
@@ -102,6 +103,7 @@ export function createDocumentHttpHandler(deps: DocumentHttpDeps, action: Docume
       }
       const store: DocumentStore = {
         createDocument: (...args) => capture(source.createDocument(...args)),
+        renameDocument: (...args) => capture(source.renameDocument(...args)),
         listDocuments: (...args) => capture(source.listDocuments(...args)),
         getDocument: (...args) => capture(source.getDocument(...args)),
         appendMessage: (...args) => capture(source.appendMessage(...args)),
@@ -120,6 +122,10 @@ export function createDocumentHttpHandler(deps: DocumentHttpDeps, action: Docume
       if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("Content-Type") ?? "")) return error("INVALID_INPUT");
       let body: unknown;
       try { body = await readJson(request); } catch (cause) { return error(cause instanceof RangeError ? "PAYLOAD_TOO_LARGE" : "INVALID_INPUT"); }
+      if (action === ACTION.RENAME) {
+        const renamed = RenameDocumentCommandSchema.safeParse(body);
+        return renamed.success ? respond(await documents.renameDocument(documentId!, renamed.data)) : error("INVALID_INPUT");
+      }
       if (action === ACTION.CREATE) {
         const parsed = CreateDocumentCommandSchema.safeParse(body);
         return parsed.success ? respond(await documents.createDocument(parsed.data)) : error("INVALID_INPUT");

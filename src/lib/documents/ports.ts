@@ -53,6 +53,19 @@ export type AppendMessageInput = {
   audit: AuditContext;
 };
 
+export type RenameDocumentInput = {
+  ownerId: string;
+  documentId: string;
+  title: string;
+  /** Se audita `document.renamed` en la misma transacción. */
+  audit: AuditContext;
+};
+
+export type RenameResult =
+  | { status: "updated" | "unchanged"; value: DocumentRecord }
+  | { status: "finalized" }
+  | { status: "not_available" };
+
 export type WriteResult<T> =
   | { status: "created"; value: T }
   | { status: "replayed"; value: T }
@@ -68,6 +81,8 @@ export type WriteResult<T> =
  */
 export type DocumentStore = {
   createDocument(input: CreateDocumentInput): Promise<WriteResult<DocumentRecord>>;
+  /** Solo propietario; rechazado si el documento está finalizado. Idempotente por contenido. */
+  renameDocument(input: RenameDocumentInput): Promise<RenameResult>;
   listDocuments(ownerId: string): Promise<DocumentRecord[]>;
   getDocument(ownerId: string, documentId: string): Promise<DocumentRecord | null>;
   appendMessage(input: AppendMessageInput): Promise<WriteResult<Message>>;

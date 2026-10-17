@@ -27,6 +27,10 @@ export const CreateDocumentCommandSchema = z.strictObject({
   idempotencyKey: z.string().regex(IDEMPOTENCY_KEY_PATTERN),
 });
 
+export const RenameDocumentCommandSchema = z.strictObject({
+  title: z.string().trim().min(1).max(200),
+});
+
 export type CreateDocumentCommand = z.infer<typeof CreateDocumentCommandSchema>;
 
 /**
@@ -84,6 +88,30 @@ export function createDocumentService(session: SessionPort, store: DocumentStore
         }
         if (result.status === "not_available") return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
         return { ok: true, value: toDocumentSummary(result.value), replayed: result.status === "replayed" };
+      } catch {
+        return failure("TECHNICAL_FAILURE", "persistencia", true, correlationId);
+      }
+    },
+
+    async renameDocument(documentId: string, command: unknown): Promise<ServiceResult<DocumentSummary>> {
+      const correlationId = correlation();
+      const auth = await requireUser(correlationId);
+      if (!("userId" in auth)) return auth;
+      if (typeof documentId !== "string" || documentId === "") {
+        return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
+      }
+      const parsed = RenameDocumentCommandSchema.safeParse(command);
+      if (!parsed.success) return failure("INVALID_INPUT", "validacion", false, correlationId);
+      try {
+        const result = await store.renameDocument({
+          ownerId: auth.userId,
+          documentId,
+          title: parsed.data.title,
+          audit: { actorScope: auth.userId, correlationId },
+        });
+        if (result.status === "not_available") return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
+        if (result.status === "finalized") return failure("DOCUMENT_FINALIZED", "validacion", false, correlationId);
+        return { ok: true, value: toDocumentSummary(result.value) };
       } catch {
         return failure("TECHNICAL_FAILURE", "persistencia", true, correlationId);
       }

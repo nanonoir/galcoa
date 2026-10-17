@@ -39,6 +39,18 @@ describe("adaptador documental RPC (sin base real)", () => {
     await expect(store.listDocuments("otro")).rejects.toThrow();
     expect(rpc).not.toHaveBeenCalled();
   });
+  it("renombra por RPC de sesión validando identidad y documento", async () => {
+    const renamed = { ...record, title: "Nuevo" };
+    const { store, rpc, executorRpc } = setup({ status: "updated", value: renamed });
+    expect(await store.renameDocument({ ownerId: owner, documentId: doc, title: "Nuevo", audit })).toEqual({ status: "updated", value: renamed });
+    expect(rpc).toHaveBeenCalledWith("rename_document", { p_document_id: doc, p_title: "Nuevo", p_correlation_id: audit.correlationId });
+    expect(executorRpc).not.toHaveBeenCalled();
+    rpc.mockResolvedValueOnce({ data: { status: "finalized" }, error: null });
+    expect(await store.renameDocument({ ownerId: owner, documentId: doc, title: "Nuevo", audit })).toEqual({ status: "finalized" });
+    rpc.mockResolvedValueOnce({ data: { status: "unchanged", value: { ...renamed, documentId: "otro" } }, error: null });
+    await expect(store.renameDocument({ ownerId: owner, documentId: doc, title: "Nuevo", audit })).rejects.toThrow();
+    await expect(store.renameDocument({ ownerId: "otro", documentId: doc, title: "Nuevo", audit })).rejects.toThrow();
+  });
   it("lista/reabre con identidad y contrato validados", async () => {
     const { store, rpc } = setup([record]);
     expect(await store.listDocuments(owner)).toEqual([record]);
