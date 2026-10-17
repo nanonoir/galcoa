@@ -2,18 +2,18 @@
 
 Tareas del maestro: `MVP-042`, `MVP-043`
 
-**Estado: conexión local implementada en `flow/evidence-wiring`, pendiente revisión independiente e integración.** Se conservan los servicios de PR #48; evidencia y contrato HTTP en §8. Sin cloud ni IA real. Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §4 REQ-04, §6 INV-04/07/09, §11, §12), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-03`, `SH-05`, `SH-07`, `SH-08`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md). No repite esos documentos.
+**Estado: backend integrado en develop (PR #86, PR #96 y PR #97, base 9d5cd15); validado en CI local DB con revisión independiente PASS; aceptación MVP-042/043 PARCIAL (UI chat no montada, sin IA real en sesión viva ni cloud).** Se conservan los servicios de PR #48; evidencia y contrato HTTP en §8. Fuentes: [maestro](../mvp-master-plan.md), [PRD v1.5](../../GALCOA-PRD-v1.4.md) (§3, §4 REQ-04, §6 INV-04/07/09, §11, §12), [fundaciones](../../../design/mvp-shared-foundations.md) (`SH-01`, `SH-03`, `SH-05`, `SH-07`, `SH-08`, `SH-10`), [arquitectura](../../../architecture.md), [desarrollo](../../../development.md). No repite esos documentos.
 
 ## 1. Objetivo y estado de partida
 
-**Estado del checkpoint de conexión (posterior a PR #48):** `flow/evidence-wiring`
-integra `origin/develop` con PR #80 (`ca957b0`). RPC, Storage privado y handlers
-probados localmente; pendiente revisión independiente e integración. Los párrafos
-históricos de preparación no describen ya el inventario actual. Sin cloud ni IA real.
+**Estado actual tras checkpoints de integración (PR #86, PR #96 y PR #97):**
+El backend de persistencia, Storage privado autenticado, retención de cuotas y protocolo terminal de descarte quedó integrado en `develop` (base `9d5cd15`).
+- PR #86 (`f1013d8`): Persistencia transaccional de evidencias y extracciones, EvidenceStore RPC interno con actor ligado, Storage privado autenticado con TTL SQL de 120 s (`upload_expires_at`) y Route Handlers privados bajo `/api/documents/[id]/evidences`. Revisión independiente posterior con resultado PASS.
+- PR #96 (`aaea26c`): Retención de cuotas por documento en reservas vencidas (migración `20261016002200_evidence_retained_quota.sql`), impidiendo que el vencimiento libere cupo automáticamente sin descarte. Verificado en CI Linux run `38989208876` SUCCESS (`validate` 3m40s, `local-server-db` 5m39s, 1099 unit, 69 bounds).
+- PR #97 (`9d5cd15`): Protocolo terminal de descarte irreversible en 3 pasos (claim terminal SQL bajo advisory lock de actor y lock de documento → `Storage.remove` → `discard_evidence_reservation`, migración `20261016002300_evidence_discard_protocol.sql`). Limpieza oportunista por propietario en lotes de hasta 3 reservas candidatas al reservar; RPC revalida que no queden descartes pendientes (`discard_pending`); autorización RLS serializada con reloj posterior al lock; originales aceptados inmutables (trigger `evidence_discard_guard`); reintento ante fallo de Storage retiene cuota y claim. Revisión independiente (sesión `ses_eb88f0798ffedC3FY0N89Bgi63`) PASS; autor validó 1103 unit, lint, types, build, 69 bounds; CI run `38990325702` SUCCESS (`validate` 2m23s, `local-server-db` 5m50s con 5 nuevos escenarios reales).
+- Aceptación de `MVP-042` y `MVP-043` permanece PARCIAL: la UI de chat no está montada (`MVP-054` / `MVP-116`), no se ejecutaron llamadas reales con proveedores de IA en sesión en vivo (`MVP-050`/`MVP-134`), y las migraciones remotas no se han aplicado en cloud (sin verificar). Issue #11 permanece abierta. El plan se conserva activo; NO se cierra ni se archiva en este checkpoint.
 
 `MVP-042`: aceptar texto, PDF e imágenes simples dentro de los límites decididos, conservar el original en Storage privado con SHA-256 de sus bytes y metadatos, y rechazar con motivo técnico explícito. `MVP-043`: persistir texto extraído con procedencia; un fallo del proveedor es un impedimento informado, nunca texto inventado, y no se proclama verificación visual independiente.
-
-**Estado real verificado:** no existen Storage, buckets ni integración de extracción/IA. `@ai-sdk/google` está instalado, sin consumidor; faltan `ai`, `@ai-sdk/react` y `groq-sdk`. Solo hay contratos de resumen y herramientas. Nada de lo descrito está implementado.
 
 ## 2. Criterios del PRD
 
@@ -123,22 +123,27 @@ no se leyeron secretos y no se ejecutaron tests ni llamadas a proveedores.
 
 ### 6.1 MVP-042 — Carga privada
 
-- [ ] Verificar `MVP-010` documentado; leer la fila y las guías locales de Route Handlers (`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md`) para el tratamiento de cuerpos multipart/binarios en la versión instalada.
-- [ ] Validación de entrada: sesión y propiedad del documento, tipo declarado vs. firma real de los bytes, tamaño y páginas según `MVP-010`; límite aplicado antes de leer todo en memoria cuando la API lo permita.
-- [ ] Reservar `evidenceId` y ruta de objeto opaca (no el nombre de archivo del usuario); calcular SHA-256 sobre los bytes originales exactos (`SH-03`), longitud y MIME verificado; subir sin sobrescritura; persistir registro con propietario, hash, longitud, ruta privada, nombre original saneado como metadato privado, `createdAt` del servidor y fecha declarada del hecho opcional separada.
-- [ ] Orden y recuperación: si falla la persistencia tras subir, limpieza acotada solo de objetos no referenciados; si falla la subida, no se persiste el registro. Idempotencia por clave del cliente (mismo contenido: mismo registro; distinto: conflicto, `SH-04`).
-- [ ] Errores técnicos con código estable (rechazo por tipo, tamaño, páginas, corrupción, almacenamiento), no mensajes de advertencia de contenido. Una imagen ilegible **no** se rechaza por contenido: es una limitación informativa posterior (`SH-03`).
-- [ ] Acceso al original: sin URL permanente pública; si se requiere lectura, URL firmada breve solo para el propietario, no cacheable entre usuarios (`SH-07`).
-- [ ] Emitir evento de auditoría mediante `MVP-044` (identificadores y hash; sin contenido ni nombre sensible).
+- [x] Verificar `MVP-010` documentado; límites aplicados en servidor (10 MiB por archivo, 3 archivos y 20 MiB acumulados por documento, PDF ≤ 10 págs, imágenes ≤ 20 MP; PRD §4 REQ-04, sources-and-ai §7).
+- [x] Validación de entrada: sesión y propiedad del documento, tipo declarado vs. firma real de los bytes (`SH-03`), tamaño y páginas según `MVP-010`.
+- [x] Reservar `evidenceId` y ruta de objeto opaca; calcular SHA-256 sobre los bytes originales exactos; subir sin sobrescritura mediante subida directa autenticada con JWT de sesión existente y TTL SQL de 120 s (migración `20261016001200_evidence_persistence.sql`).
+- [x] Retención de cuotas por documento en reservas vencidas (migración `20261016002200_evidence_retained_quota.sql`, PR #96).
+- [x] Protocolo de descarte irreversible en 3 pasos (claim SQL irreversible → `Storage.remove` → `discard_evidence_reservation`, migración `20261016002300_evidence_discard_protocol.sql`, PR #97). Limpieza oportunista por propietario en lotes de 3 al reservar; RLS serializada con reloj posterior a la espera del lock; objetos aceptados nunca se borran ni reciben claim; fallos de Storage retienen cuota y claim.
+- [x] Errores técnicos con código estable (rechazo por tipo, tamaño, páginas, corrupción, almacenamiento); imagen ilegible o ambigua conservada como limitación informativa (`SH-03`).
+- [x] Acceso al original: sin URL pública permanente; lectura firmada breve (60 s) solo para el propietario (`SH-07`).
+- [x] Emitir evento de auditoría atómicamente mediante puerto `MVP-044` (`evidence.accepted`).
+- [ ] Montaje de presentación y contenedor de adjuntos en la interfaz de usuario de chat (`MVP-054` / `MVP-116`).
+- [ ] Verificación de despliegue y migraciones en entorno cloud remoto (`MVP-134`).
 
 ### 6.2 MVP-043 — Extracción con procedencia
 
-- [ ] Texto directo: decodificación determinista sin IA, registrada con método `directo`.
-- [ ] PDF/imagen: llamada servidor a Gemini mediante el cliente de `MVP-050`, con la evidencia como dato **no confiable** delimitado, sin herramientas, salida estructurada validada con Zod (`SH-08`). Ilegible o ambiguo se marca como limitación; jamás se completa un valor.
-- [ ] Persistir extracción separada del original: texto, método/proveedor/modelo, versión de prompt, página o región cuando exista, limitaciones y tiempo del servidor; cada reintento crea otro registro, no sobrescribe. Marca persistida: «interpretada por Gemini; sin verificación visual independiente».
-- [ ] Fallo de red/proveedor, configuración ausente o salida inválida: impedimento técnico informado, estado de operación técnica `fallida` reintentable; no se crea extracción ni texto de relleno; el original no se altera.
-- [ ] Logs y auditoría con IDs de correlación; sin prompts, texto de documentos ni secretos.
-- [ ] Contrato de lectura de extracciones para `MVP-051/053/061` (puerto de servidor); la forma exacta la fija `MVP-020`.
+- [x] Texto directo: decodificación determinista sin IA, registrada con método `directo`.
+- [x] PDF/imagen: servicio de extracción con puerto real consumiendo dobles en tests (`MockLanguageModelV4`), con delimitación de datos no confiables y salida estructurada validada con Zod (`SH-08`). Ilegible o ambiguo marcado como limitación; jamás se completa un valor.
+- [x] Persistir extracción separada del original con procedencia, método, versión de prompt, páginas, texto, limitaciones y tiempo del servidor; append-only con auditoría atómica (`SH-08`). Marca persistida: «interpretada por Gemini; sin verificación visual independiente» (INV-07).
+- [x] Fallo de red/proveedor, configuración ausente o salida inválida: impedimento técnico informado, estado de operación técnica fallida reintentable; cero extracción ni texto inventado; original intacto.
+- [x] Logs y auditoría con IDs de correlación; sin prompts, texto de documentos ni secretos.
+- [x] Contrato y Route Handler de lectura de extracciones para `MVP-051/053/061` (`GET /api/documents/[id]/evidences/extractions`).
+- [ ] Integración en vivo con modelo Gemini real en sesión interactiva completa (`MVP-050` / `MVP-134`).
+- [ ] Consumo del endpoint de extracción desde el container de chat (`MVP-054`).
 
 ## 7. Casos de test por aceptación
 
@@ -158,7 +163,9 @@ Aislamiento de Storage entre dos usuarios: `MVP-024`/`MVP-121`, con base local r
 
 ## 8. Validación, evidencia y rollback
 
-### Evidencia de conexión local — 2026-10-16
+### Evidencia de conexión local previa (PR #86) — 2026-10-16
+
+*(Nota de actualización: el estado preliminar de `flow/evidence-wiring` que indicaba «pendiente revisión independiente e integración» quedó formalmente superado. PR #86 fue integrado en `develop` y contó con revisión independiente PASS. Las entregas posteriores PR #96 y PR #97 endurecieron la retención de cuotas y el protocolo de descarte, como se detalla más abajo).*
 
 - `npm ci` sin cambios de paquete/lock; lint y typecheck exit 0; `npm test`
   **987/987**; build exit 0 con las cinco rutas de evidencia enumeradas.
@@ -174,15 +181,7 @@ Aislamiento de Storage entre dos usuarios: `MVP-024`/`MVP-121`, con base local r
 - Regresión local adicional sin reset: persistencia F4 **8/8**, LOGIN ejecutor
   **6/6**, suite local Auth/bridge **8/8**. Los fixtures retiran la contraseña
   efímera de LOGIN en teardown; ninguna URL privada se escribe en archivos.
-- Base actual integrada: `560edf7` (incluye PR #80 y posteriores #83/#84), sin
-  duplicar migraciones anteriores en el diff. Pila galcoa detenida al terminar;
-  permanecen únicamente los dos contenedores protegidos `entrenar-*`.
-- Incidencia operativa: el primer `supabase start` imprimió su salida estándar
-  con configuración efímera local en el registro de herramienta. No se copió
-  a archivos/commits ni corresponde a cloud; las operaciones posteriores de CLI
-  sensibles capturaron la salida en proceso. No afirmar que nunca hubo salida
-  sensible en herramientas. El login SQL de test quedó sin contraseña y la pila
-  fue detenida.
+- Base integrada en PR #86: `f1013d8`. Revisión independiente posterior con resultado PASS.
 - Cuatro conexiones LOGIN independientes respetan 3 archivos; también 20 MiB.
   Replay, fingerprint semántico diferente, otro dueño/documento, vencimiento,
   liberación de cupo, hash incorrecto y limpieza están cubiertos. Fallo de
@@ -193,12 +192,41 @@ Aislamiento de Storage entre dos usuarios: `MVP-024`/`MVP-121`, con base local r
   sobreescritura, otros dueños, anon, MIME no admitido y archivo >10 MiB.
   El permiso no limita criptográficamente el tamaño declarado por debajo de
   10 MiB: el servidor verifica longitud/hash/contenido antes de aceptar.
-  No se acredita cancelación de un upload iniciado antes de vencer que termina
-  después; SQL tampoco acepta una reserva vencida.
 - `001200` incluye la columna de caducidad y el helper Storage; `001201` amplía
   el catálogo SQL después de la primera aplicación local, sin editar migraciones
-  publicadas. Ninguna se aplicó en cloud. Sin llamadas a proveedores IA/Hedera,
-  sin nuevos servicios/dependencias ni cambios a UI de chat/confirmaciones.
+  publicadas.
+
+### Evidencia de endurecimiento e integración posterior (PR #96 y PR #97) — 2026-10-16
+
+#### 1. Retención de cuotas de reservas vencidas (PR #96, commit `aaea26c`)
+- **Problema abordado:** la liberación automática de cuota por vencimiento de reserva permitía a un cliente abusivo agotar almacenamiento físico generando sucesivas reservas abandonadas sin consumir cuota documental permanente.
+- **Implementación:** migración `20261016002200_evidence_retained_quota.sql`. `reserve_evidence` evalúa las cuotas del documento (máximo 3 archivos y 20 MiB acumulados) contando todas las filas retenidas bajo el lock del documento (`FOR UPDATE`), independientemente de si la reserva ha vencido en tiempo, hasta tanto no se complete el descarte explícito.
+- **Validación remota CI:** Run Linux GitHub Actions `38989208876` SUCCESS (`validate` 3m40s, `local-server-db` 5m39s), 1099 unit tests y 69 barreras arquitectónicas aprobadas.
+
+#### 2. Protocolo terminal de descarte irreversible (PR #97, base `9d5cd15`)
+- **Problema abordado:** evitar condiciones de carrera donde un objeto huérfano es eliminado de Storage mientras el usuario intenta aceptarlo, o donde la eliminación de Storage falla dejando la reserva liberada incorrectamente.
+- **Implementación:** migración `20261016002300_evidence_discard_protocol.sql`:
+  - Protocolo terminal de 3 pasos: `claim_evidence_discard` (SQL bajo advisory lock de actor `pg_advisory_xact_lock` y lock `FOR UPDATE` sobre documento) → eliminación física por Storage API (`Storage.remove`) → finalización del descarte (`discard_evidence_reservation`).
+  - Columna `cleanup_claimed_at timestamptz` y trigger `private.evidence_discard_guard`: prohíbe DELETE sin claim previo; prohíbe claim o descarte sobre evidencias ya aceptadas (`Original inmutable`); hace irreversible el claim una vez asignado.
+  - Inmutabilidad estricta de aceptadas: `accept_evidence` rechaza reservas con claim o expiradas; si la aceptación confirma la fila, jamás concede claim de borrado.
+  - Limpieza oportunista por propietario: `createEvidenceService.requestUpload` invoca `list_evidence_discards` para recuperar hasta 3 reservas candidatas vencidas o con claim del mismo actor antes de insertar una nueva reserva.
+  - Revalidación en RPC: `reserve_evidence` revalida que no existan reservas del actor pendientes de descarte (`discard_pending`), evitando confiar en limpiezas previas no atómicas.
+  - Serialización RLS de subida: `private.can_upload_evidence_object` se serializa tomando `FOR UPDATE` sobre el documento y evalúa `upload_expires_at > clock_timestamp()` con reloj posterior a la espera del lock.
+  - Resiliencia ante fallos de Storage: si `storage.remove` arroja error de red o indisponibilidad, la reserva permanece con claim asignado, retiene la cuota del documento y no libera cupo ni permite nuevos permisos hasta resolverse.
+- **Validación del autor:** 1103 unit tests, lint, types, build y 69 barreras arquitectónicas. (Se registró honestamente que en la primera corrida de barreras hubo 68/69 por un timeout transitorio de ESLint bajo alta carga de CPU; la repetición inmediata con idéntica configuración y comando aprobó 69/69 sin alterar la configuración del proyecto).
+- **Revisión independiente (PR #97):** sesión `ses_eb88f0798ffedC3FY0N89Bgi63` con dictamen PASS; reejecutó y verificó types, lint, 69 barreras, 37 tests de evidencia y 10 tests de extracción.
+- **Validación remota CI (PR #97):** Run Linux GitHub Actions `38990325702` final SUCCESS (`validate` 2m23s, `local-server-db` 5m50s), ejecutando los 5 nuevos escenarios reales en Postgres y Storage locales:
+  1. Complete tardío tras vencimiento: elimina bytes tras claim y reserva nueva recupera abandonos propios.
+  2. Abandono de reserva sin complete: siguiente reserva del propietario limpia y recupera cupo.
+  3. Carrera concurrente aceptación vs claim: un solo ganador; si gana aceptación, el original es inmutable y no se concede claim ni se borra el archivo.
+  4. Autorización RLS de Storage: espera lock de documento y revalida expiración con reloj de DB posterior a la espera.
+  5. Carga HTTP con cuerpo pendiente: body abierto mientras se confirma el claim aborta la carga y previene publicación o descarga del objeto.
+
+#### 3. Límites de evidencia y deuda técnica residual
+- El test de subida HTTP con cuerpo pendiente demuestra que el claim aborta la adopción y previene la descarga del objeto, pero no prueba por sí solo el momento exacto del preflight de Supabase Storage ni la eliminación física inmediata en los discos del backend.
+- No existe un proceso en segundo plano (cron/SLA) que imponga un límite físico global de almacenamiento en el bucket ni garantice plazo de limpieza si el usuario no vuelve a realizar reservas (registrado en Technical Debt Tracker, item #8).
+- No se emplean formulaciones absolutas en la documentación (e.g. evitar proclamar «garantía matemática de no interbloqueo» ni sobreproclamar auditorías).
+- Aceptación de `MVP-042` y `MVP-043` permanece **PARCIAL**: la interfaz de usuario de chat no está montada (`MVP-054` / `MVP-116`), no se ejecutaron llamadas reales con proveedores de IA en vivo (`MVP-050`/`MVP-134`), y las migraciones remotas no se han aplicado en cloud (las variables de entorno informadas por el usuario no se leyeron ni se afirma password NULL; conectividad cloud sin verificar). Issue #11 permanece abierta.
 
 ### Contrato HTTP para MVP-054 / presentación
 
@@ -233,16 +261,17 @@ idempotente/cuotas/objeto todavía no subido; 413 JSON >16 KiB; 422 rechazo téc
 de contenido/límites de archivo; 503 fallo técnico reintentable. Proveedor sin
 configuración devuelve su error técnico, nunca extracción inventada.
 
-Límite de evidencia: pruebas de factory HTTP con Auth local real, no navegador
-Next completo ni sesión remota. Build comprueba composición de rutas, no prueba
-transporte HTTP Next vivo ni cookies browser de extremo a extremo. Revisión
-independiente y sesión final integrada siguen pendientes; #11 queda abierta.
-
-Checks: `lint`, `typecheck`, `npm test`, `test:boundaries` y `build` (rutas y dependencias). **Evidencia (2026-10-16):** `src/lib/documents/evidence/` (inspect, ports, service) y `src/lib/ai/extraction/` (prompt-v1, service con lector); pruebas `tests/server/evidence/` y `tests/server/extraction/` 43/43 con dobles de Storage, base y modelo Gemini (puerto real de MVP-050 con `MockLanguageModelV4`); `npx vitest run --project server` 163, `npm test` 429, lint, typecheck, boundaries 67 y build en verde. Archivos de Files API no hacen falta: cada archivo mide ≤ 10 MiB y la solicitud entra inline (§7.5). Sin llamadas reales. Límites: el conteo de páginas es determinista sin librería (un PDF cuyo árbol de páginas solo está en flujos comprimidos se rechaza como ilegible); el nombre original no se guarda porque la tabla `evidences` no tiene columna para eso. La extracción real con Gemini y Storage remoto no se prueban aquí: requieren autorización y credenciales (`MVP-134/135`); no se leen secretos ni se llama a proveedores. Un fallo de proveedor no se reemplaza con un mock ni con «texto extraído» ficticio. Rollback: revertir archivos del plan; objetos de prueba en Storage local se eliminan con el entorno local.
-
 ## 9. Cierre
 
-Se valida tras integrar. Actualizar solo las filas `MVP-042` y `MVP-043` y el recuento del maestro; archivar el plan. Escribir este documento no marca tareas. **Al archivar:** mover el plan a `docs/exec-plans/completed/`, conservar su enlace en las filas de sus IDs actualizándolo a la nueva ubicación y corregir los relativos del propio plan (pierden un nivel: `../../../x` → `../../x`, `../../GALCOA-PRD-v1.4.md` → `../GALCOA-PRD-v1.4.md`; el maestro pasa a `../active/mvp-master-plan.md` y los planes hermanos aún activos a `../active/mvp/<plan>.md`). El cierre registra solo los IDs propios, el recuento del §3 del maestro y la evidencia de la integración en `develop` (hasta la transición de `MVP-006`, la base vigente). Se archiva únicamente al completar; ningún plan se archiva ahora.
+**Estado del plan: ACTIVO (Checkpoint parcial registrado, NO cerrado ni archivado).**
+
+Este checkpoint concilia las integraciones completadas en `develop` (PR #86, PR #96 y PR #97, base `9d5cd15`). Las filas `MVP-042` y `MVP-043` del maestro permanecen en estado `en_curso`, y este plan se mantiene activo en `docs/exec-plans/active/mvp/f04-evidence-upload-extraction.md`. No se archiva a `docs/exec-plans/completed/` ni se cierran las Issues #11 o #35 en este paso.
+
+El cierre definitivo y archivo a `completed/` se realizará de forma coordinada únicamente cuando se cumplan los criterios pendientes:
+1. Montaje e integración del contenedor y presentación de evidencias en la UI de chat (`MVP-054` / `MVP-116`).
+2. Validación de extracción con modelo Gemini real en sesión integrada (`MVP-050` / `MVP-134`).
+3. Aplicación y verificación de migraciones en la base de datos cloud remota.
+4. Sesión final integrada y cierre formal coordinado de la Issue #11.
 
 ## 10. Pendientes y solicitudes
 
