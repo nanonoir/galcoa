@@ -78,6 +78,53 @@ describe("Inspección por contenido (MVP-042)", () => {
 });
 
 describe("Carga privada en dos pasos (MVP-042)", () => {
+  it("descarta una carga vencida antes de leer bytes y recupera el cupo", async () => {
+    const ctx = setup(); const bytes = pdfBytes(1);
+    const result = await ctx.service.requestUpload(command(bytes, "application/pdf"));
+    if (!result.ok) throw new Error("Sin reserva");
+    const e = ctx.evidences.get(result.value.evidence.evidenceId)!;
+    ctx.upload(e.privateLocation, bytes); e.uploadExpiresAt = "2000-01-01T00:00:00Z";
+    ctx.fail.download = true;
+    expect(await ctx.service.completeUpload({documentId:DOC,evidenceId:e.evidenceId})).toMatchObject({ok:false,error:{code:"NOT_AVAILABLE"}});
+    expect(ctx.objects.has(e.privateLocation)).toBe(false);
+    expect(ctx.evidences.has(e.evidenceId)).toBe(false);
+    expect(ctx.removed).toEqual([e.privateLocation]);
+  });
+
+  it("la siguiente reserva limpia una carga abandonada sin complete", async () => {
+    const ctx = setup(); const bytes = pdfBytes(1);
+    const result = await ctx.service.requestUpload(command(bytes, "application/pdf"));
+    if (!result.ok) throw new Error("Sin reserva");
+    const e = ctx.evidences.get(result.value.evidence.evidenceId)!;
+    ctx.upload(e.privateLocation, bytes); e.uploadExpiresAt = "2000-01-01T00:00:00Z";
+    expect((await ctx.service.requestUpload(command(bytes, "application/pdf"))).ok).toBe(true);
+    expect(ctx.evidences.has(e.evidenceId)).toBe(false);
+    expect(ctx.objects.has(e.privateLocation)).toBe(false);
+  });
+
+  it("un borrado fallido retiene claim/cupo e impide emitir otro permiso", async () => {
+    const ctx = setup(); const bytes = pdfBytes(1);
+    const result = await ctx.service.requestUpload(command(bytes, "application/pdf"));
+    if (!result.ok) throw new Error("Sin reserva");
+    const e = ctx.evidences.get(result.value.evidence.evidenceId)!;
+    ctx.upload(e.privateLocation, bytes); e.uploadExpiresAt = "2000-01-01T00:00:00Z";
+    ctx.storage.remove = async () => { throw new Error("Storage no disponible"); };
+    expect(await ctx.service.requestUpload(command(bytes, "application/pdf"))).toMatchObject({ok:false,error:{retryable:true}});
+    expect(ctx.evidences.get(e.evidenceId)?.cleanupClaimedAt).toBeTruthy();
+    expect(ctx.objects.has(e.privateLocation)).toBe(true);
+    expect(ctx.signedUploads).toHaveLength(1);
+    expect(await ctx.store.acceptEvidence({ownerId:ANA,evidenceId:e.evidenceId,audit:{actorScope:ANA,correlationId:"test"}})).toBeNull();
+  });
+
+  it("una aceptada nunca obtiene autoridad de descarte", async () => {
+    const ctx = setup(); const done = await uploadFlow(ctx, pdfBytes(1), "application/pdf");
+    if (!done.ok) throw new Error("Sin original");
+    expect(await ctx.store.claimDiscard(ANA, done.value.evidenceId, true)).toBeNull();
+    expect(await ctx.store.listDiscards(ANA)).toEqual([]);
+    expect(ctx.removed).toEqual([]);
+    expect(done.value).not.toHaveProperty("cleanupClaimedAt");
+  });
+
   it("emite un permiso breve a una ruta opaca y acepta el original con su hash", async () => {
     const ctx = setup();
     const bytes = pdfBytes(3);

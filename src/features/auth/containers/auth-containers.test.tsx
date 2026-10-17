@@ -17,7 +17,7 @@ afterEach(() => {
 
 describe("Containers de acceso (MVP-031)", () => {
   it("login correcto: envía JSON al endpoint, muestra el éxito y navega a un destino interno", async () => {
-    const fetchMock = vi.fn(async () => json({ state: { status: "success", message: "Ingreso correcto." }, redirectTo: "/" }));
+    const fetchMock = vi.fn(async () => json({ state: { status: "success", message: "Ingreso correcto." }, redirectTo: "/dashboard" }));
     vi.stubGlobal("fetch", fetchMock);
     render(<LoginContainer />);
     await userEvent.type(screen.getByLabelText("Correo electrónico"), "ana@ejemplo.invalid");
@@ -29,7 +29,7 @@ describe("Containers de acceso (MVP-031)", () => {
     expect(url).toBe("/api/auth/login");
     expect(init.method).toBe("POST");
     expect(JSON.parse(String(init.body))).toEqual({ email: "ana@ejemplo.invalid", password: "clave-larga-123" });
-    expect(router.replace).toHaveBeenCalledWith("/");
+    expect(router.replace).toHaveBeenCalledWith("/dashboard");
     expect(router.refresh).toHaveBeenCalled();
   });
 
