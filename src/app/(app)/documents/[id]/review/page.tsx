@@ -14,7 +14,7 @@ import { documentServiceForRequest } from "../../../_lib/documents";
  * El `draftRevision` vigente sale del mismo lector que usa el congelado en el
  * servidor; el cliente solo lo devuelve como `expectedDraftRevision` y el
  * servidor revalida. Si ya hay una revisión vigente se muestra esa (recarga sin
- * reemitir enlaces). Sin borrador aún no hay nada que congelar.
+ * reemitir enlaces) junto con el borrador actual, para ofrecer reabrirla. Sin borrador aún no hay nada que congelar.
  */
 export default async function DocumentReviewPage({ params }: PageProps<"/documents/[id]/review">) {
   const { id } = await params;
@@ -35,10 +35,15 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
   const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: context.session.user.id, session: context.rpc });
   const hcsStatus = result.value.hcsStatus;
   const bundle = await store.getActiveRevision(context.session.user.id, id);
-  const source = bundle ? null : await reader.getFreezeSource(context.session.user.id, id);
+  // Con revisión vigente también se lee el borrador actual: así se detecta si cambió desde el congelado.
+  // Si esa lectura falla, la revisión vigente se sigue mostrando y el servidor revalida al congelar.
+  const source = bundle
+    ? await reader.getFreezeSource(context.session.user.id, id).catch(() => null)
+    : await reader.getFreezeSource(context.session.user.id, id);
   const active: Frozen | null = bundle
     ? {
         revisionId: bundle.revision.revisionId,
+        frozenFromDraftRevision: bundle.revision.frozenFromDraftRevision,
         snapshotId: bundle.snapshot.snapshotId,
         snapshotHash: bundle.snapshot.snapshotHash,
         selection: bundle.revision.selection,
@@ -59,7 +64,7 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Revisión de «{result.value.title}»</h1>
       {bundle || source ? (
-        <ReviewContainer documentId={id} draftRevision={bundle ? bundle.revision.frozenFromDraftRevision : source!.draft.draftRevision} hcsStatus={hcsStatus} active={active} />
+        <ReviewContainer documentId={id} draftRevision={source ? source.draft.draftRevision : bundle!.revision.frozenFromDraftRevision} hcsStatus={hcsStatus} active={active} />
       ) : (
         <p className="text-sm text-muted-foreground">Todavía no hay un borrador para revisar. Conversá en el documento y volvé cuando esté listo.</p>
       )}

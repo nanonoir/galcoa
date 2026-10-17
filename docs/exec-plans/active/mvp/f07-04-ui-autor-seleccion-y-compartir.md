@@ -116,6 +116,13 @@ Documentos objetivo **disponibles** y enlazados; los parámetros operativos (ent
 - Ejecutado: `lint`, `typecheck`, `npm test` (64 archivos, 1090 tests), `test:boundaries`, `build` — verdes. No ejecutado: Playwright, Supabase local, QR.
 - Límites: sin QR (no hay librería en el repo); el agregado no indica qué rol respondió qué, por lo que con respuestas mixtas el detalle por rol se omite; sin sello/finalización reales (indicadores fijos).
 
+## 10 ter. Evidencia parcial: reapertura de la revisión (rama `feat/author-review-reopen`, sin DB real)
+
+- UI explícita para modificar participantes o incorporar el borrador actual tras congelar: la revisión vigente sigue visible con sus enlaces hasta que `POST` congela y crea otra; cancelar no hace peticiones. La página lee también el borrador actual (si falla esa lectura, degrada a la revisión vigente).
+- «unchanged» no reemite enlaces ni sustituye el estado. Clave de idempotencia por selección+`draftRevision`, conservada en reintentos.
+- Brecha de backend (no resuelta aquí): `freeze_revision` devuelve `unchanged` si el hash coincide con la revisión activa aunque esté rechazada, por lo que una revisión rechazada solo se puede reabrir cambiando selección o borrador. La UI lo explica y exige cambio material.
+- Ejecutado: Vitest de `corroborations` (71 tests), `typecheck`, `eslint` focal. No ejecutado: Playwright ni base real. MVP-077/078 siguen abiertas.
+
 ## 11. Cierre
 
 Con integración y evidencia real, actualizar solo las filas `MVP-077` y `MVP-078` y el recuento del §3 del maestro; archivar al cerrar ambas. Documentar no marca nada. **Al archivar:** mover el plan a `docs/exec-plans/completed/`, conservar su enlace en las filas de sus IDs actualizándolo a la nueva ubicación y corregir los relativos del propio plan (pierden un nivel: `../../../x` → `../../x`, `../../GALCOA-PRD-v1.4.md` → `../GALCOA-PRD-v1.4.md`; el maestro pasa a `../active/mvp-master-plan.md` y los planes hermanos aún activos a `../active/mvp/<plan>.md`). El cierre registra solo los IDs propios, el recuento del §3 del maestro y la evidencia de la integración en `develop` (hasta la transición de `MVP-006`, la base vigente). Se archiva únicamente al completar; ningún plan se archiva ahora.

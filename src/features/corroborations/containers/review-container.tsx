@@ -32,6 +32,8 @@ export interface Frozen {
   snapshotId: string;
   snapshotHash: string;
   selection: ParticipantSelection;
+  /** Borrador del que se congeló; si falta se asume el vigente (sin cambio de borrador detectable). */
+  frozenFromDraftRevision?: number;
   snapshot: Extract<SnapshotViewState, { status: "ready" }>;
 }
 
@@ -50,6 +52,7 @@ const SETTLED: ConfirmationStatus[] = ["completa", "rechazada", "sustituida"];
 
 export interface ReviewContainerProps {
   documentId: string;
+  /** Revisión vigente del borrador (la que se congelaría ahora). */
   draftRevision: number;
   /** Estado del sello según la proyección del documento en el servidor. */
   hcsStatus: HcsStatus;
@@ -94,6 +97,9 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
   const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  /** Edición explícita de una revisión nueva: la vigente sigue intacta hasta que el servidor cree otra. */
+  const [editing, setEditing] = useState(false);
   const keys = useRef<Record<string, string>>({});
 
   const key = (intent: string) => (keys.current[intent] ??= crypto.randomUUID());
@@ -132,20 +138,29 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
   async function freeze() {
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       const roles = thirdParties(selection);
       const result = await call(`/api/documents/${encodeURIComponent(documentId)}/revisions`, {
         method: "POST",
         body: JSON.stringify({ expectedDraftRevision: draftRevision, selection: roles, idempotencyKey: key(`freeze-${selection.join("+")}-${draftRevision}`) }),
       });
-      const data = result.body as { revision?: Record<string, string>; snapshot?: Record<string, unknown> } | null;
+      const data = result.body as { revision?: Record<string, string>; snapshot?: Record<string, unknown>; unchanged?: boolean } | null;
       if (!result.ok || !data?.revision || !data.snapshot) throw new Error(errorText(result.body, "No se pudo congelar la revisión."));
       renew(`freeze-${selection.join("+")}-${draftRevision}`);
+      if (data.unchanged && frozen && frozen.revisionId === String(data.revision.revisionId)) {
+        // Sin cambio real: la base no creó otra revisión. No se reemiten enlaces ni se tocan los vigentes.
+        setSelection(frozen.selection);
+        setEditing(false);
+        setNotice("No hubo cambios respecto de la revisión vigente: no se creó otra revisión y los enlaces siguen igual.");
+        return;
+      }
       const next: Frozen = {
         revisionId: String(data.revision.revisionId),
         snapshotId: String(data.snapshot.snapshotId),
         snapshotHash: String(data.snapshot.snapshotHash),
         selection,
+        frozenFromDraftRevision: draftRevision,
         snapshot: {
           status: "ready",
           revisionId: String(data.revision.revisionId),
@@ -158,7 +173,15 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
         },
       };
       setFrozen(next);
+      setEditing(false);
+      setAgreed(false);
       const thirds = thirdParties(selection);
+      if (data.unchanged) {
+        // Revisión vigente distinta de la mostrada: se hidrata sin emitir ni invalidar nada.
+        setLinks(thirds.map((role) => toLink(role, null)));
+        await refresh(next.revisionId);
+        return;
+      }
       // Todos los espacios existen desde el congelado: un fallo de un rol conserva los demás enlaces.
       setLinks(thirds.map((role) => toLink(role, null)));
       setProgress({ confirmationStatus: "pendiente", missingRoles: selection, confirmed: 0, rejected: 0, authorConfirmed: false });
@@ -228,6 +251,26 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
       })
     : [];
 
+  const sameSelection = frozen !== null && frozen.selection.join("+") === selection.join("+");
+  const draftChanged = frozen !== null && draftRevision !== (frozen.frozenFromDraftRevision ?? draftRevision);
+  const materialChange = !sameSelection || draftChanged;
+  // Con la confirmación completa o la revisión sustituida no se ofrece reabrir desde aquí.
+  const canReopen = frozen !== null && progress?.confirmationStatus !== "completa" && progress?.confirmationStatus !== "sustituida";
+
+  function startEditing() {
+    if (!frozen) return;
+    setSelection(frozen.selection);
+    setError(null);
+    setNotice(null);
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    if (frozen) setSelection(frozen.selection);
+    setError(null);
+    setEditing(false);
+  }
+
   const settled = progress ? SETTLED.includes(progress.confirmationStatus) : true;
   const revisionId = frozen?.revisionId;
 
@@ -261,7 +304,35 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
         </Alert>
       )}
 
-      <ParticipantSelector value={frozen?.selection ?? selection} locked={frozen !== null} onChange={setSelection} />
+      {notice && (
+        <Alert>
+          <AlertTitle>Sin cambios</AlertTitle>
+          <AlertDescription>{notice}</AlertDescription>
+        </Alert>
+      )}
+
+      <ParticipantSelector value={frozen && !editing ? frozen.selection : selection} locked={frozen !== null && !editing} onChange={setSelection} />
+
+      {frozen !== null && editing && (
+        <section aria-labelledby="reopen-title" className="flex flex-col gap-3 rounded-xl border p-4">
+          <h2 id="reopen-title" className="text-lg font-semibold">
+            Abrir una nueva revisión
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Mientras editás, la revisión anterior sigue vigente y sus enlaces siguen funcionando. Cuando crees la nueva revisión, las confirmaciones anteriores no se heredan y los enlaces anteriores dejan de aceptar respuestas.
+          </p>
+          {draftChanged && <p className="text-sm">El borrador cambió desde la revisión vigente: la nueva revisión incorporará el borrador actual.</p>}
+          {!materialChange && <p className="text-sm text-muted-foreground">Todavía no hay nada para cambiar: elegí otros participantes{draftChanged ? "" : " o modificá el borrador"} para abrir otra revisión.</p>}
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => void freeze()} disabled={busy || !materialChange}>
+              {busy ? "Creando…" : "Crear nueva revisión y generar enlaces"}
+            </Button>
+            <Button type="button" variant="outline" onClick={cancelEditing} disabled={busy}>
+              Cancelar y conservar la revisión actual
+            </Button>
+          </div>
+        </section>
+      )}
 
       {frozen === null ? (
         <Button type="button" onClick={() => void freeze()} disabled={busy} className="self-start">
@@ -269,6 +340,14 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
         </Button>
       ) : (
         <>
+          {canReopen && !editing && (
+            <div className="flex flex-col gap-2">
+              {draftChanged && <p className="text-sm">El borrador cambió después de congelar esta revisión.</p>}
+              <Button type="button" variant="outline" onClick={startEditing} className="self-start">
+                {draftChanged ? "Incorporar el borrador actual o modificar participantes" : "Modificar participantes"}
+              </Button>
+            </div>
+          )}
           <SnapshotView state={frozen.snapshot} onRetry={() => void refresh(frozen.revisionId)} />
 
           <section aria-labelledby="author-confirm-title" className="flex flex-col gap-3">
