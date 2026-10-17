@@ -46,7 +46,7 @@ export function SiteNavigation({ brand, links }: SiteNavigationProps) {
     <header className="border-b">
       <nav aria-label="Principal" onKeyDown={handleKeyDown} className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3">
         <div className="flex items-center justify-between gap-4">
-          <span className="text-base font-semibold">{brand}</span>
+          <span className="galcoa-brand"><span className="sr-only">{brand}</span></span>
 
           <ul className="hidden items-center gap-2 md:flex">
             {links.map((link) => (

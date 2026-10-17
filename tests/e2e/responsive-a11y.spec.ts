@@ -18,6 +18,17 @@ const SCREENS = [
 ] as const;
 const WIDTHS = [360, 1280] as const;
 
+test("favicon: icono GALCOA servido por Next", async ({ page }) => {
+  await page.goto("/");
+  const icon = page.locator('link[rel="icon"][type="image/svg+xml"]');
+  await expect(icon).toHaveCount(1);
+  const href = await icon.getAttribute("href");
+  expect(href).toBeTruthy();
+  const response = await page.request.get(new URL(href!, page.url()).toString());
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["content-type"]).toContain("image/svg+xml");
+});
+
 for (const screen of SCREENS) {
   for (const width of WIDTHS) {
     test.describe(`${screen.name} · ${width}px`, () => {

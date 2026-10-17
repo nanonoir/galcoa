@@ -35,6 +35,7 @@ export default defineConfig(({ command, mode, isPreview }) => {
 
   return {
     root: import.meta.dirname,
+    publicDir: path.join(repoRoot, "public"),
     // Sin archivos .env, sin prefijos públicos y sin reemplazar process.env.
     envDir: false,
     envPrefix: [],

@@ -30,7 +30,8 @@ test.describe("preview local (datos ficticios)", () => {
       return { background: s.backgroundColor, radius: parseFloat(s.borderTopLeftRadius) };
     });
     expect(style.background).not.toBe("rgba(0, 0, 0, 0)");
-    expect(style.radius).toBeGreaterThan(0);
+    // La identidad MVP usa esquinas rectas; el fondo verifica la carga de CSS.
+    expect(style.radius).toBe(0);
   });
 
   test("no inyecta entorno del proceso ni variables en el cliente", async ({ page }) => {

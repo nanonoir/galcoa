@@ -7,8 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans, ui-sans-serif), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono, ui-monospace), monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -72,7 +72,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 0px;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -117,6 +117,41 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Identidad MVP: ambos contextos comparten la misma paleta operacional.
+   Los exportables y el lienzo blanco del QR conservan sus estilos propios. */
+:root,
+.dark {
+  color-scheme: dark;
+  --brand-green: #174235;
+  --brand-yellow: #fcd34d;
+  --background: #101411;
+  --foreground: #f5f4ec;
+  --card: #18221c;
+  --card-foreground: #f5f4ec;
+  --popover: #18221c;
+  --popover-foreground: #f5f4ec;
+  --primary: var(--brand-yellow);
+  --primary-foreground: #174235;
+  --secondary: var(--brand-green);
+  --secondary-foreground: #f5f4ec;
+  --muted: #18221c;
+  --muted-foreground: #b9c6bd;
+  --accent: var(--brand-green);
+  --accent-foreground: #f5f4ec;
+  --destructive: #ff9595;
+  --border: #35443c;
+  --input: #63776a;
+  --ring: var(--brand-yellow);
+  --sidebar: #0d110f;
+  --sidebar-foreground: #f5f4ec;
+  --sidebar-primary: var(--brand-yellow);
+  --sidebar-primary-foreground: #174235;
+  --sidebar-accent: var(--brand-green);
+  --sidebar-accent-foreground: #f5f4ec;
+  --sidebar-border: #35443c;
+  --sidebar-ring: var(--brand-yellow);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -126,5 +161,18 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  /* Recorte del SVG original, sin modificar el archivo de marca suministrado. */
+  .galcoa-brand {
+    display: inline-block;
+    width: 10rem;
+    height: 3rem;
+    flex-shrink: 0;
+    background: #f5f4ec url('/galcoa.svg') no-repeat;
+    background-size: 10.86rem 8.145rem;
+    background-position: -0.5rem -2.7rem;
   }
 }
