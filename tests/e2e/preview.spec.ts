@@ -2,12 +2,13 @@ import type { Page } from "@playwright/test";
 
 import { expect, test } from "./fixtures";
 
-const scenarios: Array<{ label: string; visible: RegExp | string }> = [
+// La demo oculta advertencias (DEMO_HIDE_WARNINGS en src/lib/contracts/demo-mode.ts): `hidden` es texto que NO debe aparecer.
+const scenarios: Array<{ label: string; visible: RegExp | string; hidden?: RegExp | string }> = [
   { label: "Cargando", visible: "Cargando documentos" },
   { label: "Error técnico recuperable", visible: "No se pudo cargar la lista de documentos" },
   { label: "Lista vacía", visible: "Todavía no hay documentos" },
-  { label: "Entrega comercial contradictoria (10 vs 12)", visible: /10 toneladas.*12 toneladas/ },
-  { label: "Medición sin unidad", visible: /unidad/i },
+  { label: "Entrega comercial contradictoria (10 vs 12)", visible: "Entrega de maíz", hidden: /10 toneladas.*12 toneladas/ },
+  { label: "Medición sin unidad", visible: "Medición de humedad", hidden: /unidad/i },
   { label: "Confirmaciones pendientes", visible: "Confirmaciones" },
   { label: "Finalizada con sello HCS pendiente", visible: "Sello HCS" },
   { label: "Finalizada con sello HCS registrado", visible: "Registrado" },
@@ -48,6 +49,7 @@ test.describe("preview local (datos ficticios)", () => {
       await scenarioButton(page, scenario.label).click();
       await expect(scenarioButton(page, scenario.label)).toHaveAttribute("aria-pressed", "true");
       await expect(stage(page).getByText(scenario.visible).first()).toBeVisible();
+      if (scenario.hidden) await expect(stage(page).getByText(scenario.hidden)).toHaveCount(0);
       await testInfo.attach(`escenario-${scenario.label}`, { body: await page.screenshot(), contentType: "image/png" });
     });
   }
@@ -96,12 +98,12 @@ test.describe("preview local (datos ficticios)", () => {
 });
 
 test.describe("dashboard MVP-111 (datos ficticios)", () => {
-  const dashboardScenarios: Array<{ id: string; label: string; visible: RegExp | string }> = [
+  const dashboardScenarios: Array<{ id: string; label: string; visible: RegExp | string; hidden?: RegExp | string }> = [
     { id: "loading", label: "Cargando", visible: "Cargando documentos" },
     { id: "error", label: "Error técnico recuperable", visible: "No se pudieron cargar los documentos" },
     { id: "empty", label: "Lista vacía", visible: "Todavía no hay documentos" },
-    { id: "commercial", label: "Entrega comercial contradictoria (10 vs 12)", visible: "Fuentes: msg-0003, msg-0007" },
-    { id: "measurement", label: "Medición sin unidad", visible: "Fuentes: msg-0002" },
+    { id: "commercial", label: "Entrega comercial contradictoria (10 vs 12)", visible: "Entrega de maíz", hidden: "Fuentes: msg-0003, msg-0007" },
+    { id: "measurement", label: "Medición sin unidad", visible: "Medición de humedad", hidden: "Fuentes: msg-0002" },
     { id: "confirmations", label: "Confirmaciones pendientes", visible: "rev-confirmaciones-001-2" },
     { id: "finalized-pending", label: "Finalizada con sello HCS pendiente", visible: "rev-finalizado-pendiente-001-1" },
     { id: "finalized-registered", label: "Finalizada con sello HCS registrado", visible: "rev-finalizado-registrado-001-1" },
@@ -115,6 +117,7 @@ test.describe("dashboard MVP-111 (datos ficticios)", () => {
         await scenarioButton(page, scenario.label).click();
         await expect(scenarioButton(page, scenario.label)).toHaveAttribute("aria-pressed", "true");
         await expect(stage(page).getByText(scenario.visible).first()).toBeVisible();
+        if (scenario.hidden) await expect(stage(page).getByText(scenario.hidden)).toHaveCount(0);
         await expect(stage(page).getByRole("button", { name: "Crear documento" })).toBeVisible();
 
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -151,10 +154,10 @@ test.describe("dashboard MVP-111 (datos ficticios)", () => {
     await expect(page.getByRole("complementary").getByRole("listitem")).toHaveText(["onCreate()", 'onOpen("doc-finalizado-pendiente-001")']);
   });
 
-  test("la advertencia crítica no bloquea abrir ni crear", async ({ page }) => {
+  test("demo: la advertencia crítica no se muestra y no bloquea abrir ni crear", async ({ page }) => {
     await page.goto("/");
     await scenarioButton(page, "Entrega comercial contradictoria (10 vs 12)").click();
-    await expect(stage(page).getByText("Advertencia crítica:")).toBeVisible();
+    await expect(stage(page).getByText("Advertencia crítica:")).toHaveCount(0);
     await expect(stage(page).getByRole("button", { name: /^Abrir Entrega de maíz/ })).toBeEnabled();
     await expect(stage(page).getByRole("button", { name: "Crear documento" })).toBeEnabled();
   });
@@ -254,10 +257,10 @@ test.describe("snapshot MVP-112 (datos ficticios)", () => {
     await expect(scenarioButton(page, label)).toHaveAttribute("aria-pressed", "true");
   };
 
-  const captures: Array<{ id: string; label: string; visible: RegExp | string }> = [
-    { id: "critical-two-sources", label: "Contradicción crítica con dos fuentes (10 vs 12)", visible: "Fuente B: remito aportado: 12 toneladas" },
-    { id: "no-warnings", label: "Sin advertencias", visible: "Este snapshot no tiene advertencias registradas." },
-    { id: "unit-missing", label: "Medición sin unidad", visible: "Se registró una medición de 7 sin unidad indicada." },
+  const captures: Array<{ id: string; label: string; visible: RegExp | string; hidden?: RegExp | string }> = [
+    { id: "critical-two-sources", label: "Contradicción crítica con dos fuentes (10 vs 12)", visible: /El chat declara 10 toneladas y el remito aportado indica 12 toneladas/, hidden: "Fuente B: remito aportado: 12 toneladas" },
+    { id: "no-warnings", label: "Sin advertencias", visible: /acuerdan el flete del Tramo 5/, hidden: "Este snapshot no tiene advertencias registradas." },
+    { id: "unit-missing", label: "Medición sin unidad", visible: /La unidad no fue informada/, hidden: "Se registró una medición de 7 sin unidad indicada." },
     { id: "long-content", label: "Contenido extenso", visible: "Cláusula 8:" },
     { id: "empty", label: "Sin revisión congelada", visible: "Todavía no hay una revisión congelada." },
     { id: "loading", label: "Cargando", visible: "Cargando snapshot" },
@@ -271,6 +274,7 @@ test.describe("snapshot MVP-112 (datos ficticios)", () => {
         await openSnapshot(page, capture.label);
         await expect(stage(page).getByRole("region", { name: "Snapshot congelado" })).toBeVisible();
         await expect(stage(page).getByText(capture.visible).first()).toBeVisible();
+        if (capture.hidden) await expect(stage(page).getByText(capture.hidden)).toHaveCount(0);
         await expect(stage(page).getByTestId("scenario-json")).toHaveCount(0);
 
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -283,11 +287,12 @@ test.describe("snapshot MVP-112 (datos ficticios)", () => {
     }
   }
 
-  test("crítica: ambas fuentes visibles y ninguna acción de confirmar, rechazar, congelar ni finalizar", async ({ page }) => {
+  test("demo: la crítica y sus fuentes no se muestran y no hay acción de confirmar, rechazar, congelar ni finalizar", async ({ page }) => {
     await openSnapshot(page, "Contradicción crítica con dos fuentes (10 vs 12)");
-    await expect(stage(page).getByText("Crítica:")).toBeVisible();
-    await expect(stage(page).getByText("Fuente A: mensaje del autor: 10 toneladas")).toBeVisible();
-    await expect(stage(page).getByText("Fuente B: remito aportado: 12 toneladas")).toBeVisible();
+    await expect(stage(page).getByText("Crítica:")).toHaveCount(0);
+    await expect(stage(page).getByText("Fuente A: mensaje del autor: 10 toneladas")).toHaveCount(0);
+    await expect(stage(page).getByText("Fuente B: remito aportado: 12 toneladas")).toHaveCount(0);
+    await expect(stage(page).getByRole("heading", { name: "Advertencias" })).toHaveCount(0);
     await expect(stage(page).getByRole("button")).toHaveCount(0);
     await expect(stage(page)).not.toContainText("rev-comercial-001-1");
     await expect(stage(page)).not.toContainText("snap-comercial-001-1");
@@ -403,99 +408,30 @@ test.describe("landing MVP-114 (datos ficticios)", () => {
     await scenarioButton(page, label).click();
     await expect(scenarioButton(page, label)).toHaveAttribute("aria-pressed", "true");
   };
-  const nav = (page: Page) => stage(page).getByRole("navigation", { name: "Principal" });
+  const header = (page: Page) => stage(page).locator("header").first();
   const overflowOf = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
   const landingCases = [
-    { id: "public", label: "Visitante", action: "Crear cuenta", link: "Ingresar" },
-    { id: "signed-in", label: "Con sesión", action: "Ir a mis documentos", link: "Mis documentos" },
+    { id: "public", label: "Visitante", action: "Crear cuenta" },
+    { id: "signed-in", label: "Con sesión", action: "Ir a mis documentos" },
   ];
 
   for (const scenario of landingCases) {
-    test(`360px · «${scenario.label}» menú cerrado y abierto, sin desbordamiento`, async ({ page }, testInfo) => {
-      await page.setViewportSize({ width: 360, height: 900 });
-      await openLanding(page, scenario.label);
-      await expect(stage(page).getByTestId("scenario-json")).toHaveCount(0);
-      await expect(stage(page).getByRole("link", { name: scenario.action })).toBeVisible();
-      const toggle = nav(page).getByRole("button", { name: "Menú" });
-      await expect(toggle).toBeVisible();
-      await expect(toggle).toHaveAttribute("aria-expanded", "false");
-      await expect(nav(page).getByRole("link", { name: scenario.link })).toBeHidden();
-      expect(await overflowOf(page), "desbordamiento horizontal").toBeLessThanOrEqual(0);
-      const closed = testInfo.outputPath(`landing-${scenario.id}-360-menu-cerrado.png`);
-      await stage(page).screenshot({ path: closed });
-      await testInfo.attach(`landing-${scenario.id}-360-menu-cerrado`, { path: closed, contentType: "image/png" });
-
-      await toggle.click();
-      await expect(toggle).toHaveAttribute("aria-expanded", "true");
-      const menu = nav(page).getByRole("list", { name: "Menú" });
-      await expect(menu.getByRole("link", { name: scenario.link })).toBeVisible();
-      expect(await overflowOf(page), "desbordamiento horizontal con menú abierto").toBeLessThanOrEqual(0);
-      const opened = testInfo.outputPath(`landing-${scenario.id}-360-menu-abierto.png`);
-      await stage(page).screenshot({ path: opened });
-      await testInfo.attach(`landing-${scenario.id}-360-menu-abierto`, { path: opened, contentType: "image/png" });
-    });
-
-    test(`1280px · «${scenario.label}» enlaces en línea, sin botón de menú ni desbordamiento`, async ({ page }, testInfo) => {
-      // En escritorio no hay menú desplegable: la barra en línea muestra siempre todos los enlaces.
-      await page.setViewportSize({ width: 1280, height: 900 });
-      await openLanding(page, scenario.label);
-      await expect(nav(page).getByRole("button", { name: "Menú" })).toBeHidden();
-      await expect(nav(page).getByRole("list", { name: "Menú" })).toHaveCount(0);
-      await expect(nav(page).getByRole("link", { name: scenario.link })).toBeVisible();
-      await expect(stage(page).getByRole("region", { name: "Cómo funciona" }).getByRole("heading", { level: 3 })).toHaveCount(3);
-      expect(await overflowOf(page), "desbordamiento horizontal").toBeLessThanOrEqual(0);
-      const path = testInfo.outputPath(`landing-${scenario.id}-1280.png`);
-      await stage(page).screenshot({ path });
-      await testInfo.attach(`landing-${scenario.id}-1280`, { path, contentType: "image/png" });
-    });
+    for (const width of [360, 1280]) {
+      test(`${width}px · «${scenario.label}» encabezado sin atajos ni menú, sin desbordamiento`, async ({ page }, testInfo) => {
+        // Toda la información está en la página: el encabezado solo lleva la marca (la acción de sesión la pone la ruta real).
+        await page.setViewportSize({ width, height: 900 });
+        await openLanding(page, scenario.label);
+        await expect(stage(page).getByTestId("scenario-json")).toHaveCount(0);
+        await expect(stage(page).getByRole("link", { name: scenario.action })).toBeVisible();
+        await expect(header(page).getByRole("link")).toHaveCount(0);
+        await expect(header(page).getByRole("button", { name: "Menú" })).toHaveCount(0);
+        await expect(stage(page).getByRole("region", { name: "Cómo funciona" }).getByRole("heading", { level: 3 })).toHaveCount(3);
+        expect(await overflowOf(page), "desbordamiento horizontal").toBeLessThanOrEqual(0);
+        const path = testInfo.outputPath(`landing-${scenario.id}-${width}.png`);
+        await stage(page).screenshot({ path });
+        await testInfo.attach(`landing-${scenario.id}-${width}`, { path, contentType: "image/png" });
+      });
+    }
   }
-
-  test("teclado: Enter abre el menú, Tab recorre enlaces con foco visible, Escape cierra y devuelve el foco", async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 900 });
-    await openLanding(page, "Visitante");
-    const toggle = nav(page).getByRole("button", { name: "Menú" });
-    await toggle.focus();
-    await page.keyboard.press("Enter");
-    await expect(toggle).toHaveAttribute("aria-expanded", "true");
-
-    const menu = nav(page).getByRole("list", { name: "Menú" });
-    await page.keyboard.press("Tab");
-    const first = menu.getByRole("link", { name: "Cómo funciona" });
-    await expect(first).toBeFocused();
-    const ring = await first.evaluate((el) => {
-      const s = getComputedStyle(el);
-      return { outline: s.outlineStyle, shadow: s.boxShadow };
-    });
-    expect(ring.outline !== "none" || ring.shadow !== "none", "foco visible").toBe(true);
-    await page.keyboard.press("Tab");
-    await expect(menu.getByRole("link", { name: "Alcance" })).toBeFocused();
-
-    await page.keyboard.press("Escape");
-    await expect(menu).toHaveCount(0);
-    await expect(toggle).toHaveAttribute("aria-expanded", "false");
-    await expect(toggle).toBeFocused();
-
-    // Abrir y cerrar con el botón también deja el foco en «Menú».
-    await page.keyboard.press("Space");
-    await expect(toggle).toHaveAttribute("aria-expanded", "true");
-    await page.keyboard.press("Space");
-    await expect(toggle).toHaveAttribute("aria-expanded", "false");
-    await expect(toggle).toBeFocused();
-  });
-
-  test("ancla del menú: lleva a la sección, cierra el menú y no hace pedidos de red", async ({ page }) => {
-    const requests: string[] = [];
-    page.on("request", (request) => {
-      if (["fetch", "xhr"].includes(request.resourceType())) requests.push(request.url());
-    });
-    await page.setViewportSize({ width: 360, height: 900 });
-    await openLanding(page, "Visitante");
-    await nav(page).getByRole("button", { name: "Menú" }).click();
-    await nav(page).getByRole("list", { name: "Menú" }).getByRole("link", { name: "Alcance" }).click();
-    await expect(page).toHaveURL(/#alcance$/);
-    await expect(nav(page).getByRole("list", { name: "Menú" })).toHaveCount(0);
-    await expect(stage(page).getByRole("region", { name: "Alcance" })).toBeInViewport();
-    expect(requests, "peticiones fetch/xhr").toEqual([]);
-  });
 });

@@ -72,6 +72,16 @@
 - **Current State**: Parcialmente mitigado a nivel lógico y por propietario: las reservas vencidas no liberan cupo automáticamente, el claim irreversible previene la aceptación/adopción indebida, y la siguiente reserva del propietario limpia hasta 3 abandonos previos. CI run `38990325702` verificó los escenarios en base local.
 - **Remediation**: Para producción (post-hackathon / P1), implementar un cron seguro o función administrativa programada (e.g. pg_cron o edge function con rol de servicio autenticado) que barra reservas reclamadas o vencidas abandonadas respetando el protocolo terminal de claim, y establecer alarmas de capacidad física del bucket.
 
+### 9. Advertencias ocultas en todo el sistema para la demo del MVP
+
+- **Discovered/Recorded**: 2026-10-17
+- **Originating Plan**: `docs/exec-plans/active/mvp-demo-happy-path.md` (D1)
+- **Severity**: High (desvío de producto aceptado explícitamente por el usuario)
+- **Description**: Con `DEMO_HIDE_WARNINGS = true` (`src/lib/contracts/demo-mode.ts`) no se muestran advertencias, avisos de contraste ni estado de control en chat, snapshot, revisión, confirmación de terceros, dashboard ni PDF final, y el chat no invoca el contraste. Contradice PRD INV-02/INV-10 y §5 (advertencias visibles y registradas). Las advertencias del agente se siguen generando y persistiendo.
+- **Impact**: Participantes confirman y se publican PDFs sin ver dudas, omisiones o contradicciones detectadas. Los PDFs finalizados con el flag activo no incluyen la sección de advertencias y son inmutables (INV-05/18).
+- **Current State**: Activo para la demo.
+- **Remediation**: Poner `DEMO_HIDE_WARNINGS = false` tras la demo, rediseñar la presentación de advertencias para que sea clara y menos ruidosa, y revisar los documentos finalizados durante la demo.
+
 ---
 
 ## Resolved Technical Debt

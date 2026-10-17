@@ -9,10 +9,10 @@ import { SiteNavigation } from "./site-navigation";
  * recibe como texto (nunca HTML) y los enlaces como datos. No consulta sesión:
  * el escenario «con sesión» solo cambia los enlaces que llegan en `content`.
  */
-export function LandingPage({ content }: LandingViewProps) {
+export function LandingPage({ content, headerAction }: LandingViewProps) {
   return (
     <div className="flex flex-col">
-      <SiteNavigation brand={content.brand} links={content.navigation} />
+      <SiteNavigation brand={content.brand} action={headerAction} />
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 py-10">
         <section aria-labelledby="landing-title" className="flex flex-col items-start gap-4">

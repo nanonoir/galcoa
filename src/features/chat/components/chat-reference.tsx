@@ -16,6 +16,7 @@ import type {
   ChatMessageView,
   ChatViewProps,
 } from "@/features/chat/contracts/chat-view";
+import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 
 /**
  * Presentación del chat de un documento (MVP-054, REQ-03). Solo formatea lo
@@ -139,6 +140,7 @@ export function ChatReference({
   onRetryTurn,
   onAttach,
   onRetryAttachment,
+  actions,
 }: ChatViewProps) {
   const [draft, setDraft] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -156,7 +158,7 @@ export function ChatReference({
   const awaitingAck =
     sent !== null && draft === sent.content && state.messages.length === sent.count && state.turnError === sent.error;
   const canSend = !busy && !awaitingAck && !tooLong && draft.trim().length > 0;
-  const contrastLabel = contrastLabels[state.contrast];
+  const contrastLabel = DEMO_HIDE_WARNINGS ? null : contrastLabels[state.contrast];
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -222,7 +224,7 @@ export function ChatReference({
         <Alert role="status">
           <FileText aria-hidden="true" />
           <AlertTitle>Borrador «{state.draft.title}» actualizado (revisión {state.draft.draftRevision})</AlertTitle>
-          {state.draft.warnings !== undefined || state.draft.notInformed !== undefined ? (
+          {!DEMO_HIDE_WARNINGS && (state.draft.warnings !== undefined || state.draft.notInformed !== undefined) ? (
             <AlertDescription>
               {state.draft.warnings !== undefined ? <p>Advertencias para revisar: {state.draft.warnings}. No bloquean el avance.</p> : null}
               {state.draft.notInformed !== undefined ? <p>Datos «no informados»: {state.draft.notInformed}.</p> : null}
@@ -231,7 +233,7 @@ export function ChatReference({
         </Alert>
       ) : null}
 
-      {state.contrastFindings && state.contrastFindings.length > 0 ? (
+      {!DEMO_HIDE_WARNINGS && state.contrastFindings && state.contrastFindings.length > 0 ? (
         <Alert role="status">
           <Info aria-hidden="true" />
           <AlertTitle>Avisos del contraste (no bloquean)</AlertTitle>
@@ -259,6 +261,8 @@ export function ChatReference({
       <p role="status" className="text-sm text-muted-foreground">
         {contrastLabel}
       </p>
+
+      {actions}
 
       <form onSubmit={submit} className="flex flex-col gap-2">
         <Label htmlFor="chat-composer">Mensaje</Label>

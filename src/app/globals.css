@@ -7,8 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans, ui-sans-serif), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono, ui-monospace), monospace;
+  --font-sans: var(--font-space-grotesk, ui-sans-serif), system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono, ui-monospace), monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -158,6 +158,17 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Retícula editorial (design.md §4): líneas de 1px cada 96px, fijas y sin imágenes. */
+    background-image:
+      linear-gradient(to right, rgb(53 68 60 / 0.35) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(53 68 60 / 0.35) 1px, transparent 1px);
+    background-size: 96px 96px;
+    background-attachment: fixed;
+  }
+  @media print {
+    body {
+      background-image: none;
+    }
   }
   html {
     @apply font-sans;
@@ -165,14 +176,30 @@
 }
 
 @layer components {
-  /* Recorte del SVG original, sin modificar el archivo de marca suministrado. */
+  /* Logo para fondo oscuro: wordmark crema, isotipo verde y amarillo (relación 1232:312). */
   .galcoa-brand {
     display: inline-block;
-    width: 10rem;
-    height: 3rem;
+    width: 110px;
+    height: 28px;
     flex-shrink: 0;
-    background: #f5f4ec url('/galcoa.svg') no-repeat;
-    background-size: 10.86rem 8.145rem;
-    background-position: -0.5rem -2.7rem;
+    background: url('/galcoa-on-dark.svg') no-repeat center / contain;
+  }
+
+  /* Chip de sección: amarillo con texto verde, mono mayúsculas. */
+  .eyebrow {
+    @apply inline-block bg-primary px-2 py-1 font-mono text-xs font-medium tracking-wider text-primary-foreground uppercase;
+  }
+
+  /* Rótulo técnico y metadato. */
+  .tech-label {
+    @apply font-mono text-xs tracking-wider text-muted-foreground uppercase;
+  }
+
+  .page-title {
+    @apply text-4xl font-medium tracking-tight text-primary md:text-5xl;
+  }
+
+  .panel {
+    @apply border bg-card p-6;
   }
 }

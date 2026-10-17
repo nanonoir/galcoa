@@ -36,6 +36,13 @@ const writeResult = <T extends z.ZodType>(value: T) => z.discriminatedUnion("sta
   z.strictObject({ status: z.literal("not_available") }),
 ]);
 
+const renameResult = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("updated"), value: DocumentRecordSchema }),
+  z.strictObject({ status: z.literal("unchanged"), value: DocumentRecordSchema }),
+  z.strictObject({ status: z.literal("finalized") }),
+  z.strictObject({ status: z.literal("not_available") }),
+]);
+
 /** Errores SDK/SQL no atraviesan la frontera del dominio. Sin fallback en memoria. */
 export function createDocumentStore(context: DocumentStoreContext): DocumentStore {
   function requireActor(actor: string) {
@@ -65,6 +72,18 @@ export function createDocumentStore(context: DocumentStoreContext): DocumentStor
         p_title: input.title, p_key: input.idempotency.key, p_correlation_id: input.audit.correlationId,
       }));
       if ("value" in result) document(result.value);
+      return result;
+    },
+    async renameDocument(input) {
+      requireActor(input.ownerId);
+      requireActor(input.audit.actorScope);
+      const result = renameResult.parse(await call("rename_document", {
+        p_document_id: input.documentId, p_title: input.title, p_correlation_id: input.audit.correlationId,
+      }));
+      if ("value" in result) {
+        document(result.value);
+        if (result.value.documentId !== input.documentId) throw new Error("Respuesta de persistencia inválida");
+      }
       return result;
     },
     async listDocuments(ownerId) {

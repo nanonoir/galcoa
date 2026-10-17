@@ -12,13 +12,15 @@ export default async function PrivateLayout({ children }: { children: React.Reac
   await requirePageUser(verifiedRequestSession);
   return (
     <>
-      <header className="border-b">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <nav aria-label="Principal" className="flex items-center gap-4 text-sm font-medium">
+      <header className="h-16 border-b">
+        <div className="mx-auto flex h-full w-full max-w-6xl items-stretch justify-between gap-4 pl-4">
+          <nav aria-label="Principal" className="flex items-center gap-4">
             <Link href="/" className="galcoa-brand"><span className="sr-only">GALCOA+</span></Link>
-            <Link href="/dashboard" className="underline-offset-4 hover:underline">Mis documentos</Link>
+            <span aria-hidden="true" className="tech-label hidden sm:inline">Hedera · Testnet</span>
+            <span aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
+            <Link href="/dashboard" className="tech-label text-foreground underline-offset-4 hover:underline">Mis documentos</Link>
           </nav>
-          <LogoutButton />
+          <LogoutButton className="h-full rounded-none border-0 bg-primary px-6 font-mono text-xs tracking-wider text-primary-foreground uppercase hover:bg-primary/90" />
         </div>
       </header>
       {children}

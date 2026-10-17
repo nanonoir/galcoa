@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DashboardViewProps } from "@/features/dashboard/contracts/dashboard-view";
+import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 import type {
   ConfirmationStatus,
   ControlStatus,
@@ -87,7 +88,7 @@ function countLabel(count: number, singular: string, plural: string) {
 function Dimension({ name, value, tone = "neutral" }: { name: string; value: string; tone?: Tone }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-lg bg-muted/40 p-2">
-      <dt className="text-xs text-muted-foreground">{name}</dt>
+      <dt className="tech-label">{name}</dt>
       <dd className="min-w-0">
         <Badge
           variant={tone === "attention" ? "destructive" : "outline"}
@@ -144,7 +145,7 @@ function DocumentItem({
               <span className="min-w-0">{document.title}</span>
             </h3>
           </CardTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="tech-label">
             Actualizado <time dateTime={document.updatedAt}>{formatDate(document.updatedAt)}</time>
           </p>
           <p className="text-xs break-all text-muted-foreground">
@@ -166,18 +167,20 @@ function DocumentItem({
           {/* Cuatro dimensiones independientes (PRD §5): ninguna se deriva de otra. */}
           <dl aria-label={`Estado de ${document.title}`} className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 md:grid-cols-4">
             <Dimension name="Documento" value={documentStatusLabels[document.documentStatus]} />
-            <Dimension
-              name="Control"
-              value={controlStatusLabels[document.controlStatus]}
-              tone={controlTones[document.controlStatus]}
-            />
+            {!DEMO_HIDE_WARNINGS && (
+              <Dimension
+                name="Control"
+                value={controlStatusLabels[document.controlStatus]}
+                tone={controlTones[document.controlStatus]}
+              />
+            )}
             <Dimension
               name="Confirmaciones"
               value={document.confirmationStatus ? confirmationStatusLabels[document.confirmationStatus] : NO_FROZEN_REVISION}
             />
             <Dimension name="Sello HCS" value={hcsStatusLabels[document.hcsStatus]} />
           </dl>
-          {document.warnings.length > 0 && (
+          {!DEMO_HIDE_WARNINGS && document.warnings.length > 0 && (
             <section aria-label={`Advertencias de ${document.title}`} className="flex flex-col gap-2">
               <p className="text-xs text-muted-foreground">
                 {countLabel(document.warnings.length, "advertencia", "advertencias")}. Informativas: no bloquean confirmar ni finalizar.
@@ -213,7 +216,7 @@ export function DashboardReference({ state, onCreate, onOpen, onRetry }: Dashboa
           <h2 id="dashboard-reference-title" className="text-lg font-semibold">
             Documentos
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="tech-label">
             {state.status === "ready" && state.documents.length > 0
               ? `Historial de documentos · ${countLabel(state.documents.length, "documento", "documentos")}`
               : "Historial de documentos"}

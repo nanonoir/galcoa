@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 
 import { Document, Page, renderToBuffer, StyleSheet, Text, View } from "@react-pdf/renderer";
 
+import { OperationContentSchema, type OperationContent } from "@/lib/contracts/core";
+import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 import { FrozenOperationSchema, type FrozenOperation } from "@/lib/contracts/review";
 import type { Receipt } from "@/lib/contracts/version";
 
@@ -29,6 +31,7 @@ const styles = StyleSheet.create({
   h2: { fontSize: 13, marginTop: 14, marginBottom: 6, fontFamily: "Helvetica-Bold" },
   item: { marginBottom: 4 },
   warning: { marginBottom: 6, padding: 6, borderLeftWidth: 2, borderLeftColor: "#b45309" },
+  preview: { fontSize: 10, color: "#b45309", marginBottom: 10, fontFamily: "Helvetica-Bold" },
   footer: { position: "absolute", bottom: 24, left: 40, right: 40, fontSize: 8, color: "#777777" },
 });
 
@@ -80,22 +83,26 @@ function FinalDocument({ input }: { input: PdfInput }) {
           </View>
         )}
 
-        <Text style={styles.h2}>Advertencias informativas</Text>
-        {warnings.length === 0 ? (
-          <Text style={styles.item}>No se registraron advertencias para esta revisión.</Text>
-        ) : (
-          warnings.map((w) => (
-            <View key={w.id} style={styles.warning}>
-              <Text>
-                {w.severity === "critical" ? "Contradicción material" : "Advertencia"}: {w.message}
-              </Text>
-              {w.sources.map((s) => (
-                <Text key={s.alias} style={{ fontSize: 9, color: "#555555" }}>
-                  {s.alias}: {s.description}
-                </Text>
-              ))}
-            </View>
-          ))
+        {!DEMO_HIDE_WARNINGS && (
+          <View>
+            <Text style={styles.h2}>Advertencias informativas</Text>
+            {warnings.length === 0 ? (
+              <Text style={styles.item}>No se registraron advertencias para esta revisión.</Text>
+            ) : (
+              warnings.map((w) => (
+                <View key={w.id} style={styles.warning}>
+                  <Text>
+                    {w.severity === "critical" ? "Contradicción material" : "Advertencia"}: {w.message}
+                  </Text>
+                  {w.sources.map((s) => (
+                    <Text key={s.alias} style={{ fontSize: 9, color: "#555555" }}>
+                      {s.alias}: {s.description}
+                    </Text>
+                  ))}
+                </View>
+              ))
+            )}
+          </View>
         )}
 
         <Text style={styles.footer} fixed>
@@ -122,6 +129,49 @@ function FinalDocument({ input }: { input: PdfInput }) {
       </Page>
     </Document>
   );
+}
+
+export const PREVIEW_MARK = "Vista previa — no es la versión final";
+
+/**
+ * Vista previa del borrador vigente: efímera. Sin constancias, sin advertencias, sin hash ni sello;
+ * lleva la marca de vista previa en cada página. Los bytes del PDF final no dependen de este componente.
+ */
+function PreviewDocument({ operation }: { operation: OperationContent }) {
+  return (
+    <Document title={`${PREVIEW_MARK}: ${operation.title}`} author="GALCOA+" creator={RENDERER_VERSION} producer={RENDERER_VERSION}>
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.preview} fixed>
+          {PREVIEW_MARK}
+        </Text>
+        <Text style={styles.title}>{operation.title}</Text>
+        <Text style={styles.h2}>Operación acordada</Text>
+        {operation.body.split(/\r?\n/).map((paragraph, i) => (
+          <Text key={i} style={styles.item}>
+            {paragraph}
+          </Text>
+        ))}
+        {operation.corrections.length > 0 && (
+          <View>
+            <Text style={styles.h2}>Correcciones de forma aplicadas</Text>
+            {operation.corrections.map((c, i) => (
+              <Text key={i} style={styles.item}>
+                • {c}
+              </Text>
+            ))}
+          </View>
+        )}
+        <Text style={styles.footer} fixed>
+          {PREVIEW_MARK}. Borrador sin confirmaciones ni huella registrada.
+        </Text>
+      </Page>
+    </Document>
+  );
+}
+
+/** Bytes de la vista previa; no se persiste ni se hashea. */
+export async function renderPreviewPdf(operation: OperationContent): Promise<Uint8Array> {
+  return new Uint8Array(await renderToBuffer(<PreviewDocument operation={OperationContentSchema.parse(operation)} />));
 }
 
 /** Bytes del PDF final con su hash y longitud, listos para staging. */

@@ -19,6 +19,7 @@ const authenticated: SessionCheck = { status: "authenticated", user: { id: owner
 function setup(session: SessionCheck = authenticated) {
   const store = {
     createDocument: vi.fn(async () => ({ status: "created", value: record } as const)),
+    renameDocument: vi.fn(async () => ({ status: "updated", value: { ...record, title: "Nuevo" } } as const)),
     listDocuments: vi.fn(async () => [record]), getDocument: vi.fn(async () => record),
     appendMessage: vi.fn(async () => ({ status: "created", value: message } as const)),
     listMessages: vi.fn(async () => [message]), appendAuditEvent: vi.fn(async () => "created" as const),
@@ -33,6 +34,12 @@ function post(body: unknown, origin: string | null = "https://galcoa.test") {
   }, body: JSON.stringify(body) });
 }
 
+function patch(body: unknown, origin: string | null = "https://galcoa.test", contentType = "application/json") {
+  return new Request("https://galcoa.test/api/documents/x", { method: "PATCH", headers: {
+    "Content-Type": contentType, ...(origin ? { Origin: origin } : {}),
+  }, body: JSON.stringify(body) });
+}
+
 describe("HTTP documental real con store doble (no demuestra Postgres)", () => {
   it.each([
     ["42501", 401, "NO_SESSION", false],
@@ -40,7 +47,7 @@ describe("HTTP documental real con store doble (no demuestra Postgres)", () => {
     ["08006", 503, "TECHNICAL_FAILURE", true],
     ["unknown", 503, "TECHNICAL_FAILURE", true],
   ] as const)("RPC %s: HTTP %s sin filtrar diagnóstico", async (sqlstate, status, code, retryable) => {
-    for (const action of ["list", "get", "messages", "create", "append"] as const) {
+    for (const action of ["list", "get", "messages", "create", "append", "rename"] as const) {
       const raw = { code: sqlstate, message: "fake-secret-message", details: "fake-secret-details",
         hint: "fake-secret-hint", stack: "fake-secret-stack" };
       const store = createDocumentStore({ verifiedUserId: owner, session: {
@@ -48,7 +55,7 @@ describe("HTTP documental real con store doble (no demuestra Postgres)", () => {
       } });
       const deps = { getContext: async () => ({ session: authenticated, storeForUser: () => store }),
         trustedOrigins: () => ["https://galcoa.test"] };
-      const request = action === "create" ? post({ title: "Documento", idempotencyKey: "request_123" })
+      const request = action === "rename" ? patch({ title: "Nuevo" }) : action === "create" ? post({ title: "Documento", idempotencyKey: "request_123" })
         : action === "append" ? post({ content: "Original", declaredEventDate: { kind: "unknown" }, idempotencyKey: "request_123" })
           : new Request("https://galcoa.test");
       const response = await createDocumentHttpHandler(deps, action)(request, doc);
@@ -134,5 +141,55 @@ describe("HTTP documental real con store doble (no demuestra Postgres)", () => {
     const response = await createDocumentHttpHandler(deps, "list")(new Request("https://galcoa.test"));
     expect(response.status).toBe(503);
     expect(await response.text()).not.toContain("secreto");
+  });
+  describe("PATCH rename", () => {
+    it("renombra con usuario verificado y recorta el título", async () => {
+      const { deps, store } = setup();
+      const response = await createDocumentHttpHandler(deps, "rename")(patch({ title: "  Nuevo  " }), doc);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ schemaVersion: 1, outcome: "completed", result: { id: doc, title: "Nuevo" } });
+      expect(response.headers.get("cache-control")).toContain("no-store");
+      expect(store.renameDocument).toHaveBeenCalledWith(expect.objectContaining({
+        ownerId: owner, documentId: doc, title: "Nuevo", audit: expect.objectContaining({ actorScope: owner }),
+      }));
+    });
+    it.each([null, "https://evil.test"])("rechaza Origin %s antes de auth", async (origin) => {
+      const { deps, getContext } = setup();
+      expect((await createDocumentHttpHandler(deps, "rename")(patch({ title: "x" }, origin), doc)).status).toBe(403);
+      expect(getContext).not.toHaveBeenCalled();
+    });
+    it("solo acepta PATCH", async () => {
+      const { deps } = setup();
+      const response = await createDocumentHttpHandler(deps, "rename")(post({ title: "x" }), doc);
+      expect(response.status).toBe(405);
+      expect(response.headers.get("allow")).toBe("PATCH");
+    });
+    it.each([{}, { title: "" }, { title: "   " }, { title: "x".repeat(201) }, { title: "ok", ownerId: "otro" }])("rechaza body %j", async (body) => {
+      const { deps, store } = setup();
+      expect((await createDocumentHttpHandler(deps, "rename")(patch(body), doc)).status).toBe(400);
+      expect(store.renameDocument).not.toHaveBeenCalled();
+    });
+    it("exige JSON y UUID válido", async () => {
+      const { deps, store } = setup();
+      const handle = createDocumentHttpHandler(deps, "rename");
+      expect((await handle(patch({ title: "x" }, "https://galcoa.test", "text/plain"), doc)).status).toBe(400);
+      expect((await handle(patch({ title: "x" }), "invalid")).status).toBe(404);
+      expect(store.renameDocument).not.toHaveBeenCalled();
+    });
+    it("sin sesión no escribe", async () => {
+      const { deps, store } = setup({ status: "anonymous" });
+      expect((await createDocumentHttpHandler(deps, "rename")(patch({ title: "x" }), doc)).status).toBe(401);
+      expect(store.renameDocument).not.toHaveBeenCalled();
+    });
+    it("ajeno/inexistente: 404; finalizado: 409 DOCUMENT_FINALIZED", async () => {
+      const { deps, store } = setup();
+      const handle = createDocumentHttpHandler(deps, "rename");
+      store.renameDocument.mockResolvedValueOnce({ status: "not_available" } as never);
+      expect((await handle(patch({ title: "x" }), doc)).status).toBe(404);
+      store.renameDocument.mockResolvedValueOnce({ status: "finalized" } as never);
+      const response = await handle(patch({ title: "x" }), doc);
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ error: { code: "DOCUMENT_FINALIZED", retryable: false } });
+    });
   });
 });

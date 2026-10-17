@@ -66,8 +66,9 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
     : null;
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
-      <h1 className="text-2xl font-semibold tracking-tight">Revisión de «{result.value.title}»</h1>
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
+      <p className="eyebrow self-start">Revisión y confirmaciones</p>
+      <h1 className="page-title">Revisión de «{result.value.title}»</h1>
       {bundle || source ? (
         <ReviewContainer documentId={id} draftRevision={source ? source.draft.draftRevision : bundle!.revision.frozenFromDraftRevision} hcsStatus={hcsStatus} active={active} documentFinalized={result.value.documentStatus === "finalizado"} />
       ) : (

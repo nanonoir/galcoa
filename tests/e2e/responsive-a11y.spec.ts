@@ -89,14 +89,14 @@ for (const screen of SCREENS) {
   }
 }
 
-test("landing móvil: el menú se abre con teclado, Escape lo cierra y devuelve el foco", async ({ page }) => {
+test("landing móvil: encabezado sin menú ni atajos; «Ingresar» alcanzable con teclado", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/");
-  const toggle = page.getByRole("button", { name: /menú/i });
-  await toggle.focus();
-  await page.keyboard.press("Enter");
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  await page.keyboard.press("Escape");
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(toggle).toBeFocused();
+  const header = page.getByRole("banner");
+  await expect(header.getByRole("button", { name: /menú/i })).toHaveCount(0);
+  await expect(header.getByRole("link", { name: "Cómo funciona" })).toHaveCount(0);
+  const login = header.getByRole("link", { name: "Ingresar" });
+  await expect(login).toHaveAttribute("href", "/acceso");
+  await login.focus();
+  await expect(login).toBeFocused();
 });

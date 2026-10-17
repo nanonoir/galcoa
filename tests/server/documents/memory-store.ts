@@ -66,6 +66,18 @@ export function createMemoryStore(options: { now?: () => string } = {}) {
       });
     },
 
+    async renameDocument(input) {
+      if (failNext) throw ((failNext = false), new Error("base caída"));
+      const doc = documents.get(input.documentId);
+      if (!doc || doc.ownerId !== input.ownerId) return { status: "not_available" };
+      if (doc.documentStatus === "finalizado") return { status: "finalized" };
+      const title = input.title.trim();
+      if (doc.title === title) return { status: "unchanged", value: { ...doc } };
+      doc.title = title;
+      doc.updatedAt = now();
+      return { status: "updated", value: { ...doc } };
+    },
+
     async listDocuments(ownerId) {
       return [...documents.values()].filter((d) => d.ownerId === ownerId).map((d) => ({ ...d }));
     },

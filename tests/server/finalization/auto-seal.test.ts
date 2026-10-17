@@ -66,7 +66,10 @@ describe("publicación → sello automático durable (offline)", () => {
     const second = await t.request();
     const body = await second.json();
     expect(body).toMatchObject({ outcome: "published", operation: { phase: "published" }, seal: { status: "registrado" } });
-    expect(JSON.stringify(body)).not.toMatch(/fencing|versionId|signedBytes|transactionId|payloadHash/);
+    expect(JSON.stringify(body)).not.toMatch(/fencing|versionId|signedBytes|payloadHash/);
+    // Solo identificadores públicos y opacos del sello (INV-06); el transactionId vive únicamente dentro de `seal`.
+    expect(Object.keys(body.seal).sort()).toEqual(["consensusTimestamp", "reference", "sequenceNumber", "status", "topicId", "transactionId"]);
+    expect(JSON.stringify(body.operation)).not.toContain("transactionId");
     expect(second.headers.get("Cache-Control")).toContain("no-store");
     await t.request();
     expect(t.advance).toHaveBeenCalledTimes(1);

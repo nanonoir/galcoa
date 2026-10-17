@@ -35,7 +35,7 @@ export function NewPasswordContainer() {
 }
 
 /** Botón de cierre de sesión para las páginas privadas (las monta MVP-116). */
-export function LogoutButton() {
+export function LogoutButton({ className }: { className?: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   async function logout() {
@@ -48,7 +48,7 @@ export function LogoutButton() {
     }
   }
   return (
-    <Button type="button" variant="outline" disabled={pending} onClick={() => void logout()}>
+    <Button type="button" variant="outline" className={className} disabled={pending} onClick={() => void logout()}>
       Cerrar sesión
     </Button>
   );

@@ -370,7 +370,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
             </h2>
             <label className="flex min-h-11 items-center gap-3 text-sm">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} disabled={progress?.authorConfirmed} className="size-4" />
-              Revisé la operación y las advertencias, y confirmo esta versión.
+              Revisé la operación y confirmo esta versión.
             </label>
             <Button type="button" onClick={() => void confirmAsAuthor()} disabled={!agreed || busy || superseded || progress?.authorConfirmed} className="self-start">
               {progress?.authorConfirmed ? "Ya confirmaste" : "Confirmar como autor"}

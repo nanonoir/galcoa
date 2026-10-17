@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ChatContainer } from "./chat-container";
 
+// El interruptor de la demo se apaga aquí para cubrir la presentación de advertencias; el encendido está en *.demo.test.tsx.
+vi.mock("@/lib/contracts/demo-mode", () => ({ DEMO_HIDE_WARNINGS: false }));
+
 const upload = vi.hoisted(() => vi.fn());
 vi.mock("@/features/auth/containers/supabase-browser", () => ({ uploadReservedEvidence: upload }));
 const router = { replace: vi.fn(), refresh: vi.fn() };

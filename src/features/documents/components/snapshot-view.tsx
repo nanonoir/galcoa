@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SnapshotViewProps } from "@/features/documents/contracts/snapshot-view";
 import type { ConfirmationStatus, ControlStatus, DocumentStatus, HcsStatus } from "@/lib/contracts/document";
+import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 import type { ParticipantRole, SharedWarning } from "@/lib/contracts/review";
 
 /**
@@ -75,7 +76,7 @@ function countLabel(count: number, singular: string, plural: string) {
 function Dimension({ name, value, tone = "neutral" }: { name: string; value: string; tone?: Tone }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-lg bg-muted/40 p-2">
-      <dt className="text-xs text-muted-foreground">{name}</dt>
+      <dt className="tech-label">{name}</dt>
       <dd className="min-w-0">
         <Badge
           variant={tone === "attention" ? "destructive" : "outline"}
@@ -192,15 +193,17 @@ function ReadySnapshot({ state }: { state: Extract<SnapshotViewProps["state"], {
           {/* Cuatro dimensiones independientes (PRD §5): ninguna se deriva de otra. */}
           <dl aria-label="Estado del snapshot" className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 md:grid-cols-4">
             <Dimension name="Documento" value={documentStatusLabels[state.documentStatus]} />
-            <Dimension
-              name="Control"
-              value={controlStatusLabels[state.controlStatus]}
-              tone={state.controlStatus === "contradiccion_critica" ? "attention" : "neutral"}
-            />
+            {!DEMO_HIDE_WARNINGS && (
+              <Dimension
+                name="Control"
+                value={controlStatusLabels[state.controlStatus]}
+                tone={state.controlStatus === "contradiccion_critica" ? "attention" : "neutral"}
+              />
+            )}
             <Dimension name="Confirmaciones" value={confirmationLabel(confirmationStatus)} />
             <Dimension name="Sello HCS" value={hcsStatusLabels[state.hcsStatus]} />
           </dl>
-          {state.controlStatus === "sin_inconsistencias_criticas_detectadas" && (
+          {!DEMO_HIDE_WARNINGS && state.controlStatus === "sin_inconsistencias_criticas_detectadas" && (
             <p className="text-xs text-muted-foreground">
               Que no se hayan detectado inconsistencias críticas no significa que los datos estén corroborados.
             </p>
@@ -234,26 +237,28 @@ function ReadySnapshot({ state }: { state: Extract<SnapshotViewProps["state"], {
         </p>
       </section>
 
-      <section aria-labelledby="snapshot-warnings-title" className="flex min-w-0 flex-col gap-2">
-        <h3 id="snapshot-warnings-title" className="text-base font-semibold">
-          Advertencias
-        </h3>
-        {warnings.length > 0 ? (
-          <>
-            <p className="text-xs text-muted-foreground">
-              {countLabel(warnings.length, "advertencia", "advertencias")}. Informativas: no bloquean confirmar ni
-              finalizar.
-            </p>
-            <ul className="flex flex-col gap-2 text-sm">
-              {warnings.map((warning) => (
-                <WarningCard key={warning.id} warning={warning} />
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">Este snapshot no tiene advertencias registradas.</p>
-        )}
-      </section>
+      {!DEMO_HIDE_WARNINGS && (
+        <section aria-labelledby="snapshot-warnings-title" className="flex min-w-0 flex-col gap-2">
+          <h3 id="snapshot-warnings-title" className="text-base font-semibold">
+            Advertencias
+          </h3>
+          {warnings.length > 0 ? (
+            <>
+              <p className="text-xs text-muted-foreground">
+                {countLabel(warnings.length, "advertencia", "advertencias")}. Informativas: no bloquean confirmar ni
+                finalizar.
+              </p>
+              <ul className="flex flex-col gap-2 text-sm">
+                {warnings.map((warning) => (
+                  <WarningCard key={warning.id} warning={warning} />
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Este snapshot no tiene advertencias registradas.</p>
+          )}
+        </section>
+      )}
     </div>
   );
 }
