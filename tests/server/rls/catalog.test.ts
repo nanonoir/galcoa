@@ -33,6 +33,7 @@ describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
       "20261016002300",
       "20261016002500",
       "20261016002501",
+      "20261016002502",
     ]);
   });
 
@@ -100,7 +101,7 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
       await column(
         `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' order by p.proname;`,
       ),
-    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "attach_chat_turn_message", "claim_chat_turn", "claim_evidence_discard", "close_chat_turn", "complete_chat_turn", "confirm_as_author", "create_document", "discard_evidence_reservation", "freeze_revision", "get_active_revision", "get_document", "get_evidence", "get_freeze_source", "get_revision_state", "hit_rate_limit", "issue_invitation", "list_documents", "list_evidence_discards", "list_evidence_extractions", "list_evidences", "list_messages", "read_invitation", "reserve_evidence", "respond_invitation", "revoke_invitation", "stage_chat_turn_proposal"]);
+    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "attach_chat_turn_message", "claim_chat_turn", "claim_evidence_discard", "close_chat_turn", "complete_chat_turn", "confirm_as_author", "create_document", "discard_evidence_reservation", "freeze_revision", "get_active_revision", "get_document", "get_evidence", "get_freeze_source", "get_revision_state", "hit_rate_limit", "issue_invitation", "list_documents", "list_evidence_discards", "list_evidence_extractions", "list_evidences", "list_messages", "persist_contrast_report", "read_invitation", "reserve_evidence", "respond_invitation", "revoke_invitation", "stage_chat_turn_proposal"]);
   });
 
   it("toda función propia fija `search_path` y ninguna es ejecutable por PUBLIC ni anon", async () => {

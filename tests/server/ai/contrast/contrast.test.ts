@@ -11,6 +11,7 @@ import {
   createContrastService,
   TEXT_ONLY_LIMITATION,
   VISUAL_LIMITATION,
+  CONTRAST_STORAGE_LIMITS as LIMITS,
   type ContrastOutput,
 } from "@/lib/ai/groq/contrast";
 import { createGroqStructuredPort, type GroqChatClient } from "@/lib/ai/groq/structured";
@@ -229,6 +230,70 @@ describe("MVP-053 · contraste sin veto", () => {
     const r = await t.service.contrastDraft({ documentId: t.documentId });
     expect(r).toMatchObject({ ok: false, error: { code: "AI_INVALID_OUTPUT", retryable: true } });
     expect(t.reports.saved).toHaveLength(0);
+  });
+
+  const critical = (message: string, sourceRefs = ["m1"]) => ({ message, severity: "critical" as const, sourceRefs });
+  const warnings = (n: number) => Array.from({ length: n }, () => ({ message: "x", severity: "warning" as const, sourceRefs: ["m1"] }));
+
+  it.each([
+    ["mensaje en el límite", { result: "contradiccion_critica", findings: [critical("a".repeat(LIMITS.maxMessageChars))] }],
+    ["hallazgos en el límite", { result: "con_advertencias", findings: warnings(LIMITS.maxFindings) }],
+    ["refs en el límite", { result: "contradiccion_critica", findings: [critical("x", Array(LIMITS.maxSourceRefs).fill("m1"))] }],
+  ])("%s: persiste (crítico legítimo no se bloquea)", async (_, output) => {
+    const t = await setup(output as ContrastOutput);
+    expect((await t.service.contrastDraft({ documentId: t.documentId })).ok).toBe(true);
+    expect(t.reports.saved).toHaveLength(1);
+    expect(t.reports.saved[0].findings).toEqual(output.findings);
+  });
+
+  it.each([
+    ["mensaje sobre el límite", { result: "contradiccion_critica", findings: [critical("a".repeat(LIMITS.maxMessageChars + 1))] }],
+    ["hallazgos sobre el límite", { result: "con_advertencias", findings: warnings(LIMITS.maxFindings + 1) }],
+    ["refs sobre el límite", { result: "contradiccion_critica", findings: [critical("x", Array(LIMITS.maxSourceRefs + 1).fill("m1"))] }],
+  ])("%s: AI_INVALID_OUTPUT sin llamar a store", async (_, output) => {
+    const t = await setup(output as ContrastOutput);
+    const r = await t.service.contrastDraft({ documentId: t.documentId });
+    expect(r).toMatchObject({ ok: false, error: { code: "AI_INVALID_OUTPUT", stage: "ia" } });
+    expect(t.reports.saved).toHaveLength(0);
+  });
+
+  describe("tope de entradas (p_inputs ≤ 401, incluye b1)", () => {
+    const inputsSetup = (messageCount: number, output: ContrastOutput) => {
+      const draft: Draft = {
+        draftId: "draft-1", documentId: "doc-1", draftRevision: 1,
+        content: { title: "T", body: "B", corrections: [] }, updatedAt: "2026-10-16T15:00:00Z",
+      };
+      const reports = memoryReports(draft);
+      const g = groqPort({ content: JSON.stringify(output) });
+      const messages = {
+        listMessages: async () => ({
+          ok: true as const,
+          value: Array.from({ length: messageCount }, (_, i) => ({ messageId: `msg-${i + 1}`, content: `texto ${i + 1}` }) as never),
+        }),
+      };
+      const service = createContrastService({ session: { currentUserId: async () => ANA }, messages, store: reports.store, groq: g.port });
+      return { service, reports, g };
+    };
+    const allRefs = (n: number) => [...Array.from({ length: n }, (_, i) => `m${i + 1}`), "b1"];
+
+    it("401 entradas (400 mensajes + b1): llama a Groq y conserva todas las refs", async () => {
+      const refs = allRefs(400);
+      const t = inputsSetup(400, { result: "contradiccion_critica", findings: [{ message: "x", severity: "critical", sourceRefs: refs }] });
+      expect((await t.service.contrastDraft({ documentId: "doc-1" })).ok).toBe(true);
+      expect(t.g.calls).toHaveLength(1);
+      expect(t.reports.saved[0].inputs).toHaveLength(LIMITS.maxInputs);
+      expect(t.reports.saved[0].inputs.at(-1)).toMatchObject({ ref: "b1", kind: "borrador" });
+      expect(t.reports.saved[0].findings[0].sourceRefs).toEqual(refs);
+    });
+
+    it("402 entradas: INPUT_TOO_LARGE sin llamar a Groq ni al store", async () => {
+      const t = inputsSetup(401, { result: "sin_inconsistencias_criticas_detectadas", findings: [] });
+      expect(await t.service.contrastDraft({ documentId: "doc-1" })).toMatchObject({
+        ok: false, error: { code: "INPUT_TOO_LARGE", stage: "validacion", retryable: false },
+      });
+      expect(t.g.calls).toHaveLength(0);
+      expect(t.reports.saved).toHaveLength(0);
+    });
   });
 
   it("configuración ausente o falla del proveedor: error técnico sin reporte fabricado", async () => {

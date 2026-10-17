@@ -29,6 +29,13 @@ export const TEXT_ONLY_LIMITATION =
 export const VISUAL_LIMITATION =
   "Hay texto extraído por Gemini de PDF o imágenes: Groq no aporta verificación visual independiente.";
 
+/**
+ * Límites que `persist_contrast_report` (02502) aplica a la salida del modelo. Se validan aquí antes de
+ * persistir: una salida que los excede es técnicamente inválida y no se trunca ni se descarta en silencio.
+ * (Las limitaciones son constantes internas; no vienen del modelo.) No van en el JSON Schema enviado a Groq.
+ */
+export const CONTRAST_STORAGE_LIMITS = { maxFindings: 200, maxMessageChars: 4000, maxSourceRefs: 401, maxInputs: 401 } as const;
+
 const Ref = z.string().regex(/^(?:m|e|b)\d{1,3}$/);
 
 export const ContrastOutputSchema = z.strictObject({
@@ -109,6 +116,9 @@ export function createContrastService(deps: ContrastDeps) {
       );
       add("b1", "borrador", draft.draftId, `${draft.content.title}\n\n${draft.content.body}`);
 
+      // `p_inputs` de la RPC admite como máximo 401 entradas (incluye b1). Se rechaza sin truncar ni omitir fuentes.
+      if (inputs.length > CONTRAST_STORAGE_LIMITS.maxInputs) return fail("INPUT_TOO_LARGE", "validacion", false, correlationId);
+
       const generated = await deps.groq.generateStructured({
         instructions: CONTRAST_INSTRUCTIONS_V1,
         sources,
@@ -122,8 +132,13 @@ export function createContrastService(deps: ContrastDeps) {
       const output = generated.output;
       const sent = new Set(inputs.map((i) => i.ref));
       const refsValid = output.findings.every((f) => f.sourceRefs.every((r) => sent.has(r)));
-      if (!refsValid || output.result !== expectedResult(output.findings)) {
-        // Referencia inventada o resultado incoherente: error técnico, sin reporte.
+      const withinLimits =
+        output.findings.length <= CONTRAST_STORAGE_LIMITS.maxFindings &&
+        output.findings.every(
+          (f) => f.message.length <= CONTRAST_STORAGE_LIMITS.maxMessageChars && f.sourceRefs.length <= CONTRAST_STORAGE_LIMITS.maxSourceRefs,
+        );
+      if (!refsValid || !withinLimits || output.result !== expectedResult(output.findings)) {
+        // Referencia inventada, resultado incoherente o fuera de los límites de almacenamiento: error técnico, sin reporte.
         return fail("AI_INVALID_OUTPUT", "ia", true, correlationId);
       }
 
