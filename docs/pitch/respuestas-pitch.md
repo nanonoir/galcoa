@@ -90,15 +90,38 @@ Planillas y papel (baratos, sin rastro); sistemas de gestión de lotes/ERP (caro
 **Validación (sin inventar):** experiencia directa del integrante + feedback de mentores + consultas a contactos del rubro. Cuando lleguen respuestas, citarlas con permiso y decir «N de M consultados». Mientras tanto: «validamos el problema desde adentro; la validación con clientes es el próximo paso».
 
 ## 6. Caso de uso agro (pendiente de Gastón)
-Preguntas para Gastón, para cerrar un caso concreto de **cultivos que se auditan**:
-1. ¿Qué cultivo y qué auditoría (BPA, GACP, exportación, orgánico)?
-2. ¿Qué registra el productor por lote o campaña (siembra, insumos, aplicaciones, cosecha, traslado)?
-3. ¿Quién confirma esos registros y quién audita?
-4. ¿Qué evidencia se adjunta (fotos, remitos, análisis)?
-5. ¿Qué es lo que más se pierde o falla en la auditoría?
-6. ¿Qué dato mostraríamos en la demo (un lote de productor a comprador)?
+El agro incluye **cultivos, animales y productos derivados**. Preguntas para Gastón, para cerrar un caso concreto:
 
-Hasta que responda, el caso se presenta como **«lote de cultivo: productor → comprador»**, marcado como caso ilustrativo.
+**A. Elegir el caso**
+1. ¿Qué rubro: cultivos, ganadería, aves, cerdos, apicultura, acuicultura, lácteos u otro?
+2. ¿Qué auditoría o exigencia aplica (BPA/BPG, GACP, exportación, orgánico, SENASA, trazabilidad ganadera, cadena de frío)?
+3. ¿Quién audita y qué le piden mostrar?
+
+**B. Cultivos**
+4. ¿Qué registra el productor por lote o campaña (siembra, insumos, aplicaciones, riego, cosecha, poscosecha, traslado)?
+5. ¿Qué evidencia se adjunta (fotos, remitos, análisis de laboratorio, recetas de agroquímicos)?
+
+**C. Animales**
+6. ¿Qué se registra por animal o por lote (identificación, nacimiento, movimientos, sanidad, vacunas, tratamientos y tiempos de espera, alimentación, peso, faena)?
+7. ¿Qué documentos acompañan el traslado o la venta (guías, certificados sanitarios, remitos)?
+8. ¿Hay medicamentos veterinarios o antibióticos que deban quedar registrados?
+
+**D. Cadena y partes**
+9. ¿Quiénes son las partes que no confían del todo entre sí (productor, transportista, frigorífico o acopio, comprador, auditor)?
+10. ¿Quién confirma cada registro y en qué momento?
+11. ¿Hay cadena de frío o condiciones (temperatura, tiempos) que haya que probar?
+
+**E. Dolor y valor**
+12. ¿Qué es lo que más falla o más se pierde en la auditoría (registros faltantes, cargados tarde, discrepancias, lotes rechazados)?
+13. ¿Cuánto tiempo y costo implica hoy preparar la documentación?
+14. ¿Cómo se registra hoy (papel, planillas, WhatsApp, sistema propio)?
+
+**F. Demo y validación**
+15. ¿Qué lote o animal mostraríamos en la demo, de productor a comprador?
+16. ¿Conoce 2 o 3 productores o empresas a quienes consultar rápido, para tener validación real?
+17. ¿Quién decidiría la compra de una herramienta así y cuánto estaría dispuesto a pagar?
+
+Hasta que responda, el caso se presenta como **«lote de producción agropecuaria (cultivo o animal): productor → comprador»**, marcado como ilustrativo.
 
 ## 7. Bloque para el README (Hedera)
 > ### Uso de Hedera
