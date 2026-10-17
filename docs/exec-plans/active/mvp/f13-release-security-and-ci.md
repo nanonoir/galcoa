@@ -127,3 +127,13 @@ Reconciliación documental consolidada con UI: 73 filas (28 completadas, 27 en c
 ### Seguimiento
 
 MVP-130 y su inventario de endpoints/seguridad transversal siguen pendientes: #35 abierta, sin cierre automático. MVP-121 (15 casos/cuatro selecciones), MVP-134 y despliegue conservan sus propias validaciones. Sin llamadas a DB o proveedores desde esta reconciliación documental; no se cambia código, paquetes, Auth, executor ni responsabilidades de Facu.
+
+## Corrección acotada de cobertura CI — consolidación, etapa A
+
+La auditoría posterior encontró dos suites ausentes del lanzador: persistencia de evidencias y E2E real de confirmaciones. La aceptación histórica de MVP-131 arriba no acredita estas regresiones nuevas. Esta corrección las agrega en serie después de rutas (evidencias) y Auth (confirmaciones), sin cambiar `validate`, resets, SQL, producto ni dependencias. Ante cualquier fallo no se ejecutan suites posteriores; stdout/stderr siguen privados y solo se informan estado, señal y timeout. Limpieza limitada al proyecto del runner.
+
+La suite de evidencias deja de contar ocho migraciones: enumera versiones de los archivos SQL del repositorio y exige igualdad exacta con el historial ordenado de la DB, además de conjunto no vacío y sin versiones duplicadas. No permite versiones faltantes, adicionales o sustituidas con igual cantidad.
+
+Validación sin Docker: `node --test scripts/ci-local.test.mjs` 9/9 en Windows, repetidos tras el ajuste de diagnóstico (CLI dobles): orden exacto, reset forzado, fallo cerrado en suites previas/nuevas/Auth, privacidad, script ausente, runner/modo inválidos y parada propia. Sintaxis Node, ESLint focal, `npm run typecheck` y `git diff --check` correctos. `npm ci --ignore-scripts` correcto, nueve vulnerabilidades high del lockfile preexistente; sin actualización de paquetes.
+
+PR [#92](https://github.com/nanonoir/galcoa/pull/92), implementación `eeaae51`: [run Linux 38985725212](https://github.com/nanonoir/galcoa/actions/runs/38985725212) **success**. `validate` completo 3m51s; `local-server-db` 6m16s con seis suites Vitest, Auth real y E2E real de confirmaciones en serie, arranque y parada propia exitosos. La salida privada sigue suprimida: no se atribuyen conteos remotos no publicados. No se inició ni reseteó la pila local reservada. Sin merge/autocierre; MVP-130 permanece pendiente y #35 abierta. Esta evidencia valida la ampliación CI, no seguridad transversal ni integración en develop.

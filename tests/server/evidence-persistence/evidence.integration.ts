@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID, createHash } from "node:crypto";
+import { readdirSync } from "node:fs";
 import { Client } from "pg";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 import { createExecutorRpcFactory } from "@/lib/documents/persistence/executor-rpc";
@@ -69,8 +70,14 @@ async function upload(e: StoredEvidence, content = bytes) {
   return a.client.storage.from("evidences-private").upload(e.privateLocation, content, { contentType: e.mimeType, upsert: false });
 }
 
-it("ocho migraciones y rol interno mínimo; autor/anon/service_role no falsifican aceptación", async () => {
-  expect(await psqlOk("select count(*) from supabase_migrations.schema_migrations;")).toEqual([["8"]]);
+it("versiones de migraciones coinciden con el repositorio y rol interno mínimo; autor/anon/service_role no falsifican aceptación", async () => {
+  const versions = readdirSync(new URL("../../../supabase/migrations/", import.meta.url))
+    .filter((name) => /^\d+_.+\.sql$/.test(name))
+    .map((name) => name.slice(0, name.indexOf("_")))
+    .sort();
+  expect(versions.length).toBeGreaterThan(0);
+  expect(new Set(versions).size).toBe(versions.length);
+  expect(await psqlOk("select version from supabase_migrations.schema_migrations order by version;")).toEqual(versions.map((version) => [version]));
   for (const role of ["anon", "authenticated", "service_role"]) {
     expect(await psqlOk(`select has_function_privilege('${role}','public.accept_evidence(uuid,uuid,text)','EXECUTE'),has_function_privilege('${role}','public.append_evidence_extraction(uuid,uuid,uuid,text,text,text,integer[],text,jsonb,text)','EXECUTE');`)).toEqual([["f", "f"]]);
   }

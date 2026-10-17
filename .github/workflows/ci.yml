@@ -34,7 +34,7 @@ jobs:
         run: node --test scripts/ci-local.test.mjs
       - name: Start ephemeral local Supabase (private output)
         run: node scripts/ci-local.mjs start
-      - name: Serial RLS, server, persistence, executor, routes and real Auth
+      - name: Serial RLS, server, persistence, executor, routes, evidence, Auth and confirmations
         run: node scripts/ci-local.mjs test
       - name: Stop only this runner's local project
         if: always()
