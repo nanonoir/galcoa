@@ -43,7 +43,7 @@ export type ReserveEvidenceInput = {
   declaredEventDate: DeclaredEventDate;
   /**
    * Topes acumulados por documento. La RPC los comprueba bajo lock del
-   * documento, contando reservas vigentes y aceptadas: dos cargas simultáneas
+   * documento, contando todas las reservas retenidas y aceptadas: dos cargas simultáneas
    * no pueden excederlos.
    */
   limits: { maxFiles: number; maxTotalBytes: number };

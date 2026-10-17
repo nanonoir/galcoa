@@ -19,6 +19,7 @@ El usuario confirmó que trabaja solo. Nahuel es el único ejecutor y dueño de 
 
 - Reutilizar servicios existentes; agregar adaptadores, RPC, composición y UI faltantes. No crear versiones alternativas ni un nuevo pipeline documental por módulo.
 - Una cola de ejecución. Paralelismo auxiliar solo si aporta valor y no hay escritores de archivos o base compartidos. Todos los `fix-agent`, si se usan, exclusivamente `openai/gpt-6.1-sol#low`.
+- Actualización posterior del usuario: los próximos fix-agent usarían Sonnet 5.5 normal en lugar de la selección anterior. Luego indicó permisos con `subagent: deny`: mientras rija esa restricción, la implementación y validación se realizan directamente, sin nuevas delegaciones. La autorrevisión no se presenta como revisión independiente.
 - No leer archivos de entorno/secretos ni publicarlos. TLS estricto; sin desactivar validación de certificados, permisos generales o acceso administrador como solución rápida.
 - Usuario reportó contraseña y `GALCOA_EXECUTOR_DATABASE_URL` configuradas en Vercel: **configuración informada, conectividad sin verificar**. No inferir PASSWORD NULL actual desde la migración inicial. Vercel existente: `https://galcoa-nea.vercel.app`.
 - Último estado remoto documentado: seis migraciones aplicadas; no verificado de nuevo. Las tres adicionales del snapshot (001200, 001201 y 002000) requieren comparar catálogo/historial antes de declarar ausencia o aplicar. No interpretar este plan como permiso nuevo para ampliar el alcance remoto del rollout.
@@ -115,3 +116,15 @@ El usuario aprobó ejecutar automáticamente las seis etapas, incluyendo impleme
 - [ ] Completar B → C → D → E → F, actualizando el progreso con evidencia real.
 
 No se han aplicado migraciones, cambiado código de producto ni desplegado durante la consolidación. No se ha revalidado el estado cloud ni ejecutado un recorrido completo.
+
+## Checkpoint de integración posterior
+
+PR #91 integrado (plan), #92 integrado (CI incluye evidencias y confirmaciones), #94/#93 integrados (presentación y container de revisión, aceptación parcial) y #95 integrado por el usuario (confirmación SQL ligada al documento de la ruta). Las revisiones independientes aprobaron estos cambios; los runs Linux de #92, #94/#93 y #95 terminaron correctamente. No se cierran #21, F7 ni el MVP por estos checkpoints. Persisten QR, navegación, re-congelado, E2E del autor y carrera con finalización.
+
+### Retención de evidencias: entrega escalonada
+
+El diseño de descarte es: claim irreversible en SQL bajo lock → eliminación por API de Storage → liberación de reserva/cupo confirmada. Una aceptada jamás recibe claim, y una reclamada jamás puede aceptarse. Una respuesta `null` de aceptación no otorga autoridad para borrar. La autorización final de INSERT de Storage debe coordinarse con el mismo lock; se necesitan pruebas reales de upload en vuelo, no inferencias desde mocks. Sin actividad futura no se garantiza limpieza con plazo: los residuos deben quedar contabilizados y recuperables, sin cron ni servicios nuevos.
+
+Primer incremento acotado: dejar de liberar cuota automáticamente al vencer una reserva retenida. Contar todas las filas del documento bajo el lock existente, sin cambiar topes (3 archivos / 20 MiB declarados) ni el TTL de 120 s. Esto limita la repetición de abandonos por documento, pero **no** resuelve todavía el borrado seguro ni impone una cuota física global. Una reserva vencida conserva cupo hasta descartarse: la recuperación automática vendrá con el protocolo de claim y su prueba concurrente. No introducir borrado oportunista inseguro para ocultar el estado parcial.
+
+Implementación local de ese primer incremento: migración aditiva `20261016002200_evidence_retained_quota.sql`, sin editar las ya aplicadas. Nuevas regresiones SQL para retención de plazas/bytes, replay vencido y descarte; catálogo incorpora la versión. Typecheck, ESLint focal, 69 barreras y suite por defecto 1099/1099 aprobados. Las regresiones SQL no forman parte de esa suite: pendientes de CI Linux con base real antes de aceptar la migración. Sin llamadas remotas ni borrado de objetos. Autorrevisión explícita, no revisión independiente (subagentes deshabilitados).

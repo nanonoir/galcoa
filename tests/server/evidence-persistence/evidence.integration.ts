@@ -232,17 +232,29 @@ it("handlers con Auth real, Storage real y JSON acotado: reserva/carga/aceptaciÃ
   expect((await (await createEvidenceHttpHandler(deps,"extractions")(get,documentId)).json()).result).toHaveLength(1);
 });
 
-it("vencimiento no renueva replay, libera cupo y nunca permite adoptar una reserva vencida", async () => {
+it("vencimiento no renueva replay ni libera cuota retenida; descarte libera una plaza", async () => {
   const documentId=await doc(); const command=input(documentId);
   const first=await store.reserveEvidence(command); if(!("evidence" in first)) throw new Error("Sin reserva");
   await reserve(documentId); await reserve(documentId);
   expect((await store.reserveEvidence(input(documentId))).status).toBe("limit_exceeded");
   await admin.query("update public.evidences set upload_expires_at=clock_timestamp()-interval '1 second' where id=$1",[first.evidence.evidenceId]);
   expect(await store.reserveEvidence(command)).toEqual({status:"not_available"});
-  expect((await store.reserveEvidence(input(documentId))).status).toBe("reserved");
+  expect(await store.reserveEvidence(input(documentId))).toEqual({status:"limit_exceeded",limit:"files"});
   expect(await store.acceptEvidence({ownerId:a.id,evidenceId:first.evidence.evidenceId,audit:audit()})).toBeNull();
   await store.discardReservation({ownerId:a.id,evidenceId:first.evidence.evidenceId});
   expect(await store.getEvidence(a.id,documentId,first.evidence.evidenceId)).toBeNull();
+  expect((await store.reserveEvidence(input(documentId))).status).toBe("reserved");
+  expect(await store.reserveEvidence(command)).toEqual({status:"not_available"});
+});
+
+it("bytes de reservas vencidas siguen contando aunque no se haya completado la subida", async () => {
+  const documentId = await doc();
+  const first = await store.reserveEvidence(input(documentId, 10485760));
+  const second = await store.reserveEvidence(input(documentId, 10485760));
+  expect(first.status).toBe("reserved");
+  expect(second.status).toBe("reserved");
+  await admin.query("update public.evidences set upload_expires_at=clock_timestamp()-interval '1 second' where document_id=$1", [documentId]);
+  expect(await store.reserveEvidence(input(documentId, 1))).toEqual({status:"limit_exceeded",limit:"total_bytes"});
 });
 
 it("hash no coincidente con longitud vÃ¡lida rechaza y limpia; bucket impone 10 MiB/tipos", async () => {
