@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -15,12 +16,19 @@ import { expect } from "vitest";
 const ROOT = path.resolve(import.meta.dirname, "..", "..", "..");
 const SUPABASE_CLI = path.join(ROOT, "node_modules", "supabase", "dist", "supabase.js");
 /** Contenedor de Postgres de la pila local (`supabase/config.toml`: `project_id`). */
-export const DB_CONTAINER = "supabase_db_galcoa";
+export const DB_CONTAINER = process.env.GALCOA_LOCAL_TEST_CONTAINER ?? "supabase_db_galcoa";
 
 /** Ejecuta la CLI de `supabase` instalada como devDependency (sin shell ni PATH). */
 export function supabaseCli(args: string[], timeout = 240_000): string {
+  const workdir = process.env.GALCOA_LOCAL_TEST_WORKDIR;
+  const container = process.env.GALCOA_LOCAL_TEST_CONTAINER;
+  if (workdir || container) {
+    if (!workdir || !container?.startsWith("supabase_db_galcoa-storage-")) throw new Error("Proyecto de prueba local incompleto");
+    const config = readFileSync(path.join(workdir, "supabase/config.toml"), "utf8");
+    if (!config.includes(`project_id = "${container.slice("supabase_db_".length)}"`)) throw new Error("Proyecto y contenedor de prueba no coinciden");
+  }
   return execFileSync(process.execPath, [SUPABASE_CLI, ...args], {
-    cwd: ROOT,
+    cwd: workdir ?? ROOT,
     encoding: "utf8",
     timeout,
     stdio: ["ignore", "pipe", "pipe"],
