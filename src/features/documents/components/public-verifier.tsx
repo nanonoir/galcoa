@@ -84,7 +84,7 @@ function formatSize(bytes: number): string {
 function ProofRow({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-3">
-      <dt className="text-muted-foreground text-sm">{label}</dt>
+      <dt className="tech-label">{label}</dt>
       <dd className="font-mono text-sm break-all">{value}</dd>
     </div>
   );

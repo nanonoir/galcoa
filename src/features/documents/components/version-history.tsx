@@ -92,13 +92,13 @@ function VersionItem({
           {/* Dos estados independientes (PRD §5): la finalización no se deriva del sello. */}
           <span className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
             <span className="flex min-w-0 flex-col gap-1 rounded-lg bg-muted/40 p-2">
-              <span className="text-xs text-muted-foreground">Finalización</span>
+              <span className="tech-label">Finalización</span>
               <span className="break-words">
                 Versión finalizada · <time dateTime={version.finalizedAt}>{finalizedAt}</time>
               </span>
             </span>
             <span className="flex min-w-0 flex-col gap-1 rounded-lg bg-muted/40 p-2">
-              <span className="text-xs text-muted-foreground">Sello HCS</span>
+              <span className="tech-label">Sello HCS</span>
               <span>
                 <Badge variant={seal.registered ? "secondary" : "outline"} className="h-auto max-w-full text-left break-words whitespace-normal">
                   {seal.summary}

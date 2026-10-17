@@ -1,5 +1,4 @@
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import type { LandingContent } from "@/lib/contracts/landing";
@@ -19,22 +18,22 @@ function scenarioContent(id: string): LandingContent {
 }
 
 describe("LandingPage (MVP-114)", () => {
-  it("recorre todos los escenarios, con menú cerrado y abierto, sin términos prohibidos ni promesas fuera de P0", async () => {
+  it("recorre todos los escenarios sin términos prohibidos ni promesas fuera de P0", () => {
     expect(landingScenarios.map((s) => s.id)).toEqual(["public", "signed-in"]);
-    const user = userEvent.setup();
     for (const scenario of landingScenarios) {
       const { container, unmount } = render(<LandingPage content={scenario.content} />);
-      const check = () => {
-        const text = (container.textContent ?? "").toLowerCase();
-        for (const term of FORBIDDEN) expect(text, `${scenario.id}: «${term}»`).not.toContain(term);
-        for (const pattern of OUT_OF_SCOPE) expect(text, `${scenario.id}: ${pattern}`).not.toMatch(pattern);
-      };
-      check();
-      await user.click(screen.getByRole("button", { name: "Menú" }));
-      expect(screen.getByRole("list", { name: "Menú" })).toBeInTheDocument();
-      check();
+      const text = (container.textContent ?? "").toLowerCase();
+      for (const term of FORBIDDEN) expect(text, `${scenario.id}: «${term}»`).not.toContain(term);
+      for (const pattern of OUT_OF_SCOPE) expect(text, `${scenario.id}: ${pattern}`).not.toMatch(pattern);
       unmount();
     }
+  });
+
+  it("encabezado sin atajos: solo la marca y la acción que recibe", () => {
+    render(<LandingPage content={scenarioContent("signed-in")} headerAction={<button type="button">Cerrar sesión</button>} />);
+    expect(screen.queryByRole("link", { name: "Cómo funciona" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Menú" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeInTheDocument();
   });
 
   it("estructura del wireframe: hero con acción principal, tres características y alcance con límites", () => {
@@ -57,7 +56,6 @@ describe("LandingPage (MVP-114)", () => {
     const content = scenarioContent("signed-in");
     const { container } = render(<LandingPage content={content} />);
     expect(screen.getByRole("link", { name: "Ir a mis documentos" })).toHaveAttribute("href", "/dashboard");
-    expect(screen.getAllByRole("link", { name: "Mis documentos" })[0]).toHaveAttribute("href", "/dashboard");
     expect(screen.queryByRole("link", { name: "Ingresar" })).not.toBeInTheDocument();
     expect(container.textContent).not.toMatch(/cerrar sesión|hola|bienvenid|@/i);
   });

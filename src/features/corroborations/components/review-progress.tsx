@@ -59,8 +59,8 @@ export function ReviewProgress({ revisionLabel, confirmationStatus, participants
       </header>
 
       <dl className="grid grid-cols-1 gap-3 min-[640px]:grid-cols-3">
-        <div className="flex min-w-0 flex-col gap-2 rounded-xl border bg-card p-3">
-          <dt className="text-xs text-muted-foreground">Confirmaciones · {revisionLabel}</dt>
+        <div className="panel flex min-w-0 flex-col gap-2 p-3">
+          <dt className="tech-label">Confirmaciones · {revisionLabel}</dt>
           <dd className="flex flex-col gap-2 text-sm">
             <span>{confirmationLabels[confirmationStatus]}</span>
             <ul className="flex flex-col gap-1">
@@ -73,16 +73,16 @@ export function ReviewProgress({ revisionLabel, confirmationStatus, participants
             </ul>
           </dd>
         </div>
-        <div className="flex min-w-0 flex-col gap-2 rounded-xl border bg-card p-3">
-          <dt className="text-xs text-muted-foreground">Finalización</dt>
+        <div className="panel flex min-w-0 flex-col gap-2 p-3">
+          <dt className="tech-label">Finalización</dt>
           <dd className="text-sm">{finalizedVersionNumber === null
               ? "Todavía no finalizada"
               : finalizedVersionNumber === "no_disponible"
                 ? "Número de versión finalizada no disponible en esta pantalla"
                 : `Versión ${finalizedVersionNumber} finalizada`}</dd>
         </div>
-        <div className="flex min-w-0 flex-col gap-2 rounded-xl border bg-card p-3">
-          <dt className="text-xs text-muted-foreground">Sello HCS</dt>
+        <div className="panel flex min-w-0 flex-col gap-2 p-3">
+          <dt className="tech-label">Sello HCS</dt>
           <dd className="text-sm">
             <Badge variant={hcsStatus === "registrado" ? "secondary" : "outline"} className="h-auto max-w-full text-left break-words whitespace-normal">
               {sealLabels[hcsStatus]}

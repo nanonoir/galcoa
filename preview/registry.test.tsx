@@ -119,7 +119,7 @@ describe("entrada landing (MVP-114)", () => {
     for (const scenario of landingScenarios) {
       const { unmount } = render(<div>{entry?.render(scenario.id, handlers)}</div>);
       expect(screen.queryByTestId("scenario-json")).not.toBeInTheDocument();
-      expect(screen.getByRole("navigation", { name: "Principal" })).toBeInTheDocument();
+      expect(screen.getByRole("banner")).toHaveTextContent(scenario.content.brand);
       expect(screen.getByRole("heading", { level: 1, name: scenario.content.heading })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: scenario.content.primaryAction.label })).toHaveAttribute("href", scenario.content.primaryAction.href);
       unmount();
