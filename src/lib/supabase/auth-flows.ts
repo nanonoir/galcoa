@@ -33,7 +33,7 @@ export const AUTH_PATHS = {
   register: "/registro",
   recovery: "/recuperar",
   newPassword: "/nueva-contrasena",
-  afterLogin: "/",
+  afterLogin: "/dashboard",
 } as const;
 
 export const CALLBACK_PATH = "/api/auth/callback";

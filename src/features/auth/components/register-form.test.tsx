@@ -39,7 +39,7 @@ describe("RegisterForm (MVP-115)", () => {
     expect(scenarios.length).toBeGreaterThan(0);
     for (const scenario of scenarios) {
       const { unmount } = renderState(scenario.state);
-      expect(screen.getByRole("heading", { level: 2, name: "Crear cuenta" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1, name: "Crear cuenta" })).toBeInTheDocument();
       unmount();
     }
   });

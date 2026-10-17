@@ -77,9 +77,9 @@ export function RecoveryRequestForm({ state, onSubmit }: RecoveryRequestFormProp
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
         <CardTitle>
-          <h2 id={`${ID}-title`} className="text-lg font-medium">
+          <h1 id={`${ID}-title`} className="text-lg font-medium">
             Recuperar acceso
-          </h2>
+          </h1>
         </CardTitle>
         <CardDescription>Ingresa el correo de tu cuenta para solicitar la recuperación.</CardDescription>
       </CardHeader>

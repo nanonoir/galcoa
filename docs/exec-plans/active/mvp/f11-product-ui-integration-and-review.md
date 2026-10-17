@@ -105,6 +105,7 @@ Checkpoint A en curso; B no iniciado. Las casillas marcadas tienen evidencia en 
 - **Endurecimiento (2026-10-16):** la sesión se verifica una vez por petición (`React.cache`, `(app)/_lib/session.ts`) en vez de dos veces (layout + página); `error.tsx` (Next 16, `retry`; no muestra el mensaje original), `not-found.tsx` y `(app)/loading.tsx`; sesión vencida (`NO_SESSION` o 401 al crear) redirige a `/acceso` en vez de mostrar error genérico. **No verificado:** la deduplicación de `getUser()` (requiere Auth real; se razonó del código) y el E2E con datos reales.
 - Pendiente de decisión del líder: título del documento nuevo y destino posterior al login (hoy siempre `/`).
 - Otros cambios: layout `(app)` con cabecera y `LogoutButton`; metadatos y `lang="es"` del layout raíz; fixture `bad-app-route.ts` apunta a `@/app/layout` (la página raíz ya no existe).
+- **Checkpoint de accesibilidad de producto (rama `fix/product-accessibility`):** `lang="es"` y metadatos «GALCOA+» en el layout raíz; `--font-sans` apunta a la variable Geist con pila de reserva; los cuatro formularios de Auth usan `h1` (se retiró el `test.skip` de `responsive-a11y.spec.ts`); `AUTH_PATHS.afterLogin` pasa a `/dashboard`. Sin cambios en PKCE, cookies ni sesión. **No marca `MVP-116` ni `MVP-118` como completos** (el montaje del chat y las pantallas privadas siguen pendientes).
 
 ## 9. Referencias a completar
 
