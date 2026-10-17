@@ -3,12 +3,14 @@ import { z } from "zod";
 
 import { ReviewContainer, type Frozen } from "@/features/corroborations/containers/review-container";
 import { failureKind } from "@/features/documents/containers/failure-kind";
+import { SealedVersionContainer } from "@/features/documents/containers/sealed-version-container";
 import { createExecutorRpc } from "@/lib/documents/persistence/executor-rpc";
 import { createSupabaseRevisionAdapters } from "@/lib/documents/revisions/supabase";
 import { reviewHttpDeps } from "@/lib/documents/review-runtime";
 import { LOGIN_PATH } from "@/lib/supabase/auth";
 
 import { documentServiceForRequest } from "../../../_lib/documents";
+import { sealedVersionForRequest } from "../../../_lib/sealed-version";
 
 /**
  * Revisión del autor (MVP-077/078). Ajeno e inexistente responden igual (404).
@@ -39,6 +41,9 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
     executor: createExecutorRpc(context.session.user.id),
   });
   const hcsStatus = result.value.hcsStatus;
+  const finalized = result.value.documentStatus === "finalizado";
+  // Mismo render que oculta «Subir Contrato»: la tarjeta persistente ocupa su lugar sin intervalo vacío.
+  const sealed = finalized ? await sealedVersionForRequest(id) : null;
   const bundle = await store.getActiveRevision(context.session.user.id, id);
   // Con revisión vigente también se lee el borrador actual: así se detecta si cambió desde el congelado.
   // Si esa lectura falla, la revisión vigente se sigue mostrando y el servidor revalida al congelar.
@@ -69,8 +74,9 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <p className="eyebrow self-start">Revisión y confirmaciones</p>
       <h1 className="page-title">Revisión de «{result.value.title}»</h1>
+      {sealed && <SealedVersionContainer version={sealed} />}
       {bundle || source ? (
-        <ReviewContainer documentId={id} draftRevision={source ? source.draft.draftRevision : bundle!.revision.frozenFromDraftRevision} hcsStatus={hcsStatus} active={active} documentFinalized={result.value.documentStatus === "finalizado"} />
+        <ReviewContainer documentId={id} draftRevision={source ? source.draft.draftRevision : bundle!.revision.frozenFromDraftRevision} hcsStatus={hcsStatus} active={active} documentFinalized={finalized} />
       ) : (
         <p className="text-sm text-muted-foreground">Todavía no hay un borrador para revisar. Conversá en el documento y volvé cuando esté listo.</p>
       )}
