@@ -96,6 +96,31 @@ Todo del líder.
 
 No hay llamadas a Hedera ni a proveedores de IA.
 
+### Checkpoint Storage local real — 2026-10-17
+
+Evidencia parcial de `MVP-083`, no cierre del ID ni del plan consolidado. Base `5838f96` (#130/#131 integrados), rama `test/finalization-storage-real`. Sin cambios de producción.
+
+**Reproducir:** `node tests/server/local/run-storage.mjs` después de `npm ci`, con Docker disponible. El launcher crea configuración y migraciones en un directorio temporal, ID `galcoa-storage-<aleatorio>` y puertos 55320–55329 comprobados antes de arrancar. No lee `.env`, no resetea `galcoa`, captura la salida de la CLI en memoria y ejecuta una configuración Vitest separada. `finally` detiene solo su proyecto con `--no-backup` y elimina su directorio temporal. El launcher serial de CI lo invoca sin publicar su salida privada.
+
+| Comprobación ejecutada | Resultado |
+| --- | --- |
+| `node tests/server/local/run-storage.mjs` (corrida final, proyecto `galcoa-storage-dfb2a148`) | **5/5** en 23,40 s de Vitest; Auth, Storage y Postgres locales reales; todas las migraciones aplicadas desde cero |
+| Guarda de colisión (listener propio temporal en 55321 + launcher) | PASS: exit 1 antes de iniciar pila; listener conservado y luego cerrado por la prueba |
+| Publicación del propietario A | Freeze/confirmación/claim reales, renderer real, manifiesto y stores de producción; PDF/manifiesto descargados con hash y longitud del staging; documento finalizado sin intentos HCS |
+| A/B/anon y escritura | A no lee antes de publicar y sí después; B/anon no leen antes/después; INSERT arbitrario y overwrite/upsert denegados; identidad y timestamps de objetos preservados |
+| Respuesta Storage incierta | Upload real guarda y el transporte pierde la respuesta; relectura permite publicar; nuevo intento reutiliza sin alterar objetos |
+| Upload OK / DB falla | `publish_version` real dentro de transacción abortada por error SQL; cero versiones; retry encuentra duplicados y adopta mismos paths/IDs/timestamps, sin render ni overwrite |
+| Bytes divergentes / takeover | Conflicto no sobrescribe ni finaliza; fencing viejo no publica tras takeover; objetos superseded permanecen intactos, sin borrado ad hoc |
+| ESLint focal (5 archivos de código), `next typegen`, `tsc --noEmit` | exit 0 |
+| `vitest run --project server tests/server/finalization` | **67/67**, 7 archivos |
+| `vitest run --project boundaries` | **69/69**, 4 archivos |
+
+La primera ejecución fue 3/4 por una expectativa errónea del test (`status` permanece `active`; la fase cambia a `published`); corregida sin tocar producción. Segunda: 4/4; tercera, con bytes divergentes: 5/5; cuarta, exigiendo error explícito de RLS para INSERT arbitrario: 5/5; quinta, con guarda del ID y stop explícito del proyecto propio: 5/5. Vite avisó sobre el futuro cargador nativo de configuración; no fue un fallo. Los wrappers `npm run` fallaron desde Bash por resolución de `/bin/bash` en WSL; los entrypoints equivalentes anteriores se ejecutaron directamente y aprobaron. No se ejecutaron suite completa, build, navegador ni CI remoto como parte de esta evidencia.
+
+**Limpieza comprobada:** no quedan contenedores, volúmenes ni procesos de los proyectos efímeros; tampoco configuraciones/credenciales temporales. `supabase_*_galcoa` (worktree `galcoa-fin-publish`) y `entrenar-*` permanecieron activos e intactos. Los únicos datos semilla estaban en las pilas propias eliminadas.
+
+**Aceptaciones aún pendientes:** protocolo de huérfanos con prueba de no adopción (no basta reserva superseded), encadenamiento v2 y restantes aceptaciones del plan. Estas pruebas no acreditan Next HTTP/UI, Supabase cloud, IA ni Hedera. No se cambian casillas del plan ni contadores del maestro.
+
 ## 8. Referencias a completar
 
 Documentos objetivo **disponibles** y enlazados; los parámetros operativos (entropía, vigencia, cuotas, límites, perfil y tiempos) siguen siendo propuestas **no aprobadas** hasta que F1 (`MVP-011/012/013`) los registre. Este plan consume los documentos y no los reescribe.

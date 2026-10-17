@@ -55,6 +55,7 @@ if (process.env.GITHUB_ACTIONS !== "true" || process.env.RUNNER_OS !== "Linux") 
         if (!run(label, vitest, ["run", "--config", config], 480_000)) break;
       }
       if (!process.exitCode) run("Auth real local (3 casos, sin trazas)", auth, [], 480_000);
+      if (!process.exitCode) run("publicación Storage real aislada", path.join(root, "tests/server/local/run-storage.mjs"), [], 720_000);
       if (!process.exitCode) run("confirmaciones E2E reales locales (sin trazas)", confirm, [], 480_000);
       if (!process.exitCode) run("revisión del autor E2E real local (sin trazas)", review, [], 600_000);
       break;
