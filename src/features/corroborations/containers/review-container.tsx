@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ParticipantSelector } from "@/features/corroborations/components/participant-selector";
 import { ReviewProgress, type ParticipantProgress } from "@/features/corroborations/components/review-progress";
 import { ShareLinksPanel, type ShareLinkItem } from "@/features/corroborations/components/share-links-panel";
+import { FinalizationContainer } from "@/features/corroborations/containers/finalization-container";
 import { ShareQr } from "@/features/corroborations/containers/share-qr";
 import { buildMailtoUrl, buildWhatsAppUrl } from "@/features/corroborations/lib/share-links";
 import { SnapshotView } from "@/features/documents/components/snapshot-view";
@@ -100,6 +101,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [publishedVersion, setPublishedVersion] = useState<number | null>(null);
   /** Edición explícita de una revisión nueva: la vigente sigue intacta hasta que el servidor cree otra. */
   const [editing, setEditing] = useState(false);
   const keys = useRef<Record<string, string>>({});
@@ -259,7 +261,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
   // Una confirmación completa no es la finalización: el autor puede seguir abriendo otra revisión (INV-14)
   // mientras el documento no esté finalizado. Si la vista quedó sustituida, no se actúa sobre ella: se recarga.
   const superseded = progress?.confirmationStatus === "sustituida";
-  const canReopen = frozen !== null && !superseded && !documentFinalized;
+  const canReopen = frozen !== null && !superseded && !documentFinalized && publishedVersion === null;
 
   function startEditing() {
     if (!frozen) return;
@@ -380,12 +382,15 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
               {refreshing ? "Actualizando…" : "Cargar avance"}
             </Button>
           )}
+          {progress?.confirmationStatus === "completa" && !superseded && !documentFinalized && (
+            <FinalizationContainer key={frozen.revisionId} documentId={documentId} revisionId={frozen.revisionId} onPublished={setPublishedVersion} />
+          )}
           {progress && (
             <ReviewProgress
               revisionLabel="Revisión actual"
               confirmationStatus={progress.confirmationStatus}
               participants={participants}
-              finalizedVersionNumber="no_disponible"
+              finalizedVersionNumber={publishedVersion ?? "no_disponible"}
               hcsStatus={hcsStatus}
               refreshing={refreshing}
               onRefresh={() => void refresh(frozen.revisionId)}
