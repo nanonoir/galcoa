@@ -98,11 +98,20 @@ No acredita la matriz futura MVP-121, seguridad pendiente MVP-130, evaluación I
   | `HEDERA_NETWORK` | `testnet` | `testnet` en todos los entornos (P0) |
 
   Las URLs de redirección de Supabase Auth se configuran en Supabase, no en el `.env`.
+
 - Solo `NEXT_PUBLIC_*` puede llegar al cliente; claves IA/Hedera y futuras claves privilegiadas Supabase son exclusivamente de servidor.
 - La plantilla local anterior se preservó sin inspeccionarla como `.env.example.local`, ignorada. Quien clone no necesita ese archivo.
 - Preview sin carga de archivos de entorno ni inyección de secretos; datos ficticios, sin persistencia y solo loopback. No sirve para compartir una demo por red.
 - Supabase Auth/RLS, migraciones, rutas, integraciones y claves solo dentro del alcance explícito del pedido/ticket del líder. HCS únicamente Testnet, sin herramientas abiertas para agentes (INV-04).
 - Auditoría: registrar resultado completo y de producción por separado. Las incidencias dev conocidas no se ocultan ni justifican `npm audit fix --force`; consultar [deuda](exec-plans/tech-debt-tracker.md).
+
+### Registro con acceso inmediato
+
+El formulario mantiene correo y contraseña. Supabase debe tener **Confirm email desactivado** (Authentication → Sign In / Providers → Email); localmente corresponde a `auth.email.enable_confirmations = false`. El alta redirige al dashboard solo si Auth devuelve una sesión, cuyas cookies escribe el cliente SSR existente. Reiniciar Auth local para aplicar cambios de configuración, sin resetear la base.
+
+Decisión aprobada: Auth autoconfirma el correo; **no prueba que la dirección pertenezca al usuario**. No se envía confirmación al registrarse ni se ofrece una verificación opcional posterior. La recuperación conserva su envío de correo. El ajuste local no configura el proyecto alojado: debe desactivarse también allí y desplegarse el código. No modifica retroactivamente cuentas pendientes de confirmación.
+
+Si el proveedor no entrega sesión, el alta devuelve un error sin redirección. Una cuenta existente recibe un rechazo neutral, nunca una sesión ni un éxito ficticio; un registro exitoso sí es distinguible porque inicia sesión.
 
 ### Ejecutor interno F4: provisión privada del operador
 
