@@ -101,6 +101,8 @@ Documentos objetivo **disponibles** y enlazados; los parámetros operativos (ent
 - **PD-03** Librería de QR (nueva dependencia): decisión del líder al ejecutar, con evidencia de licencia/tamaño/auditoría.
 - **PD-04** Integración de navegación con MVP-116: la revisión usa la subruta `/review`; el líder serializa cualquier ajuste de la página base del documento, que pertenece a MVP-116.
 
+- **PD-03 resuelta (2026-10-16, autorizada por el líder):** `react-qr-code@2.2.0` (MIT, SVG local, peer `react: *`, tipos propios). Los 19.9 kB desempaquetados corresponden solo al wrapper; su árbol incluye `prop-types` y `qrcode-generator`. Los tamaños de paquete publicados para `qrcode` y `qrcode.react` no permiten concluir cuál tiene menor bundle cliente: no se midió ese impacto agregado. Se eligió por integración SVG/React directa, tipos propios y ausencia de servicio externo. `npm audit` normal (sin `--force`): 9 vulnerabilidades altas preexistentes de herramientas de desarrollo (cadena `shadcn`/`ts-morph`/`fast-glob`); ninguna menciona la dependencia nueva ni sus transitivas. Integrada en `containers/share-qr.tsx` (la presentación no importa la librería). MVP-077/078 siguen abiertas: faltan re-congelado y E2E del autor.
+
 ## 10. Rollback y recuperación
 
 - Antes de integrar: descartar la rama; sin cambios de datos.
