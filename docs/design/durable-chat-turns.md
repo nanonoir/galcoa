@@ -18,7 +18,7 @@ Implementa la etapa B del [plan de cierre](../exec-plans/active/mvp-consolidated
 
 `complete_chat_turn` verifica propietario, intento vigente, estado, lease, mensaje y staging; compara revisión esperada; publica borrador/procedencia, mensaje agente, cierre y auditoría en el mismo commit. Replay devuelve el resultado conservado. Un rollback no deja borrador ni mensaje parcial. Conservar ID del borrador al aumentar su revisión.
 
-Si cancelación gana el lock, completion falla como stale. Si completion ya hizo commit, una cancelación tardía no revierte el resultado. Recuperar lease invalida staging anterior. Emitir `draft`, `agent_message` y `done` solo después del commit; abortar consumidor NDJSON debe propagar AbortSignal y cerrar el intento en finally.
+Si cancelación gana el lock, completion falla como stale. Si completion ya hizo commit, una cancelación tardía no revierte el resultado. Recuperar lease invalida staging anterior. `close` con `failed`/`canceled` admite un lease vencido si el intento sigue vigente y nadie lo reclamó; solo cierra el turno: no publica staging, borrador ni mensaje, y no afecta un turno `completed` ni un intento nuevo. Emitir `draft`, `agent_message` y `done` solo después del commit; abortar consumidor NDJSON debe propagar AbortSignal y cerrar el intento en finally.
 
 ## Contraste y lectura congelada
 
