@@ -8,8 +8,8 @@ import { FinalizationPanel, type FinalizationPanelState, type FinalizationPhase 
  * Container de la finalización (MVP-082). `POST` reclama/reanuda en el servidor y devuelve la
  * fase; `GET` solo lee. Sin éxito optimista: el estado sale de la respuesta. El sondeo es
  * acotado (intervalo fijo y tope de intentos, solo con la pestaña visible) y termina en
- * `stalled`, desde donde el usuario decide actualizar o reanudar. Descarga del PDF e historial
- * dependen de una lectura de versiones publicadas que aún no existe como ruta: no se simula.
+ * `stalled`, desde donde el usuario decide actualizar o reanudar. La descarga lee bytes
+ * publicados y el enlace público usa únicamente la referencia devuelta por el servidor.
  */
 
 export const FINALIZATION_POLL_MS = 3_000;
@@ -39,6 +39,7 @@ function errorCode(body: Record<string, unknown> | null) {
 export function FinalizationContainer({ documentId, revisionId, onPublished }: FinalizationContainerProps) {
   const [state, setState] = useState<FinalizationPanelState>({ status: "idle" });
   const [polling, setPolling] = useState(0);
+  const [publishedLink, setPublishedLink] = useState<{ url: string; reference: string } | null>(null);
   const phase = useRef<FinalizationPhase | null>(null);
   const onPublishedRef = useRef(onPublished);
   useEffect(() => {
@@ -46,6 +47,19 @@ export function FinalizationContainer({ documentId, revisionId, onPublished }: F
   });
 
   const url = `/api/documents/${encodeURIComponent(documentId)}/revisions/${encodeURIComponent(revisionId)}/finalization`;
+  const publishedUrl = state.status === "published"
+    ? `/api/documents/${encodeURIComponent(documentId)}/versions/${state.versionNumber}` : null;
+
+  useEffect(() => {
+    if (!publishedUrl) return;
+    let cancelled = false;
+    void call(publishedUrl).then(({ ok, body }) => {
+      if (!cancelled && ok && typeof body?.publicReference === "string" && body.publicReference.length > 0) {
+        setPublishedLink({ url: publishedUrl, reference: body.publicReference });
+      }
+    }).catch(() => { /* La descarga sigue disponible; no fabricar una referencia pública. */ });
+    return () => { cancelled = true; };
+  }, [publishedUrl]);
 
   function apply(operation: Operation) {
     phase.current = operation.phase;
@@ -120,5 +134,7 @@ export function FinalizationContainer({ documentId, revisionId, onPublished }: F
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [polling]);
 
-  return <FinalizationPanel state={state} onFinalize={() => void finalize()} onRefresh={() => void refresh()} />;
+  return <FinalizationPanel state={state} onFinalize={() => void finalize()} onRefresh={() => void refresh()}
+    downloadHref={publishedUrl ? `${publishedUrl}/pdf` : undefined}
+    verificationHref={publishedLink?.url === publishedUrl ? `/verify/${encodeURIComponent(publishedLink.reference)}` : undefined} />;
 }
