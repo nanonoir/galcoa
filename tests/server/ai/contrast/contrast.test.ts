@@ -128,7 +128,7 @@ describe("Puerto Groq (MVP-053)", () => {
 
 // --- Servicio de contraste ---------------------------------------------------------
 
-function memoryReports(draft: Draft | null) {
+function memoryReports(draft: Draft | null, late?: "stale_draft" | "not_available") {
   const saved: SaveReportInput[] = [];
   const store: ContrastStore = {
     async getCurrentDraft(ownerId) {
@@ -136,13 +136,14 @@ function memoryReports(draft: Draft | null) {
     },
     async saveReport(input) {
       saved.push(structuredClone(input));
-      return { reportId: `rep-${saved.length}`, createdAt: "2026-10-16T16:00:00Z" };
+      if (late) return { status: late };
+      return { status: "created", reportId: `rep-${saved.length}`, createdAt: "2026-10-16T16:00:00Z" };
     },
   };
   return { store, saved };
 }
 
-async function setup(output: ContrastOutput | string, opts: { extraction?: boolean } = {}) {
+async function setup(output: ContrastOutput | string, opts: { extraction?: boolean; late?: "stale_draft" | "not_available" } = {}) {
   const mem = createMemoryStore();
   let user: string | null = ANA;
   const session: SessionPort = { currentUserId: async () => user };
@@ -163,7 +164,7 @@ async function setup(output: ContrastOutput | string, opts: { extraction?: boole
     content: { title: "Entrega de yerba", body: "Se entregaron 10 cajas de yerba.", corrections: [] },
     updatedAt: "2026-10-16T15:00:00Z",
   };
-  const reports = memoryReports(draft);
+  const reports = memoryReports(draft, opts.late);
   const g = groqPort({ content: typeof output === "string" ? output : JSON.stringify(output) });
   const extractions = opts.extraction
     ? { listExtractions: async () => [{ extractionId: "ext-1", origin: "pdf" as const, text: "REMITO: 12 cajas yerba" }] }
@@ -200,6 +201,26 @@ describe("MVP-053 · contraste sin veto", () => {
     expect(sent).toContain("Entregamos 10 cajas de yerba.");
     expect(sent).toContain("REMITO: 12 cajas yerba");
     expect(sent).toContain("Se entregaron 10 cajas de yerba.");
+  });
+
+  it("guarda el contenido exacto de b1 evaluado y la correlación, sin releer la cabeza", async () => {
+    const t = await setup({ result: "sin_inconsistencias_criticas_detectadas", findings: [] });
+    await t.service.contrastDraft({ documentId: t.documentId, correlationId: "corr-77" });
+    expect(t.reports.saved[0]).toMatchObject({
+      draftContent: { title: "Entrega de yerba", body: "Se entregaron 10 cajas de yerba.", corrections: [] },
+      correlationId: "corr-77",
+    });
+  });
+
+  it.each([
+    ["stale_draft", "STALE_DRAFT"],
+    ["not_available", "NOT_AVAILABLE"],
+  ] as const)("%s tardío: sin éxito ni reintento automático de IA", async (late, code) => {
+    const t = await setup({ result: "con_advertencias", findings: [{ message: "x", severity: "warning", sourceRefs: ["m1"] }] }, { late });
+    const r = await t.service.contrastDraft({ documentId: t.documentId });
+    expect(r).toMatchObject({ ok: false, error: { code, stage: "persistencia", retryable: false } });
+    expect(t.g.calls).toHaveLength(1);
+    expect(t.reports.saved).toHaveLength(1);
   });
 
   it("el reporte no tiene campos de veto ni bloqueo", async () => {
