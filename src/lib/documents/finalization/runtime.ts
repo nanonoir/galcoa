@@ -7,6 +7,7 @@ import { getSessionClient } from "@/lib/supabase/session";
 import { createExecutorRpc } from "../persistence/executor-rpc";
 
 import type { FinalizationHttpDeps } from "./http";
+import { createManifestService, createSupabaseManifestStore } from "./manifest";
 import { createFinalizationAdvancer } from "./resume";
 import { createPdfStagingService, createSupabasePdfStagingStore } from "./staging";
 
@@ -23,6 +24,9 @@ export const finalizationHttpDeps: FinalizationHttpDeps = {
   advancerFor(userId) {
     const executor = createExecutorRpc(userId);
     if (!executor) throw new Error("Persistencia no disponible");
-    return createFinalizationAdvancer({ staging: createPdfStagingService({ store: createSupabasePdfStagingStore({ verifiedUserId: userId, executor }) }) });
+    return createFinalizationAdvancer({
+      staging: createPdfStagingService({ store: createSupabasePdfStagingStore({ verifiedUserId: userId, executor }) }),
+      manifest: createManifestService({ store: createSupabaseManifestStore({ verifiedUserId: userId, executor }) }),
+    });
   },
 };
