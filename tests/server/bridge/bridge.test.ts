@@ -142,7 +142,7 @@ describe("entry real del puente de test", () => {
     const { createBridgeHandlers: create } = (await import(/* @vite-ignore */ bridge.fileUrl)) as { createBridgeHandlers: typeof createBridgeHandlers };
 
     const handlers = create({
-      turn: { session: noSession, turns: unused, messages: unused, drafting: unused, currentDraftRevision: async () => 0 },
+      turn: { session: noSession, turns: unused, messages: unused, documents: unused, drafting: unused, currentDraftRevision: async () => 0 },
       evidence: { session: noSession, store: unused, storage: unused },
       contrast: { session: noSession, messages: unused, store: unused, groq: unused },
       verification: { store: unused, mirror: unused },

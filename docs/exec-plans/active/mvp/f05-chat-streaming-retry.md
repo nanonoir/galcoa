@@ -67,7 +67,9 @@ La orquestación revisada en el PR #110 (≈865 de churn authored) supera el top
 - **3b · doble de test durable** (base 3a): `createMemoryDurableStore` con la semántica de 02500/02501 y su propia prueba.
 - **3c · orquestación y retiro legacy** (base 3b): `createTurnService` usa solo `DurableChatStore`; se retira `TurnStore`.
 
-**Alcance de 3a:** sin ruta, factoría de runtime ni UI; no acredita chat funcional.
+**Semántica de 3c:** actor y `TurnClaimRef` explícitos; el Agente 1 hace `stageProposal` y solo `completeTurn` publica; `draft`/`agent_message`/`done` salen después del commit con el resultado SQL. Replay de un turno completado recupera el original con `completeTurn` del intento (sin IA); attach `stale` corta antes de la IA; el estado del documento se revalida antes de la IA (`finalizado` → `DOCUMENT_FINALIZED`, sin crear v2 ni bloquear por advertencias); cancelar tras el staging no completa; `stale`/`stale_draft`/`document_finalized` no son éxito; cierre una sola vez.
+
+**Alcance y límites:** sin ruta, factoría de runtime ni UI; sin proveedores reales ni base; no acredita chat funcional (aceptación parcial: solo dobles en memoria). El evento `draft` en replay no trae conteos de advertencias (`warnings`/`notInformed` ausentes, sin inventar ceros ni parsear el texto de la IA): la UI debe leer el reporte canónico (F7, PR #111). Pendiente: contraste CAS/discriminante F7 y composición HTTP.
 
 ## 6. Casos de test por aceptación
 
