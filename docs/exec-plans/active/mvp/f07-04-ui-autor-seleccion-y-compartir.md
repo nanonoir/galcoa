@@ -1,6 +1,6 @@
 # F7-04 — UI de revisión del autor y compartir manual
 
-**Estado: planificado (no iniciado).** Ninguna tarea de este plan está implementada ni validada.
+**Estado: en curso (2026-10-16, etapa A del [cierre consolidado](mvp-consolidated-closure.md)); `MVP-077`/`MVP-078` NO completadas.** Recuperada la entrega de #21 (Facu) y corregida su integración; ruta `/documents/[id]/review` montada. Pendiente: QR (PD-03, requiere autorización de dependencia), Playwright del flujo, integración con la navegación del documento y la carrera con F8.
 
 Tareas del maestro: `MVP-077`, `MVP-078`
 
@@ -106,6 +106,13 @@ Documentos objetivo **disponibles** y enlazados; los parámetros operativos (ent
 - Antes de integrar: descartar la rama; sin cambios de datos.
 - Tras integrar: revertir containers y la ruta de revisión; las revisiones, invitaciones y respuestas persistidas permanecen. Si falla la dependencia de QR, puede conservarse temporalmente el enlace copiable como recuperación degradada, pero MVP-078 no se completa hasta restaurar el QR y las demás formas de compartir exigidas.
 - Un fallo de red al congelar se recupera consultando la revisión persistida antes de repetir; reintentar con la misma clave.
+
+## 10 bis. Evidencia parcial (rama `flow/closure-review-author`, sin DB real)
+
+- Revisados los contratos reales de `freeze`, `invitations`, `confirm` y `confirmations` contra el container; coinciden.
+- Correcciones: clave de idempotencia de congelado por intención (selección+borrador), avance real tras congelar (`unchanged`), rechazo ya no se muestra como «confirmó», consulta acotada con retroceso (PD-02), ruta `/review` con `draftRevision` leído en servidor por el lector existente.
+- Ejecutado: `lint`, `typecheck`, `npm test` (64 archivos, 1090 tests), `test:boundaries`, `build` — verdes. No ejecutado: Playwright, Supabase local, QR.
+- Límites: sin QR (no hay librería en el repo); el agregado no indica qué rol respondió qué, por lo que con respuestas mixtas el detalle por rol se omite; sin sello/finalización reales (indicadores fijos).
 
 ## 11. Cierre
 

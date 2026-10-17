@@ -32,7 +32,8 @@ describe("ReviewContainer", () => {
   it("congela con el borrador esperado y emite un enlace por tercero elegido", async () => {
     fetchMock
       .mockResolvedValueOnce(json({ revision: REVISION, snapshot: SNAPSHOT, unchanged: false }, 201))
-      .mockResolvedValueOnce(json({ token: "tok-comprador", role: "comprador" }, 201));
+      .mockResolvedValueOnce(json({ token: "tok-comprador", role: "comprador" }, 201))
+      .mockResolvedValueOnce(json({ confirmationStatus: "pendiente", missingRoles: ["autor", "comprador"], confirmed: 0, rejected: 0 }));
     const user = userEvent.setup();
     render(<ReviewContainer documentId="doc-1" draftRevision={3} />);
 
@@ -60,8 +61,9 @@ describe("ReviewContainer", () => {
   it("solo autor: no emite enlaces y permite confirmar tras marcar la casilla", async () => {
     fetchMock
       .mockResolvedValueOnce(json({ revision: REVISION, snapshot: SNAPSHOT, unchanged: false }, 201))
+      .mockResolvedValueOnce(json({ confirmationStatus: "pendiente", missingRoles: ["autor"], confirmed: 0, rejected: 0 }))
       .mockResolvedValueOnce(json({ responseId: "r1", confirmationStatus: "completa" }, 201))
-      .mockResolvedValueOnce(json({ confirmationStatus: "completa", missingRoles: [] }));
+      .mockResolvedValueOnce(json({ confirmationStatus: "completa", missingRoles: [], confirmed: 1, rejected: 0 }));
     const user = userEvent.setup();
     render(<ReviewContainer documentId="doc-1" draftRevision={0} />);
     await user.click(screen.getByRole("button", { name: /congelar y generar enlaces/i }));
@@ -72,7 +74,7 @@ describe("ReviewContainer", () => {
     await user.click(confirm);
 
     await waitFor(() => expect(screen.getByRole("button", { name: "Ya confirmaste" })).toBeDisabled());
-    const [, confirmCall, aggregate] = calls();
+    const [, , confirmCall, aggregate] = calls();
     expect(confirmCall).toMatchObject({
       url: "/api/documents/doc-1/revisions/confirm",
       body: { revisionId: "rev-1", snapshotId: "snap-1", decision: "confirmar", checkboxChecked: true, schemaVersion: 1 },
@@ -91,5 +93,21 @@ describe("ReviewContainer", () => {
     await user.click(screen.getByRole("button", { name: /congelar y generar enlaces/i }));
     expect(await screen.findByText(/no se pudo generar el enlace/i)).toBeInTheDocument();
     expect(screen.queryByText(/\/confirm\//)).not.toBeInTheDocument();
+  });
+
+  it("un rechazo se informa como respuesta de negocio y no atribuye roles de forma ambigua", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ revision: REVISION, snapshot: SNAPSHOT, unchanged: false }, 201))
+      .mockResolvedValueOnce(json({ token: "tok-comprador", role: "comprador" }, 201))
+      .mockResolvedValueOnce(json({ confirmationStatus: "rechazada", missingRoles: [], confirmed: 1, rejected: 1 }));
+    const user = userEvent.setup();
+    render(<ReviewContainer documentId="doc-1" draftRevision={3} />);
+    await user.click(screen.getByRole("checkbox", { name: "Comprador" }));
+    await user.click(screen.getByRole("button", { name: /congelar y generar enlaces/i }));
+
+    expect(await screen.findByText(/un participante rechazó/i)).toBeInTheDocument();
+    expect(screen.queryByText("Confirmó")).not.toBeInTheDocument();
+    expect(screen.queryByText("Rechazó")).not.toBeInTheDocument();
+    expect(screen.queryByText(/algo no salió bien/i)).not.toBeInTheDocument();
   });
 });

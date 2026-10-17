@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { ShareLinksPanel, type ShareLinkItem } from "@/features/corroborations/c
 import { buildMailtoUrl, buildWhatsAppUrl } from "@/features/corroborations/lib/share-links";
 import { SnapshotView } from "@/features/documents/components/snapshot-view";
 import type { ConfirmationStatus } from "@/lib/contracts/document";
-import type { ParticipantSelection, ThirdPartyRole } from "@/lib/contracts/review";
+import type { ParticipantRole, ParticipantSelection, ThirdPartyRole } from "@/lib/contracts/review";
 import type { SnapshotViewState } from "@/lib/contracts/snapshot-view";
 
 /**
@@ -33,8 +33,15 @@ interface Frozen {
 interface Progress {
   confirmationStatus: ConfirmationStatus;
   missingRoles: string[];
+  confirmed: number;
+  rejected: number;
   authorConfirmed: boolean;
 }
+
+/** Consulta de avance acotada: retroceso desde 10 s hasta 60 s, solo con la pestaña visible. */
+const POLL_START_MS = 10_000;
+const POLL_MAX_MS = 60_000;
+const SETTLED: ConfirmationStatus[] = ["completa", "rechazada", "sustituida"];
 
 export interface ReviewContainerProps {
   documentId: string;
@@ -92,9 +99,10 @@ export function ReviewContainer({ documentId, draftRevision }: ReviewContainerPr
     setRefreshing(true);
     try {
       const result = await call(`/api/revisions/${encodeURIComponent(revisionId)}/confirmations`);
-      const agg = result.body as { confirmationStatus?: ConfirmationStatus; missingRoles?: string[] } | null;
+      const agg = result.body as { confirmationStatus?: ConfirmationStatus; missingRoles?: string[]; confirmed?: number; rejected?: number } | null;
       if (!result.ok || !agg?.confirmationStatus) throw new Error("No se pudo actualizar el avance.");
-      setProgress((prev) => ({ confirmationStatus: agg.confirmationStatus!, missingRoles: agg.missingRoles ?? [], authorConfirmed: prev?.authorConfirmed ?? !(agg.missingRoles ?? []).includes("autor") }));
+      const missingRoles = agg.missingRoles ?? [];
+      setProgress({ confirmationStatus: agg.confirmationStatus, missingRoles, confirmed: agg.confirmed ?? 0, rejected: agg.rejected ?? 0, authorConfirmed: !missingRoles.includes("autor") });
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo actualizar el avance.");
@@ -110,11 +118,11 @@ export function ReviewContainer({ documentId, draftRevision }: ReviewContainerPr
       const roles = selection.filter((r) => r !== "autor");
       const result = await call(`/api/documents/${encodeURIComponent(documentId)}/revisions`, {
         method: "POST",
-        body: JSON.stringify({ expectedDraftRevision: draftRevision, selection: roles, idempotencyKey: key("freeze") }),
+        body: JSON.stringify({ expectedDraftRevision: draftRevision, selection: roles, idempotencyKey: key(`freeze-${selection.join("+")}-${draftRevision}`) }),
       });
       const data = result.body as { revision?: Record<string, string>; snapshot?: Record<string, unknown> } | null;
       if (!result.ok || !data?.revision || !data.snapshot) throw new Error(errorText(result.body, "No se pudo congelar la revisión."));
-      renew("freeze");
+      renew(`freeze-${selection.join("+")}-${draftRevision}`);
       const next: Frozen = {
         revisionId: String(data.revision.revisionId),
         snapshotId: String(data.snapshot.snapshotId),
@@ -136,7 +144,8 @@ export function ReviewContainer({ documentId, draftRevision }: ReviewContainerPr
       const issued: ShareLinkItem[] = [];
       for (const role of thirds) issued.push(toLink(role, await issue(next.revisionId, role)));
       setLinks(issued);
-      setProgress({ confirmationStatus: "pendiente", missingRoles: selection, authorConfirmed: false });
+      setProgress({ confirmationStatus: "pendiente", missingRoles: selection, confirmed: 0, rejected: 0, authorConfirmed: false });
+      await refresh(next.revisionId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo congelar la revisión.");
     } finally {
@@ -174,7 +183,6 @@ export function ReviewContainer({ documentId, draftRevision }: ReviewContainerPr
       });
       if (!result.ok) throw new Error(errorText(result.body, "No se pudo registrar tu confirmación."));
       renew("confirm");
-      setProgress((prev) => (prev ? { ...prev, authorConfirmed: true } : prev));
       await refresh(frozen.revisionId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo registrar tu confirmación.");
@@ -183,12 +191,30 @@ export function ReviewContainer({ documentId, draftRevision }: ReviewContainerPr
     }
   }
 
+  // El agregado no dice quién respondió qué: el detalle por rol solo se muestra si no es ambiguo.
   const participants = frozen
-    ? frozen.selection.map((role) => ({
-        role,
-        progress: (progress?.missingRoles.includes(role) ? "pendiente" : "confirmada") as ParticipantProgress,
-      }))
+    ? frozen.selection.flatMap((role): { role: ParticipantRole; progress: ParticipantProgress }[] => {
+        if (progress?.missingRoles.includes(role)) return [{ role, progress: "pendiente" }];
+        if (!progress || progress.rejected === 0) return [{ role, progress: "confirmada" }];
+        if (progress.confirmed === 0) return [{ role, progress: "rechazada" }];
+        return [];
+      })
     : [];
+
+  const settled = progress ? SETTLED.includes(progress.confirmationStatus) : true;
+  const revisionId = frozen?.revisionId;
+  useEffect(() => {
+    if (!revisionId || settled) return;
+    let delay = POLL_START_MS;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      if (document.visibilityState === "visible") void refresh(revisionId);
+      delay = Math.min(delay * 2, POLL_MAX_MS);
+      timer = setTimeout(tick, delay);
+    };
+    timer = setTimeout(tick, delay);
+    return () => clearTimeout(timer);
+  }, [revisionId, settled]);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8">
