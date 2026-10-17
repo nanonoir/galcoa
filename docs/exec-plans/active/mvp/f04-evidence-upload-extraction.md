@@ -8,10 +8,10 @@ Tareas del maestro: `MVP-042`, `MVP-043`
 
 **Estado actual tras checkpoints de integración (PR #86, PR #96 y PR #97):**
 El backend de persistencia, Storage privado autenticado, retención de cuotas y protocolo terminal de descarte quedó integrado en `develop` (base `9d5cd15`).
-- PR #86 (`f1013d8`): Persistencia transaccional de evidencias y extracciones, EvidenceStore RPC interno con actor ligado, Storage privado autenticado con TTL SQL de 120 s (`upload_expires_at`) y Route Handlers privados bajo `/api/documents/[id]/evidences`. Revisión independiente posterior con resultado PASS.
+- PR #86 (`f1013d8`): Persistencia transaccional de evidencias y extracciones, EvidenceStore RPC interno con actor ligado, Storage privado autenticado con TTL SQL de 120 s (`upload_expires_at`) y Route Handlers privados bajo `/api/documents/[id]/evidences`. Revisión independiente posterior PASS WITH FINDINGS; los hallazgos de descarte se atendieron en PR #96/#97.
 - PR #96 (`aaea26c`): Retención de cuotas por documento en reservas vencidas (migración `20261016002200_evidence_retained_quota.sql`), impidiendo que el vencimiento libere cupo automáticamente sin descarte. Verificado en CI Linux run `38989208876` SUCCESS (`validate` 3m40s, `local-server-db` 5m39s, 1099 unit, 69 bounds).
 - PR #97 (`9d5cd15`): Protocolo terminal de descarte irreversible en 3 pasos (claim terminal SQL bajo advisory lock de actor y lock de documento → `Storage.remove` → `discard_evidence_reservation`, migración `20261016002300_evidence_discard_protocol.sql`). Limpieza oportunista por propietario en lotes de hasta 3 reservas candidatas al reservar; RPC revalida que no queden descartes pendientes (`discard_pending`); autorización RLS serializada con reloj posterior al lock; originales aceptados inmutables (trigger `evidence_discard_guard`); reintento ante fallo de Storage retiene cuota y claim. Revisión independiente (sesión `ses_eb88f0798ffedC3FY0N89Bgi63`) PASS; autor validó 1103 unit, lint, types, build, 69 bounds; CI run `38990325702` SUCCESS (`validate` 2m23s, `local-server-db` 5m50s con 5 nuevos escenarios reales).
-- Aceptación de `MVP-042` y `MVP-043` permanece PARCIAL: la UI de chat no está montada (`MVP-054` / `MVP-116`), no se ejecutaron llamadas reales con proveedores de IA en sesión en vivo (`MVP-050`/`MVP-134`), y las migraciones remotas no se han aplicado en cloud (sin verificar). Issue #11 permanece abierta. El plan se conserva activo; NO se cierra ni se archiva en este checkpoint.
+- Aceptación de `MVP-042` y `MVP-043` permanece PARCIAL: la UI de chat no está montada (`MVP-054` / `MVP-116`), no se ejecutaron llamadas reales con proveedores de IA en sesión en vivo (`MVP-134`), y la aplicación de las migraciones adicionales en cloud no está acreditada. Issue #11 permanece abierta. El plan se conserva activo; NO se cierra ni se archiva en este checkpoint.
 
 `MVP-042`: aceptar texto, PDF e imágenes simples dentro de los límites decididos, conservar el original en Storage privado con SHA-256 de sus bytes y metadatos, y rechazar con motivo técnico explícito. `MVP-043`: persistir texto extraído con procedencia; un fallo del proveedor es un impedimento informado, nunca texto inventado, y no se proclama verificación visual independiente.
 
@@ -181,7 +181,9 @@ Aislamiento de Storage entre dos usuarios: `MVP-024`/`MVP-121`, con base local r
 - Regresión local adicional sin reset: persistencia F4 **8/8**, LOGIN ejecutor
   **6/6**, suite local Auth/bridge **8/8**. Los fixtures retiran la contraseña
   efímera de LOGIN en teardown; ninguna URL privada se escribe en archivos.
-- Base integrada en PR #86: `f1013d8`. Revisión independiente posterior con resultado PASS.
+- Base integrada en PR #86: `f1013d8`. Revisión independiente posterior PASS WITH FINDINGS.
+- Incidencia operativa histórica: el primer `supabase start` imprimió configuración efímera local en el registro de herramienta. No se copió a archivos/commits ni correspondía a cloud. Las operaciones posteriores capturaron la salida sensible en proceso; el LOGIN local de prueba quedó sin contraseña y la pila fue detenida. No afirmar que nunca hubo salida sensible en herramientas.
+- Límites de inspección conservados: el conteo determinista de páginas no admite todos los árboles PDF comprimidos; esos archivos pueden rechazarse como ilegibles. El nombre original no se conserva porque la tabla no tiene columna para ello. No presentar estos límites como compatibilidad PDF universal ni preservación completa de metadatos de nombre.
 - Cuatro conexiones LOGIN independientes respetan 3 archivos; también 20 MiB.
   Replay, fingerprint semántico diferente, otro dueño/documento, vencimiento,
   liberación de cupo, hash incorrecto y limpieza están cubiertos. Fallo de
@@ -226,7 +228,7 @@ Aislamiento de Storage entre dos usuarios: `MVP-024`/`MVP-121`, con base local r
 - El test de subida HTTP con cuerpo pendiente demuestra que el claim aborta la adopción y previene la descarga del objeto, pero no prueba por sí solo el momento exacto del preflight de Supabase Storage ni la eliminación física inmediata en los discos del backend.
 - No existe un proceso en segundo plano (cron/SLA) que imponga un límite físico global de almacenamiento en el bucket ni garantice plazo de limpieza si el usuario no vuelve a realizar reservas (registrado en Technical Debt Tracker, item #8).
 - No se emplean formulaciones absolutas en la documentación (e.g. evitar proclamar «garantía matemática de no interbloqueo» ni sobreproclamar auditorías).
-- Aceptación de `MVP-042` y `MVP-043` permanece **PARCIAL**: la interfaz de usuario de chat no está montada (`MVP-054` / `MVP-116`), no se ejecutaron llamadas reales con proveedores de IA en vivo (`MVP-050`/`MVP-134`), y las migraciones remotas no se han aplicado en cloud (las variables de entorno informadas por el usuario no se leyeron ni se afirma password NULL; conectividad cloud sin verificar). Issue #11 permanece abierta.
+- Aceptación de `MVP-042` y `MVP-043` permanece **PARCIAL**: la interfaz de usuario de chat no está montada (`MVP-054` / `MVP-116`), no se ejecutaron llamadas reales con proveedores de IA en vivo (`MVP-134`), y la aplicación de las migraciones adicionales en cloud no está acreditada (las variables informadas por el usuario no se leyeron ni se afirma password NULL; conectividad cloud sin verificar). Issue #11 permanece abierta.
 
 ### Contrato HTTP para MVP-054 / presentación
 
