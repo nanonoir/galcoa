@@ -60,7 +60,7 @@ it("cookies A/B reales autorizan la factory de dominio sin confiar en un UID del
       // Almacén en memoria explícito: esto prueba autorización, NO persistencia SQL.
       const unused = {};
       const handlers = bridge.createBridgeHandlers({
-        turn: { session, turns: unused, messages: unused, drafting: unused, currentDraftRevision: async () => 0 },
+        turn: { session, turns: unused, messages: unused, documents: unused, drafting: unused, currentDraftRevision: async () => 0 },
         evidence: { session, store: { listEvidences: async (owner) => owner === input.owner ? [] : null }, storage: unused },
         contrast: { session, messages: unused, store: unused, groq: unused },
         verification: { store: unused, mirror: unused },

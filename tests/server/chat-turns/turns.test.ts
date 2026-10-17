@@ -2,101 +2,29 @@ import { randomUUID } from "node:crypto";
 
 import { describe, expect, it, vi } from "vitest";
 
-import type { Message } from "@/lib/contracts/core";
 import { createMessageService } from "@/lib/documents/messages";
 import type { SessionPort } from "@/lib/documents/ports";
 import { createChatTurnHandler } from "@/lib/documents/turns/http";
-import type { TurnRecord, TurnStore } from "@/lib/documents/turns/ports";
 import { agentReply, createTurnService, type TurnDeps, type TurnEvent } from "@/lib/documents/turns/service";
 
 import { createMemoryStore } from "../documents/memory-store";
+
+import { createMemoryDurableStore } from "./memory-durable-store";
 
 // Datos ficticios; ni IA ni base reales.
 const ANA = "11111111-1111-4111-8111-111111111111";
 const LUIS = "22222222-2222-4222-8222-222222222222";
 
-/** Doble de la operación de turno: claim con vencimiento, un intento vigente, una respuesta. */
-function memoryTurns(documents: () => Map<string, string>, options: { now?: () => number } = {}) {
-  const now = options.now ?? (() => Date.now());
-  const turns = new Map<string, TurnRecord & { fingerprint: string; ownerId: string }>();
-  const agentMessages = new Map<string, Message>();
-  const events: { type: string; turnId: string; attempt: number }[] = [];
-
-  const store: TurnStore = {
-    async claimTurn(input) {
-      if (documents().get(input.documentId) !== input.ownerId) return { status: "not_available" };
-      const key = `${input.ownerId}|${input.clientMessageId}`;
-      const lease = () => new Date(now() + input.leaseSeconds * 1000).toISOString();
-      const t = turns.get(key);
-      if (!t) {
-        const turn = {
-          turnId: randomUUID(),
-          documentId: input.documentId,
-          clientMessageId: input.clientMessageId,
-          attempt: 1,
-          state: "en_curso" as const,
-          userMessageId: null,
-          agentMessageId: null,
-          leaseExpiresAt: lease(),
-          fingerprint: input.fingerprint,
-          ownerId: input.ownerId,
-        };
-        turns.set(key, turn);
-        events.push({ type: "turn.started", turnId: turn.turnId, attempt: 1 });
-        return { status: "claimed", turn, retried: false };
-      }
-      if (t.fingerprint !== input.fingerprint || t.documentId !== input.documentId) return { status: "idempotency_conflict" };
-      if (t.state === "completado") return { status: "completed", turn: t, agentMessage: agentMessages.get(t.turnId)! };
-      if (t.state === "en_curso" && Date.parse(t.leaseExpiresAt!) > now()) return { status: "in_progress", turn: t };
-      Object.assign(t, { attempt: t.attempt + 1, state: "en_curso", leaseExpiresAt: lease() });
-      events.push({ type: "turn.retried", turnId: t.turnId, attempt: t.attempt });
-      return { status: "claimed", turn: { ...t }, retried: true };
-    },
-    async attachUserMessage({ turnId, userMessageId }) {
-      const t = [...turns.values()].find((x) => x.turnId === turnId)!;
-      t.userMessageId = userMessageId;
-    },
-    async completeTurn(input) {
-      const t = [...turns.values()].find((x) => x.turnId === input.turnId)!;
-      if (t.attempt !== input.attempt || t.state !== "en_curso") return { status: "stale" };
-      const message: Message = {
-        messageId: randomUUID(),
-        documentId: t.documentId,
-        sender: "agente",
-        content: input.agentContent,
-        declaredEventDate: { kind: "unknown" },
-        uploadedAt: new Date(now()).toISOString(),
-      };
-      agentMessages.set(t.turnId, message);
-      Object.assign(t, { state: "completado", agentMessageId: message.messageId, leaseExpiresAt: null });
-      events.push({ type: "turn.completed", turnId: t.turnId, attempt: t.attempt });
-      return { status: "completed", agentMessage: message };
-    },
-    async closeAttempt(input) {
-      const t = [...turns.values()].find((x) => x.turnId === input.turnId)!;
-      if (t.attempt !== input.attempt || t.state !== "en_curso") return;
-      Object.assign(t, { state: input.state, leaseExpiresAt: null });
-      events.push({ type: input.state === "cancelado" ? "turn.cancelled" : "turn.failed", turnId: t.turnId, attempt: t.attempt });
-    },
-  };
-  return { store, turns, agentMessages, events };
-}
-
 type DraftReply = Awaited<ReturnType<TurnDeps["drafting"]["generateDraft"]>>;
-const draftOk = (title = "Entrega de yerba", warnings = 1): DraftReply => ({
-  ok: true,
-  value: {
-    draft: { draftId: randomUUID(), draftRevision: 1, content: { title } },
-    proposalId: randomUUID(),
-    proposal: { warnings: Array.from({ length: warnings }, () => ({})), notInformed: ["precio"] },
-  },
-});
+type Cmd = Parameters<TurnDeps["drafting"]["generateDraft"]>[0];
 const draftFail = (code: string, retryable = true): DraftReply => ({
   ok: false,
   error: { code, stage: "ia", retryable, correlationId: "c" },
 });
+/** Paso del Agente 1 doblado: `stage` hace el staging real contra el doble de persistencia. */
+type Step = (cmd: Cmd, stage: (title?: string, warnings?: number) => Promise<DraftReply>) => Promise<DraftReply>;
 
-async function setup(options: { user?: string | null; drafting?: TurnDeps["drafting"]["generateDraft"]; now?: () => number } = {}) {
+async function setup(options: { user?: string | null; drafting?: Step; now?: () => number } = {}) {
   const mem = createMemoryStore();
   let user = options.user === undefined ? ANA : options.user;
   const session: SessionPort = { currentUserId: async () => user };
@@ -108,15 +36,43 @@ async function setup(options: { user?: string | null; drafting?: TurnDeps["draft
   });
   if (created.status !== "created") throw new Error("setup");
   const documentId = created.value.documentId;
+  const finalized = new Set<string>();
   const owners = () => new Map(mem.inspect().documents.map((d) => [d.documentId, d.ownerId]));
-  const turns = memoryTurns(owners, { now: options.now });
-  const generateDraft = vi.fn(options.drafting ?? (async () => draftOk()));
+  const turns = createMemoryDurableStore({ owners, now: options.now, finalized });
+  const stage = (cmd: Cmd) => async (title = "Entrega de yerba", warnings = 1): Promise<DraftReply> => {
+    const staged = await turns.store.stageProposal({
+      ownerId: ANA,
+      documentId: cmd.documentId,
+      claim: cmd.claim,
+      audit: { actorScope: ANA, correlationId: "c" },
+      expectedDraftRevision: cmd.expectedDraftRevision,
+      content: { title, body: "Cuerpo del borrador.", corrections: [] },
+      proposal: { title },
+      inputs: [{ ref: "m1", kind: "mensaje", id: randomUUID() }],
+      modelId: "doble",
+      promptVersion: "v1",
+      limitations: [],
+    });
+    if (staged.status === "stale") return draftFail("TURN_SUPERSEDED", false);
+    if (staged.status !== "staged") return draftFail("TECHNICAL_FAILURE", false);
+    return {
+      ok: true,
+      value: { staged: staged.staged, proposal: { title, warnings: Array.from({ length: warnings }, () => ({})), notInformed: ["precio"] } },
+    };
+  };
+  const generateDraft = vi.fn(async (cmd: Cmd) => (options.drafting ?? ((_, s) => s()))(cmd, stage(cmd)));
   const service = createTurnService({
     session,
     turns: turns.store,
     messages: createMessageService(session, mem.store),
+    documents: {
+      async getDocument(ownerId, id) {
+        const record = await mem.store.getDocument(ownerId, id);
+        return record && finalized.has(id) ? { ...record, documentStatus: "finalizado" } : record;
+      },
+    },
     drafting: { generateDraft },
-    currentDraftRevision: async () => 0,
+    currentDraftRevision: async (_owner, id) => turns.drafts.get(id)?.draftRevision ?? 0,
     newCorrelationId: () => "corr-1",
   });
   const cmd = (over: Record<string, unknown> = {}) => ({
@@ -125,7 +81,7 @@ async function setup(options: { user?: string | null; drafting?: TurnDeps["draft
     content: "Entregamos 10 cajas de yerba a Almacén El Ceibo Ficticio.",
     ...over,
   });
-  return { mem, turns, service, generateDraft, documentId, cmd, setUser: (u: string | null) => (user = u) };
+  return { mem, turns, service, generateDraft, documentId, finalized, cmd, setUser: (u: string | null) => (user = u) };
 }
 
 async function collect(events: AsyncGenerator<TurnEvent>) {
@@ -146,9 +102,13 @@ describe("Turno normal (MVP-052)", () => {
   it("emite eventos en orden y persiste el usuario antes de la IA y la respuesta al final", async () => {
     let userSavedBeforeAi = false;
     const ctx = await setup({
-      drafting: async () => {
+      drafting: async (_cmd, stage) => {
         userSavedBeforeAi = ctxRef.mem.inspect().messages.some((m) => m.sender === "autor");
-        return draftOk("Entrega de yerba", 1);
+        // El staging no publica nada: ni borrador oficial ni mensaje del agente antes de completar.
+        const reply = await stage("Entrega de yerba", 1);
+        expect(ctxRef.turns.drafts.size).toBe(0);
+        expect(ctxRef.turns.agentMessages.size).toBe(0);
+        return reply;
       },
     });
     const ctxRef = ctx;
@@ -158,15 +118,21 @@ describe("Turno normal (MVP-052)", () => {
     expect(userSavedBeforeAi).toBe(true);
     const agent = events.find((e) => e.type === "agent_message");
     expect(agent).toMatchObject({ content: agentReply("Entrega de yerba", 1, 1) });
+    // `draft` sale del resultado de completar (revisión oficial 1), no del staging.
+    expect(events.find((e) => e.type === "draft")).toMatchObject({ draftRevision: 1, title: "Entrega de yerba", warnings: 1 });
+    expect(ctx.turns.drafts.get(ctx.documentId)?.draftRevision).toBe(1);
     expect(ctx.turns.agentMessages.size).toBe(1);
     expect(ctx.turns.events.map((e) => e.type)).toEqual(["turn.started", "turn.completed"]);
   });
 
-  it("propaga el AbortSignal y la revisión vigente al Agente 1", async () => {
+  it("propaga AbortSignal, revisión vigente y el claim explícito del intento al Agente 1", async () => {
     const ctx = await setup();
     const controller = new AbortController();
-    await runTurn(ctx, {}, controller.signal);
-    expect(ctx.generateDraft).toHaveBeenCalledWith(expect.objectContaining({ abortSignal: controller.signal, expectedDraftRevision: 0 }));
+    const { started } = await runTurn(ctx, {}, controller.signal);
+    const turnId = started.ok ? started.value.turn.turnId : "";
+    expect(ctx.generateDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ abortSignal: controller.signal, expectedDraftRevision: 0, claim: { turnId, attempt: 1 } }),
+    );
   });
 
   it("la respuesta del agente referencia el borrador sin incrustar su contenido", () => {
@@ -209,6 +175,64 @@ describe("Errores y cancelación (MVP-052)", () => {
     expect(ctx.turns.events.at(-1)?.type).toBe("turn.cancelled");
   });
 
+  it("cancelar después del staging: no completa, no hay borrador ni mensaje oficial", async () => {
+    const controller = new AbortController();
+    const ctx = await setup({
+      drafting: async (_cmd, stage) => {
+        const reply = await stage();
+        controller.abort();
+        return reply;
+      },
+    });
+    const { events } = await runTurn(ctx, {}, controller.signal);
+    expect(events.at(-1)).toEqual({ type: "cancelled" });
+    expect(ctx.turns.calls.stage).toBe(1);
+    expect(ctx.turns.calls.complete).toBe(0);
+    expect(ctx.turns.drafts.size).toBe(0);
+    expect(ctx.turns.agentMessages.size).toBe(0);
+    expect(ctx.turns.events.filter((e) => e.type === "turn.cancelled")).toHaveLength(1);
+  });
+
+  it("documento finalizado: conserva al usuario y no llama a la IA ni publica", async () => {
+    const ctx = await setup();
+    ctx.finalized.add(ctx.documentId);
+    const { events } = await runTurn(ctx);
+    expect(events.at(-1)).toMatchObject({ type: "error", error: { code: "DOCUMENT_FINALIZED", retryable: false } });
+    expect(ctx.generateDraft).not.toHaveBeenCalled();
+    expect(userMessages(ctx)).toHaveLength(1);
+    expect(ctx.turns.drafts.size).toBe(0);
+  });
+
+  it("el documento se finaliza durante la IA: completar no publica y el error es explícito", async () => {
+    const ctx = await setup({
+      drafting: async (_cmd, stage) => {
+        const reply = await stage();
+        ctx.finalized.add(ctx.documentId);
+        return reply;
+      },
+    });
+    const { events } = await runTurn(ctx);
+    expect(events.at(-1)).toMatchObject({ type: "error", error: { code: "DOCUMENT_FINALIZED" } });
+    expect(events.map((e) => e.type)).not.toContain("draft");
+    expect(ctx.turns.drafts.size).toBe(0);
+    expect(ctx.turns.agentMessages.size).toBe(0);
+  });
+
+  it("el borrador oficial cambió durante la IA (CAS): sin éxito ni publicación", async () => {
+    const ctx = await setup({
+      drafting: async (_cmd, stage) => {
+        const reply = await stage();
+        ctx.turns.drafts.set(ctx.documentId, { draftId: randomUUID(), documentId: ctx.documentId, draftRevision: 5, content: { title: "otro", body: "x", corrections: [] }, updatedAt: "2026-10-16T16:00:00Z" });
+        return reply;
+      },
+    });
+    const { events } = await runTurn(ctx);
+    expect(events.at(-1)).toMatchObject({ type: "error", error: { code: "STALE_DRAFT" } });
+    expect(ctx.turns.agentMessages.size).toBe(0);
+    expect(ctx.turns.drafts.get(ctx.documentId)?.draftRevision).toBe(5);
+    expect(ctx.turns.events.filter((e) => e.type === "turn.failed")).toHaveLength(1);
+  });
+
   it("cancelado antes de la IA: no la llama", async () => {
     const controller = new AbortController();
     controller.abort();
@@ -221,8 +245,8 @@ describe("Errores y cancelación (MVP-052)", () => {
 
 describe("Reintento, doble envío e idempotencia (MVP-052)", () => {
   it("reintento tras fallo: mismo mensaje de usuario, nuevo intento y una sola respuesta", async () => {
-    const replies = [draftFail("AI_TIMEOUT"), draftOk()];
-    const ctx = await setup({ drafting: async () => replies.shift()! });
+    const replies: Step[] = [async () => draftFail("AI_TIMEOUT"), (_cmd, stage) => stage()];
+    const ctx = await setup({ drafting: (cmd, stage) => replies.shift()!(cmd, stage) });
     await runTurn(ctx);
     const { events } = await runTurn(ctx);
     expect(events[0]).toMatchObject({ type: "turn.started", attempt: 2, retried: true });
@@ -236,14 +260,36 @@ describe("Reintento, doble envío e idempotencia (MVP-052)", () => {
     const first = await runTurn(ctx);
     const again = await runTurn(ctx);
     expect(again.started).toMatchObject({ ok: true, replayed: true });
-    expect(again.events.map((e) => e.type)).toEqual(["agent_message", "done"]);
-    expect(again.events[0]).toEqual(first.events.find((e) => e.type === "agent_message"));
+    expect(again.events.map((e) => e.type)).toEqual(["draft", "agent_message", "done"]);
+    expect(again.events[1]).toEqual(first.events.find((e) => e.type === "agent_message"));
+    expect(again.events[0]).toMatchObject({ draftRevision: 1, title: "Entrega de yerba" });
     expect(ctx.generateDraft).toHaveBeenCalledTimes(1);
+    // El replay sale de `completeTurn` del intento completado y no republica.
+    expect(ctx.turns.calls.complete).toBe(2);
+    expect(ctx.turns.drafts.get(ctx.documentId)?.draftRevision).toBe(1);
+  });
+
+  it("respuesta de completar perdida: el reintento recupera el resultado original sin reejecutar la IA", async () => {
+    const ctx = await setup();
+    ctx.turns.hooks.loseCompleteResponse = true;
+    const first = await runTurn(ctx);
+    expect(first.events.at(-1)).toMatchObject({ type: "error", error: { code: "TECHNICAL_FAILURE", retryable: true } });
+    const committed = ctx.turns.drafts.get(ctx.documentId)!;
+    expect(committed.draftRevision).toBe(1);
+    // Cerrar tras la respuesta perdida no toca el turno ya completado.
+    expect(ctx.turns.events.map((e) => e.type)).toEqual(["turn.started", "turn.completed"]);
+
+    const again = await runTurn(ctx);
+    expect(again.started).toMatchObject({ ok: true, replayed: true });
+    expect(again.events[0]).toMatchObject({ type: "draft", draftId: committed.draftId, draftRevision: 1 });
+    expect(again.events.at(-1)).toEqual({ type: "done" });
+    expect(ctx.generateDraft).toHaveBeenCalledTimes(1);
+    expect(ctx.turns.agentMessages.size).toBe(1);
   });
 
   it("doble envío con un intento vigente: «en curso», sin duplicar", async () => {
     let release!: () => void;
-    const ctx = await setup({ drafting: () => new Promise<DraftReply>((resolve) => (release = () => resolve(draftOk()))) });
+    const ctx = await setup({ drafting: (_cmd, stage) => new Promise<DraftReply>((resolve) => (release = () => resolve(stage()))) });
     const first = await ctx.service.startTurn(ctx.cmd());
     if (!first.ok) throw new Error("inicio");
     const iterating = collect(first.value.events);
@@ -259,8 +305,8 @@ describe("Reintento, doble envío e idempotencia (MVP-052)", () => {
 
   it("claim vencido (el servidor no llegó a escribir la cancelación): el reintento lo recupera", async () => {
     let clock = Date.parse("2026-10-16T16:00:00Z");
-    const replies: (() => Promise<DraftReply>)[] = [() => new Promise<DraftReply>(() => {}), async () => draftOk()];
-    const ctx = await setup({ drafting: () => replies.shift()!(), now: () => clock });
+    const replies: Step[] = [() => new Promise<DraftReply>(() => {}), (_cmd, stage) => stage()];
+    const ctx = await setup({ drafting: (cmd, stage) => replies.shift()!(cmd, stage), now: () => clock });
     const first = await ctx.service.startTurn(ctx.cmd());
     if (!first.ok) throw new Error("inicio");
     void collect(first.value.events);
@@ -276,11 +322,11 @@ describe("Reintento, doble envío e idempotencia (MVP-052)", () => {
   it("un intento viejo que termina tarde no publica una segunda respuesta", async () => {
     let clock = Date.parse("2026-10-16T16:00:00Z");
     let releaseOld!: () => void;
-    const replies: (() => Promise<DraftReply>)[] = [
-      () => new Promise<DraftReply>((resolve) => (releaseOld = () => resolve(draftOk("viejo")))),
-      async () => draftOk("nuevo"),
+    const replies: Step[] = [
+      (_cmd, stage) => new Promise<DraftReply>((resolve) => (releaseOld = () => resolve(stage("viejo")))),
+      (_cmd, stage) => stage("nuevo"),
     ];
-    const ctx = await setup({ drafting: () => replies.shift()!(), now: () => clock });
+    const ctx = await setup({ drafting: (cmd, stage) => replies.shift()!(cmd, stage), now: () => clock });
     const old = await ctx.service.startTurn(ctx.cmd());
     if (!old.ok) throw new Error("inicio");
     const oldEvents = collect(old.value.events);
@@ -291,6 +337,8 @@ describe("Reintento, doble envío e idempotencia (MVP-052)", () => {
     expect((await oldEvents).at(-1)).toMatchObject({ type: "error", error: { code: "TURN_SUPERSEDED" } });
     expect(ctx.turns.agentMessages.size).toBe(1);
     expect([...ctx.turns.agentMessages.values()][0].content).toContain("nuevo");
+    // El worker viejo no deja staging oficial: solo el intento vigente publicó.
+    expect(ctx.turns.drafts.get(ctx.documentId)).toMatchObject({ draftRevision: 1, content: { title: "nuevo" } });
   });
 
   it("misma clave con otro contenido: conflicto, sin tocar nada", async () => {
@@ -384,7 +432,7 @@ describe("Cancelación del flujo y claves de mensaje (MVP-052)", () => {
   it("cancelar el consumidor aborta al proveedor pendiente, cierra el intento y conserva al usuario", async () => {
     let providerAborted = false;
     const ctx = await setup({
-      drafting: ({ abortSignal } = {} as never) =>
+      drafting: ({ abortSignal }) =>
         new Promise<DraftReply>((resolve) => {
           abortSignal?.addEventListener("abort", () => {
             providerAborted = true;

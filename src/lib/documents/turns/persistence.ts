@@ -15,9 +15,8 @@ export type { TurnClaimRef };
 
 /**
  * Adaptador SQL de los turnos durables (migraciones 02500/02501; docs/design/durable-chat-turns.md).
- * Puerto `DurableChatStore` NUEVO: no reemplaza todavía a `TurnStore`
- * (legacy, sin fencing ni staging). No hay ruta ni orquestador que lo use aún, y la
- * auditoría TS de `chat_turn.*` queda pendiente: SQL ya emite la crítica de forma atómica.
+ * Puerto único del servicio de turnos (`TurnStore` legacy retirado). No hay
+ * auditoría TS de `chat_turn.*`: SQL la emite de forma atómica con cada transición.
  * Diferencia clave: `stageProposal` (`DraftStager`) NO devuelve un `Draft` oficial (solo
  * referencias de staging); `completeTurn` es el único punto que publica y devuelve el resultado original.
  */
