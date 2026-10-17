@@ -38,7 +38,10 @@ describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
       "20261016002504",
       "20261016002505",
       "20261016002506",
+      "20261016002507",
+      "20261016002508",
       "20261016002509",
+      "20261016002510",
     ]);
   });
 
@@ -106,7 +109,7 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
       await column(
         `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' order by p.proname;`,
       ),
-    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "attach_chat_turn_message", "claim_chat_turn", "claim_evidence_discard", "claim_finalization", "close_chat_turn", "complete_chat_turn", "confirm_as_author", "create_document", "discard_evidence_reservation", "freeze_revision", "get_active_revision", "get_document", "get_evidence", "get_finalization_manifest_input", "get_finalization_render_input", "get_finalization_status", "get_freeze_source", "get_revision_state", "hit_rate_limit", "issue_invitation", "list_documents", "list_evidence_discards", "list_evidence_extractions", "list_evidences", "list_messages", "persist_contrast_report", "prepare_finalization_manifest", "read_invitation", "reserve_evidence", "respond_invitation", "revoke_invitation", "stage_chat_turn_proposal", "stage_finalization_pdf"]);
+    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "attach_chat_turn_message", "claim_chat_turn", "claim_evidence_discard", "claim_finalization", "close_chat_turn", "complete_chat_turn", "confirm_as_author", "create_document", "discard_evidence_reservation", "freeze_revision", "get_active_revision", "get_document", "get_evidence", "get_finalization_manifest_input", "get_finalization_render_input", "get_finalization_status", "get_freeze_source", "get_public_verification", "get_revision_state", "get_seal_state", "get_seal_version", "hit_rate_limit", "issue_invitation", "list_documents", "list_evidence_discards", "list_evidence_extractions", "list_evidences", "list_messages", "persist_contrast_report", "prepare_finalization_manifest", "read_invitation", "record_seal_intent", "record_seal_outcome", "record_seal_registration", "reserve_evidence", "respond_invitation", "revoke_invitation", "stage_chat_turn_proposal", "stage_finalization_pdf"]);
   });
 
   it("toda función propia fija `search_path` y ninguna es ejecutable por PUBLIC ni anon", async () => {
@@ -123,11 +126,26 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
          where n.nspname in ('public','private') and a.grantee = 0 and a.privilege_type = 'EXECUTE' order by 1;`,
       ),
     ).toEqual([]);
-    // Única superficie anónima (capacidad pública de MVP-073/074/075): lectura sin consumo, respuesta y contador de abuso.
+    // Única superficie anónima (capacidad pública de MVP-073/074/075): lectura sin consumo, respuesta y contador de abuso;
+    // y la proyección de solo lectura del verificador (MVP-100).
     expect(await column(`select p.proname ${own} and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1;`)).toEqual([
-      "hit_rate_limit", "read_invitation", "respond_invitation",
+      "get_public_verification", "hit_rate_limit", "read_invitation", "respond_invitation",
     ]);
     expect(await column(`select has_schema_privilege('anon', 'private', 'USAGE');`)).toEqual(["f"]);
+  });
+
+  it("el escritor del verificador no lee `payload` ni `signed_bytes` del sellado", async () => {
+    expect(
+      await psqlOk(
+        `select has_table_privilege('galcoa_f7_writer', 'public.hedera_attempts', 'SELECT'),
+                has_column_privilege('galcoa_f7_writer', 'public.hedera_attempts', 'payload', 'SELECT'),
+                has_column_privilege('galcoa_f7_writer', 'public.hedera_attempts', 'signed_bytes', 'SELECT'),
+                has_column_privilege('galcoa_f7_writer', 'public.hedera_attempts', 'version_id', 'SELECT'),
+                has_column_privilege('galcoa_f7_writer', 'public.hedera_attempts', 'outcome', 'SELECT'),
+                has_table_privilege('galcoa_f7_writer', 'public.hedera_registrations', 'SELECT'),
+                has_column_privilege('galcoa_f7_writer', 'public.hedera_registrations', 'topic_id', 'SELECT');`,
+      ),
+    ).toEqual([["f", "f", "f", "t", "t", "f", "t"]]);
   });
 
   it("los buckets de Storage existen y no son públicos", async () => {

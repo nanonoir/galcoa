@@ -1,6 +1,6 @@
 # F10-01 — Verificador público
 
-**Estado: planificado (no iniciado).** Ninguna tarea de este plan está implementada ni validada.
+**Estado: en curso.** Cableado en la rama `feat/public-verifier-wiring` (PR contra `develop`): migración `02508` (`get_public_verification`, único acceso de `anon`), adaptador, `GET`/`POST /api/verify/[reference]`, página `verify/[reference]` y container, probados con dobles de base y Mirror. Pendiente: Playwright (C101-2), prueba contra Postgres local con la función y verificación real contra Testnet (`MVP-134`); el maestro no se actualiza hasta la integración.
 
 Tareas del maestro: `MVP-100`, `MVP-101`
 
