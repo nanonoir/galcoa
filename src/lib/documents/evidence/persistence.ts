@@ -12,6 +12,7 @@ export const StoredEvidenceSchema = z.strictObject({
   privateLocation: z.string().min(1), uploadState: z.enum(["reserved", "accepted"]),
   declaredEventDate: DeclaredEventDateSchema, uploadedAt: z.string(), acceptedAt: z.string().nullable(),
   uploadExpiresAt: z.string(),
+  cleanupClaimedAt: z.string().nullable(),
 });
 const extraction = z.strictObject({
   extractionId: z.uuid(), documentId: z.uuid(), evidenceId: z.uuid(), method: z.string(),
@@ -23,6 +24,7 @@ const reservation = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("limit_exceeded"), limit: z.enum(["files", "total_bytes"]) }),
   z.strictObject({ status: z.literal("idempotency_conflict") }),
   z.strictObject({ status: z.literal("not_available") }),
+  z.strictObject({ status: z.literal("discard_pending") }),
 ]);
 
 /** Solo después de Auth.getUser. El transporte debe ser el ejecutor, no service_role. */
@@ -66,6 +68,14 @@ export function createEvidenceStore(context: { verifiedUserId: string; executor:
       return row;
     },
     async discardReservation(i) { await call(i.ownerId, "discard_evidence_reservation", { p_evidence_id: i.evidenceId }); },
+    async listDiscards(owner) {
+      return z.array(StoredEvidenceSchema).max(3).parse(await call(owner, "list_evidence_discards", {}));
+    },
+    async claimDiscard(owner, id, rejected) {
+      const row = StoredEvidenceSchema.nullable().parse(await call(owner, "claim_evidence_discard", { p_evidence_id: id, p_rejected: rejected }));
+      if (row && (row.evidenceId !== id || row.uploadState !== "reserved" || !row.cleanupClaimedAt)) throw new Error("Descarte no autorizado");
+      return row;
+    },
     async appendExtraction(i) {
       actor(i.audit.actorScope);
       const row = extraction.parse(await call(i.ownerId, "append_evidence_extraction", {

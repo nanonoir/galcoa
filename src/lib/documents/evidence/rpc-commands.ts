@@ -7,6 +7,8 @@ export const evidenceRpcCommands = {
   list_evidences: ["p_actor_id", "p_document_id"],
   accept_evidence: ["p_actor_id", "p_evidence_id", "p_correlation_id"],
   discard_evidence_reservation: ["p_actor_id", "p_evidence_id"],
+  claim_evidence_discard: ["p_actor_id", "p_evidence_id", "p_rejected"],
+  list_evidence_discards: ["p_actor_id"],
   append_evidence_extraction: ["p_actor_id", "p_document_id", "p_evidence_id", "p_method", "p_model", "p_prompt_version", "p_pages", "p_text", "p_limitations", "p_correlation_id"],
   list_evidence_extractions: ["p_actor_id", "p_document_id"],
 } as const;

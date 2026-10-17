@@ -22,7 +22,7 @@ export function createEvidenceStorage(context: {
   return {
     async authorizeDirectUpload(path, options) {
       const row = await owned(path);
-      if (row.uploadState !== "reserved" || row.uploadExpiresAt !== options.expiresAt ||
+      if (row.uploadState !== "reserved" || row.cleanupClaimedAt || row.uploadExpiresAt !== options.expiresAt ||
           row.mimeType !== options.contentType || row.byteLength !== options.maxBytes) throw new Error("Reserva no disponible");
       return DirectUploadPermitSchema.parse({ transport: "authenticated", bucket: BUCKET,
         objectPath: path, contentType: row.mimeType, maxBytes: row.byteLength, expiresAt: row.uploadExpiresAt });
@@ -39,6 +39,7 @@ export function createEvidenceStorage(context: {
     async remove(path) {
       const row = await owned(path);
       if (row.uploadState !== "reserved") throw new Error("Original inmutable");
+      if (!row.cleanupClaimedAt) throw new Error("Descarte no reclamado");
       const client = createPrivilegedClient({ verifiedUserId: context.verifiedUserId, operation: "evidence.cleanup_rejected" }, context.privilegedDeps);
       const { error } = await client.storage.from(BUCKET).remove([path]);
       if (error) throw new Error("Limpieza de reserva no disponible");

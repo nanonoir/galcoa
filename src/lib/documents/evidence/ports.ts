@@ -30,6 +30,8 @@ export type StoredEvidence = {
   acceptedAt: string | null;
   /** Vencimiento impuesto por la DB para INSERT directo autenticado. */
   uploadExpiresAt: string;
+  /** Claim terminal del servidor; nunca se expone como parte del resumen público. */
+  cleanupClaimedAt: string | null;
 };
 
 export type ReserveEvidenceInput = {
@@ -54,7 +56,8 @@ export type ReserveEvidenceResult =
   | { status: "reserved" | "replayed"; evidence: StoredEvidence }
   | { status: "limit_exceeded"; limit: "files" | "total_bytes" }
   | { status: "idempotency_conflict" }
-  | { status: "not_available" };
+  | { status: "not_available" }
+  | { status: "discard_pending" };
 
 export type StoredExtraction = {
   extractionId: string;
@@ -89,8 +92,12 @@ export type EvidenceStore = {
   listEvidences(ownerId: string, documentId: string): Promise<StoredEvidence[] | null>;
   /** Promueve la reserva a original conservado y audita en la misma transacción. */
   acceptEvidence(input: { ownerId: string; evidenceId: string; audit: AuditContext }): Promise<StoredEvidence | null>;
-  /** Descarta una reserva no aceptada (libera su cupo). Nunca toca un original aceptado. */
+  /** Finaliza un descarte reclamado tras confirmar el borrado en Storage. */
   discardReservation(input: { ownerId: string; evidenceId: string }): Promise<void>;
+  /** Lote acotado propio; no lista objetos de Storage ni acepta rutas del cliente. */
+  listDiscards(ownerId: string): Promise<StoredEvidence[]>;
+  /** Irreversible; rejected solo se decide tras inspección técnica del servidor. */
+  claimDiscard(ownerId: string, evidenceId: string, rejected: boolean): Promise<StoredEvidence | null>;
   appendExtraction(input: AppendExtractionInput): Promise<StoredExtraction>;
   listExtractions(ownerId: string, documentId: string): Promise<StoredExtraction[] | null>;
 };
