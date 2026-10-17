@@ -101,6 +101,8 @@ Documentos objetivo **disponibles** y enlazados; los parámetros operativos (ent
 - **PD-03** Librería de QR (nueva dependencia): decisión del líder al ejecutar, con evidencia de licencia/tamaño/auditoría.
 - **PD-04** Integración de navegación con MVP-116: la revisión usa la subruta `/review`; el líder serializa cualquier ajuste de la página base del documento, que pertenece a MVP-116.
 
+- **PD-03 resuelta (2026-10-16, autorizada por el líder):** `react-qr-code@2.2.0` (MIT, SVG local, peer `react: *`, tipos propios). Los 19.9 kB desempaquetados corresponden solo al wrapper; su árbol incluye `prop-types` y `qrcode-generator`. Los tamaños de paquete publicados para `qrcode` y `qrcode.react` no permiten concluir cuál tiene menor bundle cliente: no se midió ese impacto agregado. Se eligió por integración SVG/React directa, tipos propios y ausencia de servicio externo. `npm audit` normal (sin `--force`): 9 vulnerabilidades altas preexistentes de herramientas de desarrollo (cadena `shadcn`/`ts-morph`/`fast-glob`); ninguna menciona la dependencia nueva ni sus transitivas. Integrada en `containers/share-qr.tsx` (la presentación no importa la librería). MVP-077/078 siguen abiertas: faltan re-congelado y E2E del autor.
+
 ## 10. Rollback y recuperación
 
 - Antes de integrar: descartar la rama; sin cambios de datos.
@@ -113,6 +115,15 @@ Documentos objetivo **disponibles** y enlazados; los parámetros operativos (ent
 - Correcciones: clave de idempotencia de congelado por intención (selección+borrador), avance real tras congelar (`unchanged`), rechazo ya no se muestra como «confirmó», consulta acotada con retroceso (PD-02), ruta `/review` con `draftRevision` leído en servidor por el lector existente.
 - Ejecutado: `lint`, `typecheck`, `npm test` (64 archivos, 1090 tests), `test:boundaries`, `build` — verdes. No ejecutado: Playwright, Supabase local, QR.
 - Límites: sin QR (no hay librería en el repo); el agregado no indica qué rol respondió qué, por lo que con respuestas mixtas el detalle por rol se omite; sin sello/finalización reales (indicadores fijos).
+
+## 10 ter. Evidencia parcial: reapertura de la revisión (rama `feat/author-review-reopen`, sin DB real)
+
+- UI explícita para modificar participantes o incorporar el borrador actual tras congelar: la revisión vigente sigue visible con sus enlaces hasta que `POST` congela y crea otra; cancelar no hace peticiones. La página lee también el borrador actual (si falla esa lectura, degrada a la revisión vigente).
+- «unchanged» no reemite enlaces ni sustituye el estado. Clave de idempotencia por selección+`draftRevision`, conservada en reintentos.
+- Una confirmación **completa no es finalización** (INV-14): el autor puede abrir otra revisión (cambio material o de selección, sin heredar confirmaciones) mientras el documento no esté finalizado. La página pasa `documentFinalized` desde el `documentStatus` de `getDocument` (contrato existente) y la UI no ofrece reabrir si es `finalizado`; el servidor/SQL conserva las guardas. Si la consulta indica `sustituida`, se ofrece recargar la revisión vigente y se deshabilitan confirmar y reemitir sobre la vieja. No se bloquea por advertencias.
+- Integración futura (F8): cuando exista el estado de finalización/claim técnico, reemplazar `documentFinalized` por esa señal; hoy no se inventa. No se sustituye un claim existente ni se habilita v2 antes de F8.
+- Brecha de backend (no resuelta aquí): `freeze_revision` devuelve `unchanged` si el hash coincide con la revisión activa aunque esté rechazada, por lo que una revisión rechazada solo se puede reabrir cambiando selección o borrador. La UI lo explica y exige cambio material.
+- Ejecutado: Vitest de `corroborations` (75 tests), `typecheck`, `eslint` focal. No ejecutado: Playwright ni base real. MVP-077/078 siguen abiertas.
 
 ## 11. Cierre
 

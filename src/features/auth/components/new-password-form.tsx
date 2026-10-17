@@ -77,9 +77,9 @@ export function NewPasswordForm({ state, onSubmit }: NewPasswordFormProps) {
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
         <CardTitle>
-          <h2 id={`${ID}-title`} className="text-lg font-medium">
+          <h1 id={`${ID}-title`} className="text-lg font-medium">
             Nueva contraseña
-          </h2>
+          </h1>
         </CardTitle>
         <CardDescription>Elige la nueva contraseña de tu cuenta.</CardDescription>
       </CardHeader>

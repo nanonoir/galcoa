@@ -32,9 +32,6 @@ for (const screen of SCREENS) {
       });
 
       test("estructura: un solo h1, región main y títulos sin saltos", async ({ page }) => {
-        // Hallazgo MVP-118 abierto: los formularios de auth (presentación ajena, solo lectura
-        // en este ticket) usan h2 sin h1; se corrige con su propietario. Ver plan F11.
-        test.skip(["acceso", "registro", "recuperar"].includes(screen.name), "formularios de auth sin h1: hallazgo registrado");
         await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
         await expect(page.getByRole("main")).toHaveCount(1);
         const levels = await page.evaluate(() => [...document.querySelectorAll("h1,h2,h3,h4")].map((h) => Number(h.tagName[1])));
@@ -42,6 +39,13 @@ for (const screen of SCREENS) {
           expect(level - prev, `salto de nivel ${prev}→${level}`).toBeLessThanOrEqual(1);
           return level;
         }, 0);
+      });
+
+      test("idioma es y metadatos de GALCOA+", async ({ page }) => {
+        await expect(page.locator("html")).toHaveAttribute("lang", "es");
+        // La confirmación pública define su propio título; el resto hereda el del layout raíz.
+        await expect(page).not.toHaveTitle(/Create Next App/);
+        if (screen.name !== "confirmación sin invitación") await expect(page).toHaveTitle("GALCOA+");
       });
 
       test("todo control interactivo tiene nombre accesible", async ({ page }) => {
