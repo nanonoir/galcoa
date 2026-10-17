@@ -34,20 +34,54 @@ export function createChatTurnHandler(getService: () => Promise<ReturnType<typeo
       body = null;
     }
     const command = body && typeof body === "object" ? { ...(body as Record<string, unknown>), documentId } : null;
-    const service = await getService();
-    const started = await service.startTurn(command, request.signal);
-    if (!started.ok) return errorResponse(started.error);
+    // Aborto propio enlazado a la petición: cancelar el flujo debe abortar al proveedor *antes* de
+    // `events.return()`, que de otro modo esperaría a que termine el `generateDraft` pendiente.
+    const abort = new AbortController();
+    const onRequestAbort = () => abort.abort();
+    if (request.signal.aborted) abort.abort();
+    else request.signal.addEventListener("abort", onRequestAbort, { once: true });
+    const unlink = () => request.signal.removeEventListener("abort", onRequestAbort);
+
+    let started;
+    try {
+      const service = await getService();
+      started = await service.startTurn(command, abort.signal);
+    } catch (error) {
+      unlink();
+      throw error;
+    }
+    if (!started.ok) {
+      unlink();
+      return errorResponse(started.error);
+    }
 
     const encoder = new TextEncoder();
     const events = started.value.events;
+    let cancelled = false;
     const stream = new ReadableStream<Uint8Array>({
       async pull(controller) {
-        const next = await events.next();
-        if (next.done) return controller.close();
-        controller.enqueue(encoder.encode(`${JSON.stringify(next.value satisfies TurnEvent)}\n`));
+        try {
+          const next = await events.next();
+          if (cancelled) return;
+          if (next.done) {
+            unlink();
+            return controller.close();
+          }
+          controller.enqueue(encoder.encode(`${JSON.stringify(next.value satisfies TurnEvent)}\n`));
+        } catch (error) {
+          unlink();
+          if (!cancelled) controller.error(error);
+        }
       },
       async cancel() {
-        await events.return(undefined);
+        cancelled = true;
+        abort.abort();
+        unlink();
+        try {
+          await events.return(undefined);
+        } catch {
+          // El cierre del intento ya es best-effort; el claim vence si no se pudo escribir.
+        }
       },
     });
     return new Response(stream, {

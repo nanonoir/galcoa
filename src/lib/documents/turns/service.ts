@@ -135,15 +135,27 @@ export function createTurnService(deps: TurnDeps) {
       const { turn, retried } = claim;
       const log = (outcome: string) => deps.log?.({ correlationId, turnId: turn.turnId, attempt: turn.attempt, outcome });
 
+      // El intento queda «cerrado» al completar, fallar o cancelar; si el consumidor corta el flujo antes, `run` lo cancela.
+      let settled = false;
+      const close = async (state: "fallido" | "cancelado", errorCode: string) => {
+        settled = true;
+        try {
+          await deps.turns.closeAttempt({ ownerId: ownerId!, turnId: turn.turnId, attempt: turn.attempt, state, errorCode, audit });
+        } catch {
+          // Si no se pudo escribir, el claim vence y el reintento lo recupera (SH-05).
+        }
+        log(state);
+      };
+
       async function* run(): AsyncGenerator<TurnEvent> {
-        const close = async (state: "fallido" | "cancelado", errorCode: string) => {
-          try {
-            await deps.turns.closeAttempt({ ownerId: ownerId!, turnId: turn.turnId, attempt: turn.attempt, state, errorCode, audit });
-          } catch {
-            // Si no se pudo escribir, el claim vence y el reintento lo recupera (SH-05).
-          }
-          log(state);
-        };
+        try {
+          yield* attempt();
+        } finally {
+          if (!settled) await close("cancelado", "AI_ABORTED");
+        }
+      }
+
+      async function* attempt(): AsyncGenerator<TurnEvent> {
         const fail = async function* (error: TechnicalError, state: "fallido" | "cancelado" = "fallido"): AsyncGenerator<TurnEvent> {
           await close(state, error.code);
           yield state === "cancelado" ? { type: "cancelled" } : { type: "error", error };
@@ -157,7 +169,8 @@ export function createTurnService(deps: TurnDeps) {
           documentId,
           content,
           declaredEventDate,
-          idempotencyKey: `turn-${clientMessageId}`.slice(0, 128),
+          // Hash completo: truncar `clientMessageId` (hasta 128) podía colisionar entre ids distintos.
+          idempotencyKey: `turn-${commandFingerprint({ schemaVersion: 1, action: "chat.turn.user_message", documentId, clientMessageId })}`,
         });
         if (!recorded.ok) return yield* fail(recorded.error);
         try {
@@ -207,6 +220,7 @@ export function createTurnService(deps: TurnDeps) {
         } catch {
           return yield* fail({ code: "TECHNICAL_FAILURE", stage: "persistencia", retryable: true, correlationId });
         }
+        settled = true;
         if (completed.status === "stale") {
           // Otro intento ya cerró el turno: este no publica una segunda respuesta.
           log("stale");
