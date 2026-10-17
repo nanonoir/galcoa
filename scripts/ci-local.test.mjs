@@ -9,7 +9,7 @@ import test from "node:test";
 function fixture(t) {
   const root = mkdtempSync(path.join(os.tmpdir(), "galcoa-ci-launcher-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  for (const file of ["scripts/ci-local.mjs", "node_modules/supabase/dist/supabase.js", "node_modules/vitest/vitest.mjs", "tests/server/auth-flow/run-local-auth.mjs", "tests/e2e/confirm/run.mjs"]) {
+  for (const file of ["scripts/ci-local.mjs", "node_modules/supabase/dist/supabase.js", "node_modules/vitest/vitest.mjs", "tests/server/auth-flow/run-local-auth.mjs", "tests/e2e/confirm/run.mjs", "tests/e2e/review/run.mjs"]) {
     mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     writeFileSync(path.join(root, file), file.startsWith("scripts/")
       ? readFileSync(new URL("./ci-local.mjs", import.meta.url))
@@ -33,12 +33,12 @@ test("rechaza fuera de CI sin lanzar CLI", (t) => {
   assert.throws(f.calls);
 });
 
-test("suites en serie, reset forzado, Auth y confirmaciones explícitos sin salida privada", (t) => {
+test("suites en serie, reset forzado, Auth, confirmaciones y revisión del autor explícitos sin salida privada", (t) => {
   const f = fixture(t);
   const result = f.invoke("test", { RLS_SKIP_RESET: "1" });
   assert.equal(result.status, 0, result.stderr);
   const calls = f.calls();
-  assert.equal(calls.length, 8);
+  assert.equal(calls.length, 9);
   assert.deepEqual(calls.slice(0, 6).map((call) => call.args[2]), [
     "vitest.rls.config.ts", "vitest.server-local.config.ts", "tests/server/persistence/vitest.local.config.ts",
     "tests/server/persistence/executor/vitest.local.config.ts", "tests/server/routes/vitest.local.config.ts",
@@ -47,6 +47,7 @@ test("suites en serie, reset forzado, Auth y confirmaciones explícitos sin sali
   assert.deepEqual(calls.slice(6).map((call) => [call.file, call.args]), [
     ["tests/server/auth-flow/run-local-auth.mjs", []],
     ["tests/e2e/confirm/run.mjs", []],
+    ["tests/e2e/review/run.mjs", []],
   ]);
   assert.ok(calls.every((call) => call.reset === "0"));
   assert.doesNotMatch(result.stdout + result.stderr, /PRIVATE_FIXTURE_OUTPUT/);
@@ -63,6 +64,7 @@ for (const [failure, count] of [
   ["tests/server/evidence-persistence/vitest.local.config.ts", 6],
   ["tests/server/auth-flow/run-local-auth.mjs", 7],
   ["tests/e2e/confirm/run.mjs", 8],
+  ["tests/e2e/review/run.mjs", 9],
 ]) {
   test(`fallo cerrado en ${failure}`, (t) => {
     const f = fixture(t);
@@ -79,6 +81,15 @@ test("script de confirmaciones ausente falla sin exponer diagnóstico del subpro
   const result = f.invoke("test");
   assert.equal(result.status, 1);
   assert.equal(f.calls().length, 7);
+  assert.doesNotMatch(result.stdout + result.stderr, /PRIVATE_FIXTURE_OUTPUT/);
+});
+
+test("script de revisión del autor ausente falla sin exponer diagnóstico del subprocess", (t) => {
+  const f = fixture(t);
+  f.remove("tests/e2e/review/run.mjs");
+  const result = f.invoke("test");
+  assert.equal(result.status, 1);
+  assert.equal(f.calls().length, 8);
   assert.doesNotMatch(result.stdout + result.stderr, /PRIVATE_FIXTURE_OUTPUT/);
 });
 

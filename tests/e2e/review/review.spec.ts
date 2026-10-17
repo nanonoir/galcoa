@@ -48,7 +48,7 @@ async function login(page: Page) {
   await page.getByRole("textbox", { name: "Correo electrónico", exact: true }).fill(email);
   await page.getByRole("textbox", { name: "Contraseña", exact: true }).fill(password);
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
 }
 
 const card = (page: Page, role: Role) => page.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: role }) });
@@ -252,7 +252,7 @@ test.describe("revisión del autor (E2E real local)", () => {
       // El enlace viejo del intermediario ya no permite responder.
       const stale = await other.newPage();
       await stale.goto(oldInter);
-      await expect(stale.getByRole("heading", { level: 1 })).toBeVisible();
+      await expect(stale.getByText(/Esta revisión fue reemplazada|Enlace no disponible/)).toBeVisible();
       await expect(stale.getByRole("checkbox")).toHaveCount(0);
       await expect(stale.getByRole("button", { name: "Confirmar" })).toHaveCount(0);
       expect(count(`select count(*) from public.corroboration_responses where revision_id = '${rev1}' and role = 'intermediario'`), "el enlace viejo no registró respuesta").toBe(0);

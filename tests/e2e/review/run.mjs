@@ -3,7 +3,7 @@
 // ficticios, pasa credenciales efímeras por un archivo temporal y lo borra al terminar.
 // Nunca imprime URL, claves, contraseñas ni tokens ni lee `.env`. Falla si falta un prerrequisito.
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -40,6 +40,19 @@ function run() {
   const publishableKey = status.get("PUBLISHABLE_KEY") || status.get("ANON_KEY");
   if (!supabaseUrl || !publishableKey) {
     console.error("test:e2e:review — faltan API_URL o la clave pública en `supabase status`.");
+    return 1;
+  }
+
+  // Un volumen anterior puede tener menos migraciones que el repo: se exige una base al día.
+  try {
+    const applied = execFileSync(process.platform === "win32" ? "docker.exe" : "docker", ["exec", "-i", "supabase_db_galcoa", "psql", "-U", "postgres", "-d", "postgres", "-At", "-c", "select count(*) from supabase_migrations.schema_migrations"], { encoding: "utf8", timeout: 30_000, stdio: ["ignore", "pipe", "ignore"] });
+    const expected = readdirSync(path.join(ROOT, "supabase", "migrations")).filter((f) => f.endsWith(".sql")).length;
+    if (Number(applied.trim()) !== expected) {
+      console.error(`test:e2e:review — la base local tiene ${applied.trim()} migraciones y el repo ${expected}. Ejecuta \`npx supabase db reset --local --no-seed\` sobre tu pila exclusiva y reintenta.`);
+      return 1;
+    }
+  } catch {
+    console.error("test:e2e:review — no se pudo comprobar las migraciones de la base local.");
     return 1;
   }
 
