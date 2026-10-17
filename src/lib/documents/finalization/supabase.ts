@@ -31,6 +31,30 @@ export type ClaimResult = z.infer<typeof ClaimResultSchema>;
 export type ClaimInput = { documentId: string; revisionId: string; renderer: string; leaseSeconds: number; correlationId: string };
 export type FinalizationClaimStore = { claim(input: ClaimInput): Promise<ClaimResult> };
 
+/** Lectura de estado: proyección mínima de `get_finalization_status`; nunca nonce, fencing, hashes ni versionId. */
+const StatusResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("found"),
+    operation: z.strictObject({ operationId: Uuid, phase: z.enum(PHASES), status: z.enum(["active", "abandoned"]), versionNumber: z.number().int().positive() }),
+  }),
+  z.strictObject({ status: z.enum(["no_operation", "not_available"]) }),
+]);
+export type FinalizationStatusResult = z.infer<typeof StatusResultSchema>;
+export type FinalizationStatusStore = { status(input: { documentId: string; revisionId: string }): Promise<FinalizationStatusResult> };
+
+export function createSupabaseFinalizationStatusStore(context: { verifiedUserId: string; session: DocumentRpc }): FinalizationStatusStore {
+  return {
+    async status(input) {
+      if (!context.verifiedUserId) throw new Error("Operación no autorizada");
+      const { data, error } = await context.session.rpc("get_finalization_status", { p_document_id: input.documentId, p_revision_id: input.revisionId });
+      if (error) throw new Error("Persistencia no disponible");
+      const parsed = StatusResultSchema.safeParse(data);
+      if (!parsed.success) throw new Error("Respuesta de persistencia inválida");
+      return parsed.data;
+    },
+  };
+}
+
 export function createSupabaseFinalizationStore(context: { verifiedUserId: string; session: DocumentRpc }): FinalizationClaimStore {
   return {
     async claim(input) {
