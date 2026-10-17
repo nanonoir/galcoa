@@ -18,13 +18,16 @@ import {
   type FinalizationClaimStore,
   type FinalizationStatusStore,
 } from "./supabase";
+import type { FinalizationAdvancer } from "./resume";
 
 /**
- * `POST` de reclamo/reanudación de finalización (MVP-080). Sin cuerpo: ni el renderer ni el lease
+ * `POST` de reclamo/reanudación de finalización (MVP-080/081). Sin cuerpo: ni el renderer ni el lease
  * vienen del cliente, y el actor sale de la sesión verificada (`auth.uid()` en la base). Los
  * estados no exitosos son 409 con código estable; ningún mensaje de SDK/SQL llega al cliente.
- * Solo reclama: no genera PDF, manifiesto ni HCS (MVP-081+). El `GET` de estado lee la proyección
- * mínima de `get_finalization_status` (propietario; ajeno e inexistente son indistinguibles).
+ * Quien obtiene el claim (nuevo o reanudado) recibe el fencing solo dentro del servidor y con él avanza
+ * las fases; quien no es dueño (`in_progress`, `published`) solo observa. El `GET` de estado lee la
+ * proyección mínima de `get_finalization_status` (propietario; ajeno e inexistente son indistinguibles).
+ * Nada de esto envía a Hedera.
  */
 
 export const FINALIZATION_RENDERER = "react-pdf-v1";
@@ -37,6 +40,8 @@ export interface FinalizationHttpDeps {
   storeFor?(userId: string, rpc: DocumentRpc): FinalizationClaimStore;
   /** Solo pruebas: sustituye al adaptador de lectura de estado. */
   statusStoreFor?(userId: string, rpc: DocumentRpc): FinalizationStatusStore;
+  /** Avance de fases del dueño del claim; sin él el POST solo reclama. Puede lanzar si falta el canal del ejecutor. */
+  advancerFor?(userId: string): FinalizationAdvancer;
 }
 
 const CODES = {
@@ -50,6 +55,20 @@ const CODES = {
 function problem(code: string, status: number, retryable = false): Response {
   const stage = code === "TECHNICAL_FAILURE" ? "persistencia" : status === 401 || status === 403 || status === 503 ? "autenticacion" : "validacion";
   const error: TechnicalError = { code, stage, retryable, correlationId: randomUUID() };
+  return Response.json({ error }, { status, headers: PRIVATE_RESPONSE_HEADERS });
+}
+
+const ADVANCE_STATUS: Record<string, number> = {
+  NOT_AVAILABLE: 404,
+  STALE_CLAIM: 409,
+  FINALIZATION_ABANDONED: 409,
+  ARTIFACT_CONFLICT: 409,
+  RECEIPTS_INCOMPLETE: 409,
+};
+
+/** Fallo de una fase: código y reintentabilidad del servicio; los no listados son impedimentos técnicos 503. */
+function advanceProblem(error: TechnicalError): Response {
+  const status = ADVANCE_STATUS[error.code] ?? 503;
   return Response.json({ error }, { status, headers: PRIVATE_RESPONSE_HEADERS });
 }
 
@@ -75,7 +94,16 @@ export function createClaimFinalizationHandler(deps: FinalizationHttpDeps) {
       });
       if ("operation" in result) {
         const status = result.status === "claimed" ? 201 : 200;
-        return Response.json(present(result), { status, headers: PRIVATE_RESPONSE_HEADERS });
+        const dto = present(result);
+        // Solo quien tiene el fencing (claim nuevo o reanudado) avanza; se queda en el servidor.
+        if ("fencing" in result.operation && deps.advancerFor) {
+          const advanced = await deps.advancerFor(userId).advance({
+            operationId: result.operation.operationId, fencing: result.operation.fencing, phase: result.operation.phase,
+          });
+          if (!advanced.ok) return advanceProblem(advanced.error);
+          dto.operation.phase = advanced.phase;
+        }
+        return Response.json(dto, { status, headers: PRIVATE_RESPONSE_HEADERS });
       }
       return problem(CODES[result.status], result.status === "not_available" ? 404 : 409);
     } catch {
