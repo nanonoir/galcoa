@@ -1,0 +1,517 @@
+[
+  {
+    "key": "f00-acceso-colaborador",
+    "title": "Confirmar acceso de colaboradores y registrar MVP-007",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f00-acceso-colaborador.md",
+    "plan": "docs/exec-plans/completed/f00-acceso-colaborador.md",
+    "ids": [
+      "MVP-007"
+    ],
+    "owner": "nahuel",
+    "kind": "external",
+    "number": 3,
+    "url": "https://github.com/nanonoir/galcoa/issues/3",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f01-revision-juridica",
+    "title": "Obtener dictamen jurídico externo sobre confirmación y privacidad",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f01-revision-juridica.md",
+    "plan": "docs/exec-plans/active/mvp/f01-revision-juridica.md",
+    "ids": [
+      "MVP-014"
+    ],
+    "owner": "nahuel",
+    "kind": "external",
+    "number": 4,
+    "url": "https://github.com/nanonoir/galcoa/issues/4",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f02-esquema-migraciones-rls",
+    "title": "Implementar esquema SQL, migraciones y aislamiento RLS/Storage local",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f02-esquema-migraciones-rls.md",
+    "plan": "docs/exec-plans/active/mvp/f02-esquema-migraciones-rls.md",
+    "ids": [
+      "MVP-022",
+      "MVP-023",
+      "MVP-024"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 5,
+    "url": "https://github.com/nanonoir/galcoa/issues/5",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f02-clientes-supabase",
+    "title": "Implementar clientes Supabase server-only y configuración perezosa",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f02-clientes-supabase.md",
+    "plan": "docs/exec-plans/active/mvp/f02-clientes-supabase.md",
+    "ids": [
+      "MVP-025"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 6,
+    "url": "https://github.com/nanonoir/galcoa/issues/6",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f02-entorno-supabase-remoto",
+    "title": "Preparar y verificar Supabase remoto de desarrollo/demo con permiso específico",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f02-entorno-supabase-remoto.md",
+    "plan": "docs/exec-plans/active/mvp/f02-entorno-supabase-remoto.md",
+    "ids": [
+      "MVP-026"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 7,
+    "url": "https://github.com/nanonoir/galcoa/issues/7",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f03-sesiones-y-guardas",
+    "title": "Implementar sesión SSR verificada y guardas privadas reutilizables",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f03-sesiones-y-guardas.md",
+    "plan": "docs/exec-plans/active/mvp/f03-sesiones-y-guardas.md",
+    "ids": [
+      "MVP-030"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 8,
+    "url": "https://github.com/nanonoir/galcoa/issues/8",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f03-auth-flujos-reales",
+    "title": "Conectar registro, acceso, logout y recuperación completos con Auth local",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f03-auth-flujos-reales.md",
+    "plan": "docs/exec-plans/completed/f03-auth-flujos-reales.md",
+    "ids": [
+      "MVP-031"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 9,
+    "url": "https://github.com/nanonoir/galcoa/issues/9",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f04-documents-chat-audit",
+    "title": "Persistir documentos, mensajes originales y auditoría solo-agregar",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f04-documents-chat-audit.md",
+    "plan": "docs/exec-plans/active/mvp/f04-documents-chat-audit.md",
+    "ids": [
+      "MVP-040",
+      "MVP-041",
+      "MVP-044"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 10,
+    "url": "https://github.com/nanonoir/galcoa/issues/10",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f04-evidence-upload-extraction",
+    "title": "Implementar carga privada de evidencias y extracción con procedencia",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f04-evidence-upload-extraction.md",
+    "plan": "docs/exec-plans/active/mvp/f04-evidence-upload-extraction.md",
+    "ids": [
+      "MVP-042",
+      "MVP-043"
+    ],
+    "owner": "gaston",
+    "kind": "implementation",
+    "number": 11,
+    "url": "https://github.com/nanonoir/galcoa/issues/11",
+    "intendedAssignee": "grancobud"
+  },
+  {
+    "key": "f05-gemini-provider",
+    "title": "Gemini de servidor con AI SDK — MVP-050",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f05-gemini-provider.md",
+    "plan": "docs/exec-plans/active/mvp/f05-gemini-provider.md",
+    "ids": [
+      "MVP-050"
+    ],
+    "owner": "gaston",
+    "kind": "implementation",
+    "number": 12,
+    "url": "https://github.com/nanonoir/galcoa/issues/12",
+    "intendedAssignee": "grancobud"
+  },
+  {
+    "key": "f05-agent1-drafting",
+    "title": "Agente 1: borrador autónomo con procedencia — MVP-051",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f05-agent1-drafting.md",
+    "plan": "docs/exec-plans/active/mvp/f05-agent1-drafting.md",
+    "ids": [
+      "MVP-051"
+    ],
+    "owner": "gaston",
+    "kind": "implementation",
+    "number": 13,
+    "url": "https://github.com/nanonoir/galcoa/issues/13",
+    "intendedAssignee": "grancobud"
+  },
+  {
+    "key": "f05-chat-streaming-retry",
+    "title": "Streaming, cancelación y reintento del turno — MVP-052",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f05-chat-streaming-retry.md",
+    "plan": "docs/exec-plans/active/mvp/f05-chat-streaming-retry.md",
+    "ids": [
+      "MVP-052"
+    ],
+    "owner": "gaston",
+    "kind": "implementation",
+    "number": 14,
+    "url": "https://github.com/nanonoir/galcoa/issues/14",
+    "intendedAssignee": "grancobud"
+  },
+  {
+    "key": "f05-agent2-groq-contrast",
+    "title": "Agente 2: contraste textual Groq sin veto — MVP-053",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f05-agent2-groq-contrast.md",
+    "plan": "docs/exec-plans/active/mvp/f05-agent2-groq-contrast.md",
+    "ids": [
+      "MVP-053"
+    ],
+    "owner": "gaston",
+    "kind": "implementation",
+    "number": 15,
+    "url": "https://github.com/nanonoir/galcoa/issues/15",
+    "intendedAssignee": "grancobud"
+  },
+  {
+    "key": "f04-connected-chat",
+    "title": "Conectar chat, carga de adjuntos, streaming y contraste persistido",
+    "bodyFile": "docs/tasks/issue-rollout/foundations/f04-connected-chat.md",
+    "plan": "docs/exec-plans/active/mvp/f04-connected-chat.md",
+    "ids": [
+      "MVP-054"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 16,
+    "url": "https://github.com/nanonoir/galcoa/issues/16",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f06-rules-and-warnings",
+    "title": "Motor determinista y advertencias no bloqueantes — MVP-060, MVP-061, MVP-062",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f06-rules-and-warnings.md",
+    "plan": "docs/exec-plans/active/mvp/f06-rules-and-warnings.md",
+    "ids": [
+      "MVP-060",
+      "MVP-061",
+      "MVP-062"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 17,
+    "url": "https://github.com/nanonoir/galcoa/issues/17",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f07-01-revision-congelada-y-confirmacion-autor",
+    "title": "Revisión congelada y confirmación del autor — MVP-070, MVP-071",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f07-01-revision-congelada-y-confirmacion-autor.md",
+    "plan": "docs/exec-plans/active/mvp/f07-01-revision-congelada-y-confirmacion-autor.md",
+    "ids": [
+      "MVP-070",
+      "MVP-071"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 18,
+    "url": "https://github.com/nanonoir/galcoa/issues/18",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f07-02-invitaciones-y-respuesta-atomica",
+    "title": "Invitaciones, GET seguro y respuesta atómica — MVP-072, MVP-073, MVP-074",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f07-02-invitaciones-y-respuesta-atomica.md",
+    "plan": "docs/exec-plans/active/mvp/f07-02-invitaciones-y-respuesta-atomica.md",
+    "ids": [
+      "MVP-072",
+      "MVP-073",
+      "MVP-074"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 19,
+    "url": "https://github.com/nanonoir/galcoa/issues/19",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f07-03-estado-agregado-y-pantalla-publica",
+    "title": "Agregado y pantalla pública de confirmación — MVP-075, MVP-076",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f07-03-estado-agregado-y-pantalla-publica.md",
+    "plan": "docs/exec-plans/active/mvp/f07-03-estado-agregado-y-pantalla-publica.md",
+    "ids": [
+      "MVP-075",
+      "MVP-076"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 20,
+    "url": "https://github.com/nanonoir/galcoa/issues/20",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f07-04-ui-autor-seleccion-y-compartir",
+    "title": "Revisión del autor y compartir manual — MVP-077, MVP-078",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f07-04-ui-autor-seleccion-y-compartir.md",
+    "plan": "docs/exec-plans/active/mvp/f07-04-ui-autor-seleccion-y-compartir.md",
+    "ids": [
+      "MVP-077",
+      "MVP-078"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 21,
+    "url": "https://github.com/nanonoir/galcoa/issues/21",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f08-01-finalizacion-durable-y-pdf-canonico",
+    "title": "Finalización durable y PDF canónico — MVP-080, MVP-081",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f08-01-finalizacion-durable-y-pdf-canonico.md",
+    "plan": "docs/exec-plans/active/mvp/f08-01-finalizacion-durable-y-pdf-canonico.md",
+    "ids": [
+      "MVP-080",
+      "MVP-081"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 22,
+    "url": "https://github.com/nanonoir/galcoa/issues/22",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f08-02-manifiesto-version-inmutable-y-nueva-version",
+    "title": "Manifiesto privado, publicación inmutable y v2 — MVP-082, MVP-083, MVP-084",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f08-02-manifiesto-version-inmutable-y-nueva-version.md",
+    "plan": "docs/exec-plans/active/mvp/f08-02-manifiesto-version-inmutable-y-nueva-version.md",
+    "ids": [
+      "MVP-082",
+      "MVP-083",
+      "MVP-084"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 23,
+    "url": "https://github.com/nanonoir/galcoa/issues/23",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f09-01-hedera-hcs-testnet",
+    "title": "HCS exclusivamente Testnet y reconciliación — MVP-090, MVP-091, MVP-092, MVP-093",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f09-01-hedera-hcs-testnet.md",
+    "plan": "docs/exec-plans/active/mvp/f09-01-hedera-hcs-testnet.md",
+    "ids": [
+      "MVP-090",
+      "MVP-091",
+      "MVP-092",
+      "MVP-093"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 24,
+    "url": "https://github.com/nanonoir/galcoa/issues/24",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "f10-01-verificador-publico",
+    "title": "Verificador público de integridad — MVP-100, MVP-101",
+    "bodyFile": "docs/tasks/issue-rollout/flow/f10-01-verificador-publico.md",
+    "plan": "docs/exec-plans/active/mvp/f10-01-verificador-publico.md",
+    "ids": [
+      "MVP-100",
+      "MVP-101"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 25,
+    "url": "https://github.com/nanonoir/galcoa/issues/25",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "delivery-111",
+    "title": "MVP-111 · Presentación completa del dashboard",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/111-dashboard.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
+    "ids": [
+      "MVP-111"
+    ],
+    "owner": "facu",
+    "kind": "implementation",
+    "number": 26,
+    "url": "https://github.com/nanonoir/galcoa/issues/26",
+    "intendedAssignee": "jfacundoayala"
+  },
+  {
+    "key": "delivery-112",
+    "title": "MVP-112 · Snapshot completo y advertencias",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/112-snapshot.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
+    "ids": [
+      "MVP-112"
+    ],
+    "owner": "facu",
+    "kind": "implementation",
+    "number": 27,
+    "url": "https://github.com/nanonoir/galcoa/issues/27",
+    "intendedAssignee": "jfacundoayala"
+  },
+  {
+    "key": "delivery-113",
+    "title": "MVP-113 · Historial de versiones de solo lectura",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/113-history.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
+    "ids": [
+      "MVP-113"
+    ],
+    "owner": "facu",
+    "kind": "implementation",
+    "number": 28,
+    "url": "https://github.com/nanonoir/galcoa/issues/28",
+    "intendedAssignee": "jfacundoayala"
+  },
+  {
+    "key": "delivery-114",
+    "title": "MVP-114 · Landing y navegación responsive",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/114-landing.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
+    "ids": [
+      "MVP-114"
+    ],
+    "owner": "facu",
+    "kind": "implementation",
+    "number": 29,
+    "url": "https://github.com/nanonoir/galcoa/issues/29",
+    "intendedAssignee": "jfacundoayala"
+  },
+  {
+    "key": "delivery-115",
+    "title": "MVP-115 · Cuatro formularios de acceso como presentación",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/115-access.md",
+    "plan": "docs/exec-plans/completed/f11-frontend-presentation-tickets.md",
+    "ids": [
+      "MVP-115"
+    ],
+    "owner": "facu",
+    "kind": "implementation",
+    "number": 30,
+    "url": "https://github.com/nanonoir/galcoa/issues/30",
+    "intendedAssignee": "jfacundoayala"
+  },
+  {
+    "key": "delivery-116-118",
+    "title": "MVP-116 / MVP-118 · Integración del producto y revisión transversal",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/116-118-integration.md",
+    "plan": "docs/exec-plans/active/mvp/f11-product-ui-integration-and-review.md",
+    "ids": [
+      "MVP-116",
+      "MVP-118"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 31,
+    "url": "https://github.com/nanonoir/galcoa/issues/31",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "delivery-120",
+    "title": "MVP-120 · Harness local de servidor y puente de tests",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/120-harness.md",
+    "plan": "docs/exec-plans/completed/f12-server-test-harness.md",
+    "ids": [
+      "MVP-120"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 32,
+    "url": "https://github.com/nanonoir/galcoa/issues/32",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "delivery-121",
+    "title": "MVP-121 · Matriz de 15 casos y E2E compuesto de cuatro selecciones",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/121-matrix.md",
+    "plan": "docs/exec-plans/active/mvp/f12-critical-flow-matrix-and-e2e.md",
+    "ids": [
+      "MVP-121"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 33,
+    "url": "https://github.com/nanonoir/galcoa/issues/33",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "delivery-122-123",
+    "title": "MVP-122 / MVP-123 · Dataset etiquetado y runner de evaluación",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/122-123-dataset.md",
+    "plan": "docs/exec-plans/active/mvp/f12-ai-evaluation-dataset-and-runner.md",
+    "ids": [
+      "MVP-122",
+      "MVP-123"
+    ],
+    "owner": "gaston",
+    "kind": "implementation",
+    "number": 34,
+    "url": "https://github.com/nanonoir/galcoa/issues/34",
+    "intendedAssignee": "grancobud"
+  },
+  {
+    "key": "delivery-130-131",
+    "title": "MVP-130 / MVP-131 · Seguridad transversal y CI ampliado",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/130-131-security-ci.md",
+    "plan": "docs/exec-plans/active/mvp/f13-release-security-and-ci.md",
+    "ids": [
+      "MVP-130",
+      "MVP-131"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 35,
+    "url": "https://github.com/nanonoir/galcoa/issues/35",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "delivery-132-133",
+    "title": "MVP-132 / MVP-133 · Despliegue autorizado y preparación de demo",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/132-133-deploy-demo.md",
+    "plan": "docs/exec-plans/active/mvp/f13-deploy-and-demo.md",
+    "ids": [
+      "MVP-132",
+      "MVP-133"
+    ],
+    "owner": "nahuel",
+    "kind": "external",
+    "number": 36,
+    "url": "https://github.com/nanonoir/galcoa/issues/36",
+    "intendedAssignee": "nanonoir"
+  },
+  {
+    "key": "delivery-134-136",
+    "title": "MVP-134 / MVP-135 / MVP-136 · Validación real final y cierre honesto",
+    "bodyFile": "docs/tasks/issue-rollout/delivery/134-136-live-closure.md",
+    "plan": "docs/exec-plans/active/mvp/f13-live-validation-and-closure.md",
+    "ids": [
+      "MVP-134",
+      "MVP-135",
+      "MVP-136"
+    ],
+    "owner": "nahuel",
+    "kind": "implementation",
+    "number": 37,
+    "url": "https://github.com/nanonoir/galcoa/issues/37",
+    "intendedAssignee": "nanonoir"
+  }
+]
