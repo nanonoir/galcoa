@@ -62,6 +62,16 @@
 - **Current State**: Ambos checks pasan con el archivo existente `src/lib/utils.ts`.
 - **Remediation**: Armonizar la comprobación en `graph.ts` para aceptar tanto `.ts` como `.tsx` en un pase posterior de mantenimiento de herramientas.
 
+### 8. Limpieza residual de objetos de Storage abandonados sin SLA global ni cron de fondo
+
+- **Discovered/Recorded**: 2026-10-16
+- **Originating Plan**: `docs/exec-plans/active/mvp/f04-evidence-upload-extraction.md` (PR #96, PR #97)
+- **Severity**: Medium / Operativo
+- **Description**: El protocolo de descarte irreversible (`claim_evidence_discard` + `Storage.remove` + `discard_evidence_reservation`, migración `20261016002300_evidence_discard_protocol.sql`) asegura que una reserva vencida o rechazada retiene su cuota por documento y no se acepta mientras esté pendiente de limpieza. La recuperación de objetos abandonados es oportunista y se ejecuta únicamente en el contexto de nuevas reservas del mismo propietario (en lotes de hasta 3 reservas candidatas). No existe un proceso en segundo plano (cron/worker/job) ni SLA que garantice un plazo máximo de eliminación física de objetos huérfanos si el usuario no realiza nuevas operaciones, ni existe un límite físico acumulado global en el bucket a nivel infraestructura. Asimismo, la prueba HTTP de subida concurrente demuestra que el claim aborta la adopción y descarga del objeto, pero no prueba por sí sola el instante exacto del preflight de Storage ni la recolección física inmediata en el almacenamiento del proveedor.
+- **Impact**: Si un usuario sube un archivo y abandona la reserva sin volver a interactuar con el sistema, el objeto binario permanece en el bucket de Storage sin exceder la cuota documental del usuario pero consumiendo almacenamiento físico en Supabase hasta que el propietario genere una nueva reserva.
+- **Current State**: Parcialmente mitigado a nivel lógico y por propietario: las reservas vencidas no liberan cupo automáticamente, el claim irreversible previene la aceptación/adopción indebida, y la siguiente reserva del propietario limpia hasta 3 abandonos previos. CI run `38990325702` verificó los escenarios en base local.
+- **Remediation**: Para producción (post-hackathon / P1), implementar un cron seguro o función administrativa programada (e.g. pg_cron o edge function con rol de servicio autenticado) que barra reservas reclamadas o vencidas abandonadas respetando el protocolo terminal de claim, y establecer alarmas de capacidad física del bucket.
+
 ---
 
 ## Resolved Technical Debt
