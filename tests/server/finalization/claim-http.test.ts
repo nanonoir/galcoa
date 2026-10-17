@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createClaimFinalizationHandler, type FinalizationHttpDeps } from "@/lib/documents/finalization/http";
+import type { FinalizationAdvancer } from "@/lib/documents/finalization/resume";
 import { createSupabaseFinalizationStore } from "@/lib/documents/finalization/supabase";
 import { createSupabaseRevisionAdapters } from "@/lib/documents/revisions/supabase";
 
@@ -84,5 +85,57 @@ describe("MVP-080 · adaptador y handler de claim_finalization", () => {
     expect(await freeze({ code: "23001", message: "document_revisions: hay una finalización en curso para esta revisión" })).toEqual({ status: "finalization_in_progress" });
     await expect(freeze({ code: "23001", message: "otra restricción" })).rejects.toThrow("Persistencia no disponible");
     await expect(freeze({ code: "XX000", message: "hay una finalización en curso" })).rejects.toThrow("Persistencia no disponible");
+  });
+
+  describe("avance de fases con el fencing del servidor", () => {
+    const fail = (code: string, retryable: boolean) => ({ ok: false as const, error: { code, stage: "persistencia" as const, retryable, correlationId: "corr" } });
+    const run = async (data: unknown, advance: FinalizationAdvancer["advance"]) => {
+      const calls: unknown[] = [];
+      const handler = createClaimFinalizationHandler({
+        ...deps(rpcReturning(data)),
+        advancerFor: () => ({ advance: async (input) => (calls.push(input), advance(input)) }),
+      });
+      return { response: await handler(post(), DOC, REV), calls };
+    };
+
+    it("claim y reanudación avanzan con el fencing del claim; la respuesta muestra la fase y no lo expone", async () => {
+      for (const status of ["claimed", "resumed"] as const) {
+        const { response, calls } = await run({ status, operation: { ...op, fencing: 7 } }, async () => ({ ok: true, phase: "pdf_staged" }));
+        const body = await response.json();
+        expect(calls).toEqual([{ operationId: op.operationId, fencing: 7, phase: "reserved" }]);
+        expect(body.operation.phase).toBe("pdf_staged");
+        expect(JSON.stringify(body)).not.toMatch(/fencing|snapshotHash|versionId|nonce/);
+      }
+    });
+
+    it("quien no es dueño (in_progress, published) no avanza ni recibe fencing", async () => {
+      for (const data of [{ status: "in_progress", operation: op }, { status: "published", operation: { ...op, phase: "published" } }]) {
+        const { response, calls } = await run(data, async () => ({ ok: true, phase: "pdf_staged" }));
+        expect(response.status).toBe(200);
+        expect(calls).toEqual([]);
+      }
+    });
+
+    it("mapea los fallos de fase: constancias incompletas no reintentable, render reintentable, claim superado", async () => {
+      const cases: [string, boolean, number][] = [
+        ["RECEIPTS_INCOMPLETE", false, 409], ["RENDER_FAILED", true, 503], ["STALE_CLAIM", false, 409],
+        ["ARTIFACT_CONFLICT", false, 409], ["TECHNICAL_FAILURE", true, 503],
+      ];
+      for (const [code, retryable, status] of cases) {
+        const { response } = await run({ status: "claimed", operation: { ...op, fencing: 1 } }, async () => fail(code, retryable));
+        expect(response.status).toBe(status);
+        expect((await response.json()).error).toMatchObject({ code, retryable });
+      }
+    });
+
+    it("si falta el canal del ejecutor responde un fallo técnico opaco", async () => {
+      const handler = createClaimFinalizationHandler({
+        ...deps(rpcReturning({ status: "claimed", operation: { ...op, fencing: 1 } })),
+        advancerFor: () => { throw new Error("GALCOA_EXECUTOR_DATABASE_URL secreta"); },
+      });
+      const response = await handler(post(), DOC, REV);
+      expect(response.status).toBe(503);
+      expect(JSON.stringify(await response.json())).not.toMatch(/secreta|EXECUTOR/);
+    });
   });
 });

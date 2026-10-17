@@ -76,6 +76,22 @@ describe("MVP-081 · staging canónico del PDF", () => {
     expect(staged()).toBeNull();
   });
 
+  it("constancias que no cubren la selección son RECEIPTS_INCOMPLETE no reintentable, distinto de RENDER_FAILED", async () => {
+    const { store, staged } = fakeStore();
+    const partial: PdfStagingStore = {
+      ...store,
+      renderInput: async () => {
+        const input = ready();
+        return { ...input, content: { ...input.content, selection: ["autor", "comprador"] } };
+      },
+    };
+    const render = vi.fn(renderFinalPdf);
+    const result = await createPdfStagingService({ store: partial, render }).stagePdf({ operationId: OP, fencing: 3 });
+    expect(result).toMatchObject({ ok: false, error: { code: "RECEIPTS_INCOMPLETE", retryable: false } });
+    expect(render).not.toHaveBeenCalled();
+    expect(staged()).toBeNull();
+  });
+
   it("bytes distintos de los ya guardados son un conflicto técnico, no una sobrescritura", async () => {
     const { store, staged } = fakeStore();
     const service = createPdfStagingService({ store: { ...store, renderInput: async () => ready() } });

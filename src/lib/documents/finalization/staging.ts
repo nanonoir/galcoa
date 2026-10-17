@@ -9,7 +9,7 @@ import { failure, newId } from "../result";
 import type { DocumentRpc } from "../persistence/store";
 import { renderFinalPdf, type PdfInput } from "../pdf/render";
 
-import { buildReceipts } from "./receipts";
+import { buildReceipts, ReceiptsError } from "./receipts";
 
 /**
  * Staging canónico del PDF bajo el claim (MVP-081, C081-2; migración 02506). El PDF se renderiza desde
@@ -94,11 +94,19 @@ export function createPdfStagingService(deps: PdfStagingDeps) {
         // Ya hay bytes canónicos: se reutilizan, nunca se renderiza otra vez.
         if (loaded.staged) return { ok: true, value: { ...loaded.staged, reused: true } };
 
+        // Constancias que no cubren la selección no se arreglan reintentando: error técnico no reintentable.
+        let receipts: PdfInput["receipts"];
+        try {
+          receipts = buildReceipts(loaded.content.selection, loaded.receipts);
+        } catch (error) {
+          return error instanceof ReceiptsError ? fail("RECEIPTS_INCOMPLETE") : fail("RENDER_FAILED", true);
+        }
+
         let rendered: Awaited<ReturnType<typeof renderFinalPdf>>;
         try {
           const pdf: PdfInput = {
             content: loaded.content,
-            receipts: buildReceipts(loaded.content.selection, loaded.receipts),
+            receipts,
             revisionId: loaded.revisionId,
             snapshotHash: loaded.snapshotHash,
             publicReference: loaded.publicReference,
