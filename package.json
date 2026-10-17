@@ -25,6 +25,7 @@
     "test:e2e": "playwright test",
     "test:e2e:auth": "node tests/server/auth-flow/run-local-auth.mjs",
     "test:e2e:confirm": "node tests/e2e/confirm/run.mjs",
+    "test:e2e:review": "node tests/e2e/review/run.mjs",
     "preview:ui": "vite --config preview/vite.config.ts"
   },
   "dependencies": {

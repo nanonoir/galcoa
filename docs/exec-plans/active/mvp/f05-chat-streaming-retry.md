@@ -87,6 +87,8 @@ Tras integrar y repetir checks: actualizar solo `MVP-052` (y recuento) y archiva
 
 **Solicitudes:** a `MVP-020/021` (mensaje del asistente con referencias a artefactos, operación técnica y error estable); a `MVP-022/023` (operación durable de turno y restricción de unicidad); a `MVP-054` (consumir este protocolo con `@ai-sdk/react`); a `MVP-130` (límites de uso y rate limit del endpoint).
 
+**Hallazgo de revisión PR103 (prueba añadida, pendiente de ejecución en CI):** `complete_chat_turn` sobre un documento en estado técnico `finalizado` devuelve `document_finalized` sin crear borrador, mensaje, reporte ni auditoría de completion, y conserva el borrador existente (`tests/server/local/chat-turn-publication.test.ts`). La semilla de finalización del harness ya deja el documento finalizado antes del `stage` (el SQL de `stage` no lo rechaza); no se probó el orden literal stage→finalizar. La guarda temprana en claim/stage y el discriminante F7 son entregas posteriores; no se añadió bloqueo global.
+
 **Decisiones pendientes:** valores de `MVP-013`; tratamiento del texto parcial (propuesta arriba, a confirmar con `MVP-020`).
 
 [Maestro](../mvp-master-plan.md) · [Fundaciones](../../../design/mvp-shared-foundations.md) · Previo: [Agente 1](f05-agent1-drafting.md) · Siguiente: [Chat conectado](f04-connected-chat.md)
