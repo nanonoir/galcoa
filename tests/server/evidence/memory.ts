@@ -40,10 +40,12 @@ export function createEvidenceDoubles(options: { documents: Record<string, strin
       const key = `${input.ownerId}|${input.idempotency.key}`;
       const prior = idempotency.get(key);
       if (prior) {
-        return prior.fingerprint === input.idempotency.fingerprint
-          ? { status: "replayed", evidence: evidences.get(prior.evidenceId)! }
-          : { status: "idempotency_conflict" };
+        if (prior.fingerprint !== input.idempotency.fingerprint) return { status: "idempotency_conflict" };
+        const e = evidences.get(prior.evidenceId);
+        if (!e || e.cleanupClaimedAt || (e.uploadState === "reserved" && Date.parse(e.uploadExpiresAt) <= Date.now())) return {status:"not_available"};
+        return {status:"replayed",evidence:e};
       }
+      if ((await store.listDiscards(input.ownerId)).length) return {status:"discard_pending"};
       const current = [...evidences.values()].filter((e) => e.documentId === input.documentId);
       if (current.length + 1 > input.limits.maxFiles) return { status: "limit_exceeded", limit: "files" };
       const total = current.reduce((sum, e) => sum + e.byteLength, 0) + input.byteLength;
@@ -60,7 +62,8 @@ export function createEvidenceDoubles(options: { documents: Record<string, strin
         declaredEventDate: input.declaredEventDate,
         uploadedAt: now(),
         acceptedAt: null,
-        uploadExpiresAt: "2026-10-16T15:02:00.000Z",
+        uploadExpiresAt: new Date(Date.now() + 120_000).toISOString(),
+        cleanupClaimedAt: null,
       };
       evidences.set(evidence.evidenceId, evidence);
       idempotency.set(key, { fingerprint: input.idempotency.fingerprint, evidenceId: evidence.evidenceId });
@@ -77,6 +80,7 @@ export function createEvidenceDoubles(options: { documents: Record<string, strin
       if (fail.accept) throw new Error("base caída");
       const e = evidences.get(evidenceId);
       if (!e || !owns(ownerId, e.documentId) || e.uploadState !== "reserved") return null;
+      if (e.cleanupClaimedAt || Date.parse(e.uploadExpiresAt) <= Date.now()) return null;
       const accepted: StoredEvidence = { ...e, uploadState: "accepted", acceptedAt: now() };
       evidences.set(evidenceId, accepted);
       audit.push({ type: "evidence.accepted", evidenceId, correlationId: ctx.correlationId });
@@ -86,7 +90,19 @@ export function createEvidenceDoubles(options: { documents: Record<string, strin
       const e = evidences.get(evidenceId);
       if (!e || !owns(ownerId, e.documentId)) return;
       if (e.uploadState === "accepted") throw new Error("un original aceptado no se borra");
-      evidences.delete(evidenceId);
+      if (e.cleanupClaimedAt) evidences.delete(evidenceId);
+    },
+    async listDiscards(ownerId) {
+      return [...evidences.values()].filter((e) => owns(ownerId, e.documentId) && e.uploadState === "reserved" &&
+        (e.cleanupClaimedAt || Date.parse(e.uploadExpiresAt) <= Date.now())).slice(0, 3);
+    },
+    async claimDiscard(ownerId, id, rejected) {
+      const e = evidences.get(id);
+      if (!e || !owns(ownerId, e.documentId) || e.uploadState !== "reserved") return null;
+      if (!e.cleanupClaimedAt && !rejected && Date.parse(e.uploadExpiresAt) > Date.now()) return null;
+      const claimed = { ...e, cleanupClaimedAt: e.cleanupClaimedAt ?? now() };
+      evidences.set(id, claimed);
+      return claimed;
     },
     async appendExtraction(input) {
       if (fail.append) throw new Error("base caída");
@@ -113,6 +129,8 @@ export function createEvidenceDoubles(options: { documents: Record<string, strin
       return objects.get(location) ?? null;
     },
     async remove(location) {
+      const e = [...evidences.values()].find((e) => e.privateLocation === location);
+      if (!e || e.uploadState === "accepted" || !e.cleanupClaimedAt) throw new Error("Descarte no reclamado");
       removed.push(location);
       objects.delete(location);
     },
