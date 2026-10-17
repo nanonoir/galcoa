@@ -9,6 +9,12 @@ revoke select on public.hedera_attempts, public.hedera_registrations from galcoa
 grant select (version_id, outcome) on public.hedera_attempts to galcoa_f7_writer;
 grant select (id, version_id, network, topic_id, sequence_number, transaction_id) on public.hedera_registrations to galcoa_f7_writer;
 
+-- La función pertenece a `galcoa_f7_writer` (02508): el reemplazo exige delegación temporal de rol. Los grants de
+-- tabla de arriba los emite `postgres`, dueño de las tablas.
+grant create on schema public to galcoa_f7_writer;
+grant galcoa_f7_writer to postgres with set true;
+set local role galcoa_f7_writer;
+
 create or replace function public.get_public_verification(p_reference text) returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -45,3 +51,7 @@ begin
       'transactionId', reg.transaction_id) end));
 end
 $$;
+
+reset role;
+revoke create on schema public from galcoa_f7_writer;
+grant galcoa_f7_writer to postgres with set false, inherit false;
