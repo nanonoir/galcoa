@@ -7,6 +7,9 @@ import { dashboardScenarios } from "@/mocks/dashboard";
 
 import { DashboardReference } from "./dashboard-reference";
 
+// El interruptor de la demo se apaga aquí para cubrir la presentación de advertencias; el encendido está en *.demo.test.tsx.
+vi.mock("@/lib/contracts/demo-mode", () => ({ DEMO_HIDE_WARNINGS: false }));
+
 function scenarioState(id: string): DashboardViewState {
   const scenario = dashboardScenarios.find((s) => s.id === id);
   if (!scenario) throw new Error(`Escenario inexistente: ${id}`);

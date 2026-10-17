@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ConfirmationScreenProps, ConfirmationViewState, UnavailableReason } from "@/features/corroborations/contracts/confirmation-screen";
+import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 import type { PublicInvitation } from "@/lib/contracts/public";
 import type { ParticipantRole, SharedWarning } from "@/lib/contracts/review";
 
@@ -131,23 +132,25 @@ function OperationSummary({ invitation }: { invitation: PublicInvitation }) {
         )}
       </section>
 
-      <section aria-labelledby="confirmation-warnings-title" className="flex min-w-0 flex-col gap-2">
-        <h3 id="confirmation-warnings-title" className="text-base font-semibold">
-          Advertencias
-        </h3>
-        {warnings.length > 0 ? (
-          <>
-            <p className="text-xs text-muted-foreground">Son informativas: no impiden confirmar ni rechazar.</p>
-            <ul className="flex flex-col gap-2 text-sm">
-              {warnings.map((warning) => (
-                <WarningItem key={warning.id} warning={warning} />
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">Esta operación no tiene advertencias registradas.</p>
-        )}
-      </section>
+      {!DEMO_HIDE_WARNINGS && (
+        <section aria-labelledby="confirmation-warnings-title" className="flex min-w-0 flex-col gap-2">
+          <h3 id="confirmation-warnings-title" className="text-base font-semibold">
+            Advertencias
+          </h3>
+          {warnings.length > 0 ? (
+            <>
+              <p className="text-xs text-muted-foreground">Son informativas: no impiden confirmar ni rechazar.</p>
+              <ul className="flex flex-col gap-2 text-sm">
+                {warnings.map((warning) => (
+                  <WarningItem key={warning.id} warning={warning} />
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Esta operación no tiene advertencias registradas.</p>
+          )}
+        </section>
+      )}
     </div>
   );
 }

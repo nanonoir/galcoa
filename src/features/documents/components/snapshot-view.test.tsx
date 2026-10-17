@@ -7,6 +7,9 @@ import { snapshotScenarios } from "@/mocks/documents";
 
 import { SnapshotView } from "./snapshot-view";
 
+// El interruptor de la demo se apaga aquí para cubrir la presentación de advertencias; el encendido está en *.demo.test.tsx.
+vi.mock("@/lib/contracts/demo-mode", () => ({ DEMO_HIDE_WARNINGS: false }));
+
 type ReadyState = Extract<SnapshotViewState, { status: "ready" }>;
 
 function scenarioState(id: string): SnapshotViewState {

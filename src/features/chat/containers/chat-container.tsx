@@ -7,8 +7,11 @@ import { uploadReservedEvidence } from "@/features/auth/containers/supabase-brow
 import { ChatReference } from "@/features/chat/components/chat-reference";
 import type { ChatAttachmentView, ChatErrorView, ChatMessageView, ChatViewState } from "@/features/chat/contracts/chat-view";
 import type { Message } from "@/lib/contracts/core";
+import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 import type { TechnicalError } from "@/lib/contracts/technical";
+import { NEW_DOCUMENT_TITLE } from "@/features/dashboard/containers/dashboard-container";
 
+import { ChatActionsContainer } from "./chat-actions-container";
 import { loadMessages, requestContrast, runTurn, type TurnCommand, type TurnStreamEvent } from "./chat-client";
 import { completeEvidence, extractEvidence, precheckEvidence, reserveEvidence, sha256Hex } from "./evidence-client";
 
@@ -57,6 +60,8 @@ export function ChatContainer({ documentId }: { documentId: string }) {
   const lastCommand = useRef<TurnCommand | null>(null);
   const running = useRef(false);
   const draftPublished = useRef(false);
+  const titleChecked = useRef(false);
+  const [hasDraft, setHasDraft] = useState(false);
   const records = useRef(new Map<string, AttachmentRecord>());
   const lifecycle = useRef(new AbortController());
 
@@ -69,10 +74,43 @@ export function ChatContainer({ documentId }: { documentId: string }) {
     else patch({ turnError: toErrorView(result.error, result.status) });
   }, [documentId, patch, router]);
 
+  /** Pone al documento el título del borrador, una sola vez y solo si sigue con el predeterminado. Falla en silencio. */
+  const autoTitle = useCallback(
+    async (draftTitle: string) => {
+      if (titleChecked.current) return;
+      const title = draftTitle.trim().slice(0, 200);
+      if (!title) return;
+      titleChecked.current = true;
+      try {
+        const base = `/api/documents/${encodeURIComponent(documentId)}`;
+        const current = await fetch(base, { credentials: "same-origin" });
+        if (!current.ok) return;
+        const record = (await current.json().catch(() => null)) as { result?: { title?: string } } | null;
+        if (record?.result?.title !== NEW_DOCUMENT_TITLE) return;
+        const renamed = await fetch(base, {
+          method: "PATCH",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title }),
+        });
+        if (renamed.ok) router.refresh();
+      } catch {
+        // El título es cosmético: no bloquea el chat.
+      }
+    },
+    [documentId, router],
+  );
+
   useEffect(() => {
     lifecycle.current = new AbortController();
     const uploads = lifecycle.current;
     const initial = new AbortController();
+    // Hidrata la existencia de un borrador al recargar (el estado del turno no sobrevive).
+    void fetch(`/api/documents/${encodeURIComponent(documentId)}/draft`, { credentials: "same-origin", signal: initial.signal })
+      .then((response) => {
+        if (response.ok && !initial.signal.aborted) setHasDraft(true);
+      })
+      .catch(() => undefined);
     void loadMessages(documentId, initial.signal).then((result) => {
       if (initial.signal.aborted) return;
       if (result.ok) setState((current) => ({ ...current, messages: result.value.map(toView) }));
@@ -88,6 +126,8 @@ export function ChatContainer({ documentId }: { documentId: string }) {
 
   const contrast = useCallback(
     async (signal: AbortSignal) => {
+      // Demo: sin advertencias visibles no se consulta el contraste (evita 503 y costo de IA).
+      if (DEMO_HIDE_WARNINGS) return;
       patch({ contrast: "running" });
       const result = await requestContrast(documentId, signal);
       if (signal.aborted) return;
@@ -104,8 +144,9 @@ export function ChatContainer({ documentId }: { documentId: string }) {
       lastCommand.current = command;
       const controller = new AbortController();
       abortRef.current = controller;
-      const outcome: { published: boolean; cancelled: boolean; failed: { error: TechnicalError; status: number } | null } = {
+      const outcome: { published: boolean; title: string; cancelled: boolean; failed: { error: TechnicalError; status: number } | null } = {
         published: false,
+        title: "",
         cancelled: false,
         failed: null,
       };
@@ -120,6 +161,7 @@ export function ChatContainer({ documentId }: { documentId: string }) {
           );
         } else if (event.type === "draft") {
           outcome.published = true;
+          outcome.title = event.title;
           draftPublished.current = true;
           const { draftId, draftRevision, title, warnings, notInformed } = event;
           patch({ draft: { draftId, draftRevision, title, ...(warnings === undefined ? {} : { warnings }), ...(notInformed === undefined ? {} : { notInformed }) } });
@@ -153,9 +195,10 @@ export function ChatContainer({ documentId }: { documentId: string }) {
       }
       running.current = false;
       await sync();
+      if (!failed && outcome.published) void autoTitle(outcome.title);
       if (!failed && !cancelled && outcome.published) await contrast(controller.signal);
     },
-    [documentId, contrast, patch, router, sync],
+    [autoTitle, contrast, documentId, patch, router, sync],
   );
 
   const runAttachment = useCallback(
@@ -247,6 +290,7 @@ export function ChatContainer({ documentId }: { documentId: string }) {
       state={state}
       maxMessageChars={MAX_MESSAGE_CHARS}
       onSend={(content) => void execute({ clientMessageId: crypto.randomUUID(), content })}
+      actions={state.draft || hasDraft ? <ChatActionsContainer documentId={documentId} /> : undefined}
       onAttach={attach}
       onRetryAttachment={(attachmentId) => void runAttachment(attachmentId)}
       onCancel={() => abortRef.current?.abort()}

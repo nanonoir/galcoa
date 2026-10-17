@@ -41,7 +41,7 @@ export type PendingReason =
   | "discrepancia_mirror";
 
 export type SealResult =
-  | { status: "registrado"; registration: SealRegistration }
+  | { status: "registrado"; registration: SealRegistration; reference: string }
   | { status: "pendiente"; reason: PendingReason; attemptId?: string }
   /** `sent: false` = fallo técnico previo a cualquier envío; `true` = rechazo terminal de ese ID. */
   | { status: "fallido"; retryable: true; sent: boolean; code: string; attemptId?: string }
@@ -112,7 +112,7 @@ export function createSealingService(deps: SealingDeps) {
           // Probado en Mirror pero sin asentar: no se afirma registro; se reconcilia de nuevo.
           return { status: "pendiente", reason: "resultado_no_persistido", attemptId: attempt.id };
         }
-        return { status: "registrado", registration };
+        return { status: "registrado", registration, reference: version.reference };
       }
       case "no_coincide": {
         // Discrepancia técnica: se deja constancia en el intento; no registrado y sin reenvío automático.
@@ -224,7 +224,7 @@ export function createSealingService(deps: SealingDeps) {
       const version = await store.loadVersion(versionId);
       if (!version) return { status: "no_disponible" };
       const state = await store.loadSealState(versionId);
-      if (state.registration) return { status: "registrado", registration: state.registration };
+      if (state.registration) return { status: "registrado", registration: state.registration, reference: version.reference };
       const latest = state.latestAttempt;
       if (latest && (latest.outcome === "pendiente" || latest.outcome === "incierto")) {
         return reconcile(version, latest, latest.observation.sequenceNumber);

@@ -75,6 +75,10 @@ function advanceProblem(error: TechnicalError): Response {
   return Response.json({ error }, { status, headers: PRIVATE_RESPONSE_HEADERS });
 }
 
+type PublicSeal =
+  | { status: "pendiente" }
+  | { status: "registrado"; reference: string; topicId: string; sequenceNumber: string; transactionId: string; consensusTimestamp: string };
+
 /** DTO del cliente: sin hashes, identidad reservada, nonce ni fencing. */
 function present(result: Extract<ClaimResult, { operation: unknown }>) {
   const { operationId, phase, status, versionNumber } = result.operation;
@@ -109,10 +113,14 @@ export function createClaimFinalizationHandler(deps: FinalizationHttpDeps) {
         if (dto.operation.phase === "published" && deps.sealerFor) {
           // Sin fire-and-forget: intención persistida antes del envío y reconciliación en replay.
           // Una caída deja la publicación como punto de recuperación, sin regenerar artefactos.
-          let seal: { status: "pendiente" | "registrado" } = { status: "pendiente" };
+          let seal: PublicSeal = { status: "pendiente" };
           try {
             const sealed = await deps.sealerFor(userId).seal(result.operation.versionId);
-            if (sealed.status === "registrado") seal = { status: "registrado" };
+            if (sealed.status === "registrado") {
+              // Solo identificadores públicos y opacos (INV-06): nunca bytes firmados ni claves.
+              const { topicId, sequenceNumber, transactionId, consensusTimestamp } = sealed.registration;
+              seal = { status: "registrado", reference: sealed.reference, topicId, sequenceNumber, transactionId, consensusTimestamp };
+            }
           } catch {
             // INV-18: configuración ausente o HCS indisponible no deshacen la publicación.
           }

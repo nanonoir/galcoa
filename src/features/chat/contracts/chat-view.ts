@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { z } from "zod";
 
 import { IdSchema, InstantSchema } from "@/lib/contracts/common";
@@ -121,4 +122,6 @@ export interface ChatViewProps {
   /** Sin callbacks de adjuntos la presentación no ofrece la carga (aún sin ruta conectada). */
   onAttach?: (files: File[]) => void;
   onRetryAttachment?: (attachmentId: string) => void;
+  /** Acciones del borrador publicado; se muestran debajo de los mensajes y sobre el composer. */
+  actions?: ReactNode;
 }

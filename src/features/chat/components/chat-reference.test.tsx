@@ -7,6 +7,9 @@ import { chatScenarios } from "@/features/chat/fixtures/chat-scenarios";
 
 import { ChatReference } from "./chat-reference";
 
+// El interruptor de la demo se apaga aquí para cubrir la presentación de advertencias; el encendido está en *.demo.test.tsx.
+vi.mock("@/lib/contracts/demo-mode", () => ({ DEMO_HIDE_WARNINGS: false }));
+
 function scenarioState(id: string): ChatViewState {
   const scenario = chatScenarios.find((s) => s.id === id);
   if (!scenario) throw new Error(`Escenario inexistente: ${id}`);

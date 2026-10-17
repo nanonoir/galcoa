@@ -2,6 +2,7 @@ import { inflateSync } from "node:zlib";
 
 import { describe, expect, it } from "vitest";
 
+import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 import type { ParticipantSelection } from "@/lib/contracts/review";
 import { applyTransition, canClaim, type FinalizationOperation } from "@/lib/documents/finalization/phases";
 import { buildReceipts, receiptsHeadline, ReceiptsError } from "@/lib/documents/finalization/receipts";
@@ -149,15 +150,19 @@ describe("MVP-081 · PDF final", () => {
     finalizedAt: "2026-10-16T12:05:00.000Z",
   });
 
-  it("renderiza un PDF con la operación, las advertencias y el anexo de constancias", async () => {
+  it("renderiza un PDF con la operación y el anexo de constancias; con el interruptor de la demo omite las advertencias", async () => {
     const pdf = await renderFinalPdf(input());
     expect(Buffer.from(pdf.bytes.subarray(0, 5)).toString("latin1")).toBe("%PDF-");
     expect(pdf.byteLength).toBe(pdf.bytes.byteLength);
     expect(pdf.sha256).toMatch(/^[0-9a-f]{64}$/);
     expect(pdf.renderer).toBe(RENDERER_VERSION);
     const text = pdfText(pdf.bytes);
-    for (const phrase of ["Acuerdo ficticio de entrega", "Operaci", "Constancias de confirmaci", "Fuente B", "000102030405060708090a0b0c0d0e0f"]) {
+    for (const phrase of ["Acuerdo ficticio de entrega", "Operaci", "Constancias de confirmaci", "000102030405060708090a0b0c0d0e0f"]) {
       expect(text, phrase).toContain(phrase);
+    }
+    expect(DEMO_HIDE_WARNINGS).toBe(true);
+    for (const hidden of ["Advertencias informativas", "Fuente B", "Chat indica 10 cajas"]) {
+      expect(text, hidden).not.toContain(hidden);
     }
   }, 30_000);
 

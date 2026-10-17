@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { snapshotScenarios } from "@/mocks/documents";
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }) }));
+
 import { ReviewContainer, type Frozen } from "./review-container";
 
 const ready = snapshotScenarios.find((s) => s.state.status === "ready")!.state;
@@ -253,16 +255,16 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       expect(screen.getByText(/tu confirmación/i)).toBeInTheDocument();
     });
 
-    it("«Finalizar» solo aparece con todas las confirmaciones y revisión vigente", async () => {
+    it("«Subir Contrato» solo aparece con todas las confirmaciones y revisión vigente", async () => {
       fetchMock.mockImplementation(async () => json({ confirmationStatus: "pendiente", missingRoles: ["comprador"], confirmed: 1, rejected: 0 }));
       const first = render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
       await screen.findByText(/faltan confirmaciones/i);
-      expect(screen.queryByRole("button", { name: /^finalizar$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^subir contrato$/i })).not.toBeInTheDocument();
       first.unmount();
 
       fetchMock.mockImplementation(async () => json({ confirmationStatus: "completa", missingRoles: [], confirmed: 2, rejected: 0 }));
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
-      expect(await screen.findByRole("button", { name: /^finalizar$/i })).toBeEnabled();
+      expect(await screen.findByRole("button", { name: /^subir contrato$/i })).toBeEnabled();
     });
 
     it("con confirmación completa y documento sin finalizar permite editar; cancelar no muta", async () => {
