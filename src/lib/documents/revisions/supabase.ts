@@ -24,7 +24,7 @@ const FreezeResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("created"), value: Bundle, supersededRevisionId: z.string().nullable(), invalidatedInvitations: z.number().int().nonnegative() }),
   z.strictObject({ status: z.literal("replayed"), value: Bundle }),
   z.strictObject({ status: z.literal("unchanged"), value: Bundle }),
-  z.strictObject({ status: z.enum(["stale_draft", "idempotency_conflict", "not_available"]) }),
+  z.strictObject({ status: z.enum(["stale_draft", "idempotency_conflict", "not_available", "finalization_in_progress"]) }),
 ]);
 
 const AuthorResultSchema = z.discriminatedUnion("status", [
@@ -41,10 +41,20 @@ const AuthorResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.enum(["snapshot_mismatch", "revision_not_active", "already_responded", "idempotency_conflict", "not_available"]) }),
 ]);
 
+/** `restrict_violation` (23001) del trigger que fija la revisión mientras hay un claim activo (MVP-080). */
+function finalizationInProgress(error: unknown): { status: "finalization_in_progress" } | undefined {
+  const e = error as { code?: unknown; message?: unknown } | null;
+  return e?.code === "23001" && typeof e.message === "string" && e.message.includes("finalización en curso") ? { status: "finalization_in_progress" } : undefined;
+}
+
 export function createSupabaseRevisionAdapters(context: { verifiedUserId: string; session: DocumentRpc }): { store: RevisionStore; reader: FreezeReader } {
-  async function call(name: string, args: Record<string, unknown>): Promise<unknown> {
+  async function call(name: string, args: Record<string, unknown>, onError?: (error: unknown) => unknown): Promise<unknown> {
     const { data, error } = await context.session.rpc(name, args);
-    if (error) throw new Error("Persistencia no disponible");
+    if (error) {
+      const handled = onError?.(error);
+      if (handled !== undefined) return handled;
+      throw new Error("Persistencia no disponible");
+    }
     return data;
   }
   function requireOwner(ownerId: string) {
@@ -79,7 +89,7 @@ export function createSupabaseRevisionAdapters(context: { verifiedUserId: string
           p_key: input.idempotency.key,
           p_fingerprint: input.idempotency.fingerprint,
           p_correlation_id: input.audit.correlationId,
-        }),
+        }, finalizationInProgress),
       );
       if ("value" in result) {
         const { revision, snapshot } = result.value;

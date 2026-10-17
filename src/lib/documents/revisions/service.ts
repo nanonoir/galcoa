@@ -97,6 +97,8 @@ export function createRevisionService(deps: RevisionDeps) {
             return failure("STALE_DRAFT", "congelado", false, correlationId);
           case "idempotency_conflict":
             return failure("IDEMPOTENCY_CONFLICT", "persistencia", false, correlationId);
+          case "finalization_in_progress":
+            return failure("FINALIZATION_IN_PROGRESS", "congelado", false, correlationId);
           default:
             return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
         }

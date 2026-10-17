@@ -59,6 +59,8 @@ export type FreezeResult =
   /** Mismo contenido y selección que la revisión activa: no se crea otra. */
   | { status: "unchanged"; value: RevisionBundle }
   | { status: "stale_draft" }
+  /** Hay una finalización activa sin publicar para la revisión vigente: no se sustituye (MVP-080). */
+  | { status: "finalization_in_progress" }
   | { status: "idempotency_conflict" }
   | { status: "not_available" };
 
