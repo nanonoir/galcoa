@@ -257,6 +257,45 @@ describe("MVP-053 · contraste sin veto", () => {
     expect(t.reports.saved).toHaveLength(0);
   });
 
+  describe("tope de entradas (p_inputs ≤ 401, incluye b1)", () => {
+    const inputsSetup = (messageCount: number, output: ContrastOutput) => {
+      const draft: Draft = {
+        draftId: "draft-1", documentId: "doc-1", draftRevision: 1,
+        content: { title: "T", body: "B", corrections: [] }, updatedAt: "2026-10-16T15:00:00Z",
+      };
+      const reports = memoryReports(draft);
+      const g = groqPort({ content: JSON.stringify(output) });
+      const messages = {
+        listMessages: async () => ({
+          ok: true as const,
+          value: Array.from({ length: messageCount }, (_, i) => ({ messageId: `msg-${i + 1}`, content: `texto ${i + 1}` }) as never),
+        }),
+      };
+      const service = createContrastService({ session: { currentUserId: async () => ANA }, messages, store: reports.store, groq: g.port });
+      return { service, reports, g };
+    };
+    const allRefs = (n: number) => [...Array.from({ length: n }, (_, i) => `m${i + 1}`), "b1"];
+
+    it("401 entradas (400 mensajes + b1): llama a Groq y conserva todas las refs", async () => {
+      const refs = allRefs(400);
+      const t = inputsSetup(400, { result: "contradiccion_critica", findings: [{ message: "x", severity: "critical", sourceRefs: refs }] });
+      expect((await t.service.contrastDraft({ documentId: "doc-1" })).ok).toBe(true);
+      expect(t.g.calls).toHaveLength(1);
+      expect(t.reports.saved[0].inputs).toHaveLength(LIMITS.maxInputs);
+      expect(t.reports.saved[0].inputs.at(-1)).toMatchObject({ ref: "b1", kind: "borrador" });
+      expect(t.reports.saved[0].findings[0].sourceRefs).toEqual(refs);
+    });
+
+    it("402 entradas: INPUT_TOO_LARGE sin llamar a Groq ni al store", async () => {
+      const t = inputsSetup(401, { result: "sin_inconsistencias_criticas_detectadas", findings: [] });
+      expect(await t.service.contrastDraft({ documentId: "doc-1" })).toMatchObject({
+        ok: false, error: { code: "INPUT_TOO_LARGE", stage: "validacion", retryable: false },
+      });
+      expect(t.g.calls).toHaveLength(0);
+      expect(t.reports.saved).toHaveLength(0);
+    });
+  });
+
   it("configuración ausente o falla del proveedor: error técnico sin reporte fabricado", async () => {
     const t = await setup("no es json");
     const r = await t.service.contrastDraft({ documentId: t.documentId });

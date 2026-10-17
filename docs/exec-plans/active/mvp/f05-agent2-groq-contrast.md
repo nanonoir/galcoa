@@ -94,6 +94,8 @@ Implementado el lado SQL; el adaptador `ContrastStore` real y el cambio de `get_
 
 **Corrección PR108 (CI servidor local falló por `RETURNING created_at` sin SELECT):** aserciones nuevas en `tests/server/local/contrast-report-persistence.test.ts` (`created_at` almacenado = `createdAt` devuelto; el rol sigue sin `SELECT` en reportes) y fronteras en `tests/server/ai/contrast/contrast.test.ts`. Typecheck, ESLint, `tests/server/ai/contrast` (29) y `test:boundaries` OK localmente; SQL real pendiente de CI.
 
+**Tope de entradas (revisión PR108):** `p_inputs` admite ≤ 401 entradas incluyendo `b1`; `CONTRAST_STORAGE_LIMITS.maxInputs = 401` se comprueba en `contrastDraft` ANTES de llamar a Groq. Si hay más, devuelve `INPUT_TOO_LARGE` (etapa `validacion`, `retryable: false`) sin llamar a Groq ni al store y sin truncar ni omitir fuentes. `TechnicalError.code` es un string estable (`^[A-Z][A-Z0-9_]*$`), no un enum cerrado; no existía un código equivalente para entrada excesiva (solo `PAYLOAD_TOO_LARGE`, que es HTTP de otra ruta), así que se usa `INPUT_TOO_LARGE`. El SQL y el límite no cambian.
+
 **Evidencia previa:** `npm run typecheck` y ESLint de los tests nuevos: OK. Las pruebas `tests/server/local/contrast-report-persistence.test.ts` y el catálogo RLS **no se ejecutaron localmente** (Supabase local no reservado); pendientes de CI Linux.
 
 [Maestro](../mvp-master-plan.md) · [Fundaciones](../../../design/mvp-shared-foundations.md) · Previo: [Evidencias](f04-evidence-upload-extraction.md) y [Agente 1](f05-agent1-drafting.md) · Siguiente: [Reglas y advertencias](f06-rules-and-warnings.md)

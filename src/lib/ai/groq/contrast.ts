@@ -34,7 +34,7 @@ export const VISUAL_LIMITATION =
  * persistir: una salida que los excede es técnicamente inválida y no se trunca ni se descarta en silencio.
  * (Las limitaciones son constantes internas; no vienen del modelo.) No van en el JSON Schema enviado a Groq.
  */
-export const CONTRAST_STORAGE_LIMITS = { maxFindings: 200, maxMessageChars: 4000, maxSourceRefs: 401 } as const;
+export const CONTRAST_STORAGE_LIMITS = { maxFindings: 200, maxMessageChars: 4000, maxSourceRefs: 401, maxInputs: 401 } as const;
 
 const Ref = z.string().regex(/^(?:m|e|b)\d{1,3}$/);
 
@@ -115,6 +115,9 @@ export function createContrastService(deps: ContrastDeps) {
         add(`e${i + 1}`, "extraccion", x.extractionId, `[texto extraído por Gemini de ${x.origin === "pdf" ? "un PDF" : "una imagen"}]\n${x.text}`),
       );
       add("b1", "borrador", draft.draftId, `${draft.content.title}\n\n${draft.content.body}`);
+
+      // `p_inputs` de la RPC admite como máximo 401 entradas (incluye b1). Se rechaza sin truncar ni omitir fuentes.
+      if (inputs.length > CONTRAST_STORAGE_LIMITS.maxInputs) return fail("INPUT_TOO_LARGE", "validacion", false, correlationId);
 
       const generated = await deps.groq.generateStructured({
         instructions: CONTRAST_INSTRUCTIONS_V1,
