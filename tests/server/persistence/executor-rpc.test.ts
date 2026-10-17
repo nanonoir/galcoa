@@ -120,6 +120,20 @@ describe("executor RPC, sin conexiones reales", () => {
     expect(doubles.query).toHaveBeenCalledTimes(1);
     expect(doubles.end).not.toHaveBeenCalled();
   });
+  it("permite las RPC de turnos durables con un pool y su orden exacto de argumentos", async () => {
+    const { turnRpcCommands } = await import("@/lib/documents/turns/rpc-commands");
+    const rpc = createExecutorRpc("verified")!;
+    for (const [name, keys] of Object.entries(turnRpcCommands)) {
+      doubles.query.mockClear();
+      const input = Object.fromEntries(keys.map((key) => [key, key === "p_actor_id" ? "verified" : key]));
+      expect((await rpc.rpc(name, input)).error).toBeNull();
+      expect(doubles.query).toHaveBeenCalledWith(
+        `select public.${name}(${keys.map((key, i) => `${key} => $${i + 1}`).join(", ")}) as result`, [...keys].map((key) => input[key]));
+      expect((await rpc.rpc(name, { ...input, p_actor_id: "other" })).error).toBeTruthy();
+      expect((await rpc.rpc(name, { ...input, extra: 1 })).error).toBeTruthy();
+    }
+    expect(doubles.configs).toHaveLength(1);
+  });
   it("close es idempotente y solo dispone el pool del owner que lo creó", async () => {
     const other = createExecutorRpcFactory();
     await createExecutorRpc("verified")!.rpc("append_agent_message", args());

@@ -33,3 +33,7 @@ Contraste compara borrador ID/revisión antes de insertar: resultado tardío no 
 3. Adaptadores/contratos explícitos; luego orquestación/abort, contraste CAS y composición HTTP/UI. Usar siguientes `025xx` si una unidad SQL lo requiere. Reservadas `02300` para evidencias y `02400` para ajustes previos, no ocuparlas.
 
 Cada PR mantiene ≤600 líneas authored con tests, sin contar docs/lock. Las tablas/RPC aisladas no acreditan chat funcional. Probar con Supabase local y proveedores doblados: doble claim, lease, worker viejo, cancelar después de stage, completion vs freeze/cambio de borrador, rollback, replay, contraste tardío, aislamiento A/B/anon/authenticated y claves largas. La disponibilidad gratuita de modelos y el transporte real se acreditan en la sesión final, no en estos tests.
+
+## Adaptador SQL (contrato interno)
+
+`src/lib/documents/turns/persistence.ts` expone `DurableChatStore`, puerto nuevo y separado de los legacy `TurnStore`/`DraftStore` (que se retirarán al componer la orquestación). Cada operación recibe `ownerId` verificado y una referencia explícita `{ turnId, attempt }`; `stageProposal` devuelve solo referencias de staging y `completeTurn` entrega el resultado original (borrador, `proposalId`, mensaje del agente). Los códigos de error de cierre del dominio (`AI_ABORTED`) se convierten a minúsculas para SQL. La auditoría TS de `chat_turn.*` queda pendiente para la orquestación (SQL ya audita de forma atómica). No hay ruta ni orquestador conectados: no acredita chat funcional.
