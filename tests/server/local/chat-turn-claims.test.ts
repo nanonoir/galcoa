@@ -131,6 +131,7 @@ select pg_backend_pid();
 select public.claim_chat_turn(${lit(ana.id)}, ${lit(docA.documentId)}, ${lit(id)}, ${lit(FP)}, 90, 'corr-turn');
 select pg_sleep(1);
 commit;`,
+      "supabase_admin",
     );
     expect(distinctBackends(results)).toBe(2);
     expect(results.every((r) => r.ok)).toBe(true);
