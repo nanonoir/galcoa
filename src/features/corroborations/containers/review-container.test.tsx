@@ -46,6 +46,7 @@ describe("ReviewContainer", () => {
     expect(invite).toMatchObject({ url: "/api/revisions/rev-1/invitations", method: "POST", body: { role: "comprador" } });
     expect(screen.getByText(/\/confirm\/tok-comprador/)).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Comprador" })).toBeDisabled();
+    expect(screen.getByRole("img", { name: /código qr del enlace de comprador/i })).toBeInTheDocument();
   });
 
   it("un conflicto de borrador se muestra como error y no congela nada", async () => {

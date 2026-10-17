@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ParticipantSelector } from "@/features/corroborations/components/participant-selector";
 import { ReviewProgress, type ParticipantProgress } from "@/features/corroborations/components/review-progress";
 import { ShareLinksPanel, type ShareLinkItem } from "@/features/corroborations/components/share-links-panel";
+import { ShareQr } from "@/features/corroborations/containers/share-qr";
 import { buildMailtoUrl, buildWhatsAppUrl } from "@/features/corroborations/lib/share-links";
 import { SnapshotView } from "@/features/documents/components/snapshot-view";
 import type { ConfirmationStatus, HcsStatus } from "@/lib/contracts/document";
@@ -300,7 +301,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
             />
           )}
 
-          <ShareLinksPanel links={links} onCopy={(url) => navigator.clipboard.writeText(url)} onReissue={(role) => void reissue(role)} />
+          <ShareLinksPanel links={links} onCopy={(url) => navigator.clipboard.writeText(url)} onReissue={(role) => void reissue(role)} renderQr={(url, label) => <ShareQr url={url} label={label} />} />
         </>
       )}
     </div>
