@@ -235,7 +235,7 @@ describe("Acceso y cierre de sesión", () => {
     const { deps } = fakeClient();
     const response = await handleLogin(post("/api/auth/login", { email: EMAIL, password: PASSWORD }), deps);
     expect(response.status).toBe(200);
-    expect((await read(response)).redirectTo).toBe("/");
+    expect((await read(response)).redirectTo).toBe("/dashboard");
   });
 
   it.each([
