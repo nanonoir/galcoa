@@ -61,6 +61,14 @@ describe("Barra de acciones del chat (red simulada, no es integración real)", (
     expect(screen.queryByRole("button", { name: /Revisar/ })).not.toBeInTheDocument();
   });
 
+  it("no aparece si el servidor marca el documento como finalizado, aunque haya borrador", async () => {
+    render(<ChatContainer documentId={DOC} finalized />);
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/draft"))).toBe(true));
+    expect(screen.queryByTestId("chat-actions")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirmar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Compartir/ })).not.toBeInTheDocument();
+  });
+
   it("aparece al recargar con un borrador existente y Revisar abre el iframe de la vista previa", async () => {
     render(<ChatContainer documentId={DOC} />);
     await userEvent.click(await screen.findByRole("button", { name: /Revisar/ }));

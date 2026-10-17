@@ -53,7 +53,11 @@ const CLEAN = { progress: null, reasonCode: null, retryable: false } as const;
 
 const EMPTY: ChatViewState = { messages: [], streaming: null, attachments: [], contrast: "idle", turnError: null, draft: null };
 
-export function ChatContainer({ documentId }: { documentId: string }) {
+/**
+ * `finalized` viene del render del servidor: un documento finalizado no ofrece Revisar/Confirmar/
+ * Compartir/Subir Contrato (la tarjeta persistente de la versión ocupa ese lugar en la página).
+ */
+export function ChatContainer({ documentId, finalized = false }: { documentId: string; finalized?: boolean }) {
   const router = useRouter();
   const [state, setState] = useState<ChatViewState>(EMPTY);
   const abortRef = useRef<AbortController | null>(null);
@@ -290,7 +294,7 @@ export function ChatContainer({ documentId }: { documentId: string }) {
       state={state}
       maxMessageChars={MAX_MESSAGE_CHARS}
       onSend={(content) => void execute({ clientMessageId: crypto.randomUUID(), content })}
-      actions={state.draft || hasDraft ? <ChatActionsContainer documentId={documentId} /> : undefined}
+      actions={!finalized && (state.draft || hasDraft) ? <ChatActionsContainer documentId={documentId} /> : undefined}
       onAttach={attach}
       onRetryAttachment={(attachmentId) => void runAttachment(attachmentId)}
       onCancel={() => abortRef.current?.abort()}

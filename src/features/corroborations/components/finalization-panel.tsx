@@ -2,6 +2,7 @@ import { ArrowUp, Loader2 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { SealRegisteredAlert } from "@/features/documents/components/sealed-version-card";
 
 /**
  * Finalización de la revisión (REQ-12, INV-13/14): presentación pura. Recibe el estado ya
@@ -76,30 +77,7 @@ export function FinalizationPanel({ state, onFinalize, onRefresh }: Finalization
 
       {state.status === "idle" && <p className="text-sm text-muted-foreground">Todos los participantes confirmaron esta revisión. Al subir el contrato se genera la versión con su PDF y se registra su huella en Hedera Testnet.</p>}
 
-      {state.status === "published" && (
-        <Alert>
-          <AlertTitle>Contrato subido. Huella registrada en Hedera Testnet.</AlertTitle>
-          <AlertDescription>
-            <p>La versión {state.versionNumber} quedó finalizada y ya no se puede modificar.</p>
-            <p className="font-mono text-xs break-all text-muted-foreground">
-              Topic {state.seal.topicId} · Secuencia {state.seal.sequenceNumber}
-            </p>
-            <p className="flex flex-wrap gap-x-4 gap-y-1">
-              <a className="font-medium underline underline-offset-4" href={`/verify/${encodeURIComponent(state.seal.reference)}`}>
-                Ver verificación
-              </a>
-              <a
-                className="font-medium underline underline-offset-4"
-                href={`https://hashscan.io/testnet/transaction/${encodeURIComponent(state.seal.consensusTimestamp)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Ver en HashScan
-              </a>
-            </p>
-          </AlertDescription>
-        </Alert>
-      )}
+      {state.status === "published" && <SealRegisteredAlert versionNumber={state.versionNumber} seal={state.seal} />}
 
       {state.status === "failed" && (
         <Alert variant="destructive">

@@ -89,6 +89,9 @@ describe("FinalizationContainer", () => {
     await tick(SEAL_RETRY_MS * 3);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(router.refresh).toHaveBeenCalledTimes(1);
+    // El recuadro no desaparece solo tras `done`: lo reemplaza la tarjeta persistente del servidor.
+    expect(screen.getByText("Contrato subido. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /hashscan/i })).toBeInTheDocument();
   });
 
   it("con el sello pendiente reintenta el POST con tope y termina detenido, con opción de reintentar", async () => {
