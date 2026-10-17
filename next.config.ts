@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Imagen Docker mínima (docs/DEPLOY-VPS.md); Vercel lo ignora.
+  output: "standalone",
   logging: {
     incomingRequests: {
       // El token de invitación viaja en la ruta: no se registra en el log del framework.

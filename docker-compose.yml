@@ -1,0 +1,35 @@
+# GALCOA+ en VPS (ver docs/DEPLOY-VPS.md). Supabase es externo: sin base local.
+name: galcoa
+
+services:
+  galcoa-web:
+    build:
+      context: .
+      args:
+        # Públicos, necesarios en el build (se incrustan en el bundle del navegador).
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?definir en .env.production}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:?definir en .env.production}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://galcoa.noirnahuel.com}
+    image: galcoa-web:${GALCOA_TAG:-latest}
+    container_name: galcoa-web
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    ports:
+      - "127.0.0.1:3001:3000"
+    mem_limit: 768m
+    memswap_limit: 768m
+    cpus: 1.0
+    environment:
+      NODE_OPTIONS: --max-old-space-size=512
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
