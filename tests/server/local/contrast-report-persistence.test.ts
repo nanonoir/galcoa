@@ -95,7 +95,8 @@ describe("acceso: solo el ejecutor, con permisos mínimos", () => {
       .toEqual([["t", "galcoa_contrast_writer", "f", "f", "f", "search_path=\"\"", "t", "f", "f", "f"]]);
     expect(await psqlOk(`select has_table_privilege('galcoa_contrast_writer', 'public.drafts', 'INSERT'),
       has_table_privilege('galcoa_contrast_writer', 'public.drafts', 'DELETE'), has_table_privilege('galcoa_contrast_writer', 'public.verification_reports', 'UPDATE'),
-      has_table_privilege('galcoa_contrast_writer', 'public.messages', 'INSERT');`)).toEqual([["f", "f", "f", "f"]]);
+      has_table_privilege('galcoa_contrast_writer', 'public.messages', 'INSERT'),
+      has_table_privilege('galcoa_contrast_writer', 'public.verification_reports', 'SELECT');`)).toEqual([["f", "f", "f", "f", "f"]]);
   });
 });
 
@@ -109,6 +110,8 @@ describe("persistencia del reporte", () => {
     expect(out.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/);
 
     const [row] = await psqlOk(`select input::text, output::text, model, prompt_version, rules_version, limitations::text from public.verification_reports where id = ${lit(out.reportId)};`);
+    const [stored] = await psqlOk(`select to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') from public.verification_reports where id = ${lit(out.reportId)};`);
+    expect(stored[0]).toBe(out.createdAt);
     expect(JSON.parse(row[0])).toEqual({ kind: "contraste", schemaVersion: 1, inputs: inputsOf(w), draft: { draftId: w.draftId, draftRevision: 3, content: w.content } });
     expect(JSON.parse(row[1])).toEqual({ kind: "contraste", schemaVersion: 1, draftId: w.draftId, draftRevision: 3, result: "con_advertencias", findings: [WARNING] });
     expect(row.slice(2, 5)).toEqual(["modelo-ficticio", "contrast-v1", "contraste-v1"]);

@@ -36,7 +36,7 @@ create function public.persist_contrast_report(p_actor_id uuid, p_document_id uu
   p_draft_content jsonb, p_result text, p_findings jsonb, p_inputs jsonb, p_model_id text, p_prompt_version text,
   p_limitations jsonb, p_correlation_id text)
 returns jsonb language plpgsql security definer set search_path = '' as $$
-declare dr public.drafts; rid uuid := gen_random_uuid(); created timestamptz; expected text;
+declare dr public.drafts; rid uuid := gen_random_uuid(); created timestamptz := now(); expected text;
 begin
   if p_actor_id is null then raise insufficient_privilege; end if;
   -- Forma (sin acceso a datos): igual que SaveReportInput y ContrastOutputSchema del servicio.
@@ -92,14 +92,14 @@ begin
     raise invalid_parameter_value;
   end if;
 
-  insert into public.verification_reports(id, document_id, input, output, model, prompt_version, rules_version, limitations)
+  -- `created_at` explícito y sin RETURNING: el rol no tiene SELECT sobre `verification_reports` (mínimo privilegio).
+  insert into public.verification_reports(id, document_id, input, output, model, prompt_version, rules_version, limitations, created_at)
     values(rid, p_document_id,
       jsonb_build_object('kind', 'contraste', 'schemaVersion', 1, 'inputs', p_inputs,
         'draft', jsonb_build_object('draftId', dr.id, 'draftRevision', dr.draft_revision, 'content', dr.content)),
       jsonb_build_object('kind', 'contraste', 'schemaVersion', 1, 'draftId', dr.id, 'draftRevision', dr.draft_revision,
         'result', p_result, 'findings', p_findings),
-      p_model_id, p_prompt_version, 'contraste-v1', p_limitations)
-    returning created_at into created;
+      p_model_id, p_prompt_version, 'contraste-v1', p_limitations, created);
   insert into public.report_sources(document_id, report_id, message_id, extraction_id)
     select p_document_id, rid, case when i->>'kind' = 'mensaje' then (i->>'id')::uuid end,
         case when i->>'kind' = 'extraccion' then (i->>'id')::uuid end

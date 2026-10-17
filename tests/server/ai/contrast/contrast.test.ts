@@ -11,6 +11,7 @@ import {
   createContrastService,
   TEXT_ONLY_LIMITATION,
   VISUAL_LIMITATION,
+  CONTRAST_STORAGE_LIMITS as LIMITS,
   type ContrastOutput,
 } from "@/lib/ai/groq/contrast";
 import { createGroqStructuredPort, type GroqChatClient } from "@/lib/ai/groq/structured";
@@ -228,6 +229,31 @@ describe("MVP-053 · contraste sin veto", () => {
     const t = await setup(output as ContrastOutput);
     const r = await t.service.contrastDraft({ documentId: t.documentId });
     expect(r).toMatchObject({ ok: false, error: { code: "AI_INVALID_OUTPUT", retryable: true } });
+    expect(t.reports.saved).toHaveLength(0);
+  });
+
+  const critical = (message: string, sourceRefs = ["m1"]) => ({ message, severity: "critical" as const, sourceRefs });
+  const warnings = (n: number) => Array.from({ length: n }, () => ({ message: "x", severity: "warning" as const, sourceRefs: ["m1"] }));
+
+  it.each([
+    ["mensaje en el límite", { result: "contradiccion_critica", findings: [critical("a".repeat(LIMITS.maxMessageChars))] }],
+    ["hallazgos en el límite", { result: "con_advertencias", findings: warnings(LIMITS.maxFindings) }],
+    ["refs en el límite", { result: "contradiccion_critica", findings: [critical("x", Array(LIMITS.maxSourceRefs).fill("m1"))] }],
+  ])("%s: persiste (crítico legítimo no se bloquea)", async (_, output) => {
+    const t = await setup(output as ContrastOutput);
+    expect((await t.service.contrastDraft({ documentId: t.documentId })).ok).toBe(true);
+    expect(t.reports.saved).toHaveLength(1);
+    expect(t.reports.saved[0].findings).toEqual(output.findings);
+  });
+
+  it.each([
+    ["mensaje sobre el límite", { result: "contradiccion_critica", findings: [critical("a".repeat(LIMITS.maxMessageChars + 1))] }],
+    ["hallazgos sobre el límite", { result: "con_advertencias", findings: warnings(LIMITS.maxFindings + 1) }],
+    ["refs sobre el límite", { result: "contradiccion_critica", findings: [critical("x", Array(LIMITS.maxSourceRefs + 1).fill("m1"))] }],
+  ])("%s: AI_INVALID_OUTPUT sin llamar a store", async (_, output) => {
+    const t = await setup(output as ContrastOutput);
+    const r = await t.service.contrastDraft({ documentId: t.documentId });
+    expect(r).toMatchObject({ ok: false, error: { code: "AI_INVALID_OUTPUT", stage: "ia" } });
     expect(t.reports.saved).toHaveLength(0);
   });
 
