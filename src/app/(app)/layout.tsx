@@ -15,7 +15,7 @@ export default async function PrivateLayout({ children }: { children: React.Reac
       <header className="border-b">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3">
           <nav aria-label="Principal" className="flex items-center gap-4 text-sm font-medium">
-            <Link href="/" className="font-semibold">GALCOA+</Link>
+            <Link href="/" className="galcoa-brand"><span className="sr-only">GALCOA+</span></Link>
             <Link href="/dashboard" className="underline-offset-4 hover:underline">Mis documentos</Link>
           </nav>
           <LogoutButton />
