@@ -46,6 +46,8 @@ Aceptación: PRs acotados, regresiones focales y CI pertinente; sin marcar F7 co
 
 IDs: MVP-040…044, 051…054, 061/062, 077/078, 116. Referencias: planes F4/F5/F6/F7/F11 enlazados desde el maestro.
 
+Decisión de ejecución: [publicación durable de turnos](../../design/durable-chat-turns.md). El primer checkpoint de backend B se limita a claims/attach/close de `02500`, con pruebas SQL locales y rol mínimo. No se publica un borrador desde `saveProposal` antes de completar el turno, ni se compone una ruta provisional que pueda exponer staging a F7. Las entregas restantes siguen esa decisión y requieren revisión independiente.
+
 - [ ] Migraciones aditivas y adaptadores para TurnStore, DraftStore y ContrastStore usando las tablas ya existentes cuando correspondan; claims, fencing/idempotencia y auditoría con actor de sesión. No permitir al autor falsificar resultados del agente.
 - [ ] Componer handlers de turno NDJSON y contraste con servicios existentes. Definir rutas reales desde los contratos verificados; los paths sugeridos por informes no son API aprobada.
 - [ ] Consolidar advertencias de Agente 1, Agente 2 y reglas con fuentes, revisión vigente y alias; asegurar que el snapshot no pierda advertencias materiales. Advertencias incluso críticas nunca vetan.

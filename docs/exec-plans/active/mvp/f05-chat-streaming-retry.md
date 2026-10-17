@@ -51,6 +51,10 @@ Antes de implementar leer `node_modules/next/dist/docs/01-app/01-getting-started
 - [ ] Route Handler: valida entrada con el esquema del comando, llama al servicio, devuelve el stream y los errores proyectados; sin tokens, claves ni contenido en logs.
 - [ ] Prueba de protocolo: consumir el stream en Vitest (Node) para verificar orden, fin normal y error a mitad de stream.
 
+### Checkpoint 1 — claims de turno en SQL (`02500`)
+
+Migración `20261016002500_chat_turn_claims.sql`: tabla técnica `chat_turns` y RPC `claim_chat_turn`, `attach_chat_turn_message` y `close_chat_turn`, solo para `galcoa_executor` (propietario `galcoa_turn_writer`, sin login ni bypass, `search_path` vacío), con actor explícito, lease de SQL, fencing por `attempt` y auditoría (`chat_turn.claimed`/`chat_turn.closed`) en la misma transacción. Pruebas: `tests/server/local/chat-turn-claims.test.ts` y el catálogo RLS. **Alcance:** no hay staging, completar turno, adaptador TS ni ruta; el catálogo TS de auditoría no se extiende hasta que un adaptador emita esos eventos. `complete_chat_turn` y la limpieza de staging al recuperar el lease pertenecen a `02501` ([diseño](../../../design/durable-chat-turns.md)). Evidencia: ver el PR; sin chat funcional acreditado.
+
 ## 6. Casos de test por aceptación
 
 | Aceptación | Caso |

@@ -16,8 +16,12 @@ export function runIndependent<T>(count: number, task: (index: number) => Promis
  * Ejecuta el mismo script SQL en `count` conexiones independientes. Cada script debe
  * imprimir `select pg_backend_pid();` para que la aserción de independencia sea comprobable.
  */
-export async function runSqlOnIndependentConnections(count: number, sql: string): Promise<SqlResult[]> {
-  const settled = await runIndependent(count, () => psql(sql));
+export async function runSqlOnIndependentConnections(
+  count: number,
+  sql: string,
+  databaseUser: Parameters<typeof psql>[1] = "postgres",
+): Promise<SqlResult[]> {
+  const settled = await runIndependent(count, () => psql(sql, databaseUser));
   return settled.map((item) => {
     if (item.status === "rejected") throw item.reason;
     return item.value;
