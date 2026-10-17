@@ -127,7 +127,7 @@ Reglas para completarlo: salen de una **transacción real** hecha por Nahuel; no
 |---|---|
 | Deck | §1 a §5, una idea por slide |
 | Video (≤ 5 min) | §2 en 3 minutos; escena de HashScan |
-| README | §7 + problema → solución → demo |
+| README | §6 + problema → solución → demo |
 | Formulario de entrega | Frase de una línea, Topic, transacción, **hash**, HashScan, uso de IA |
 | Formulario NEA Productivo Digital | §2 con un caso agro (lote de producción agropecuaria, ilustrativo) |
 | Mapa del camino feliz y roadmap | Paso «Sellar» = HCS Testnet vía `@hiero-ledger/sdk`; Fase 3 = Mainnet |
