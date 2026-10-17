@@ -10,6 +10,7 @@ import { trustedOrigin } from "@/lib/supabase/auth-http";
 import type { SessionCheck } from "@/lib/supabase/auth";
 
 import type { DocumentRpc } from "../persistence/store";
+import type { SealResult } from "../sealing/service";
 
 import {
   createSupabaseFinalizationStatusStore,
@@ -25,9 +26,9 @@ import type { FinalizationAdvancer } from "./resume";
  * vienen del cliente, y el actor sale de la sesión verificada (`auth.uid()` en la base). Los
  * estados no exitosos son 409 con código estable; ningún mensaje de SDK/SQL llega al cliente.
  * Quien obtiene el claim (nuevo o reanudado) recibe el fencing solo dentro del servidor y con él avanza
- * las fases; quien no es dueño (`in_progress`, `published`) solo observa. El `GET` de estado lee la
+ * las fases; quien no tiene fencing (`in_progress`, `published`) no regenera artefactos. El `GET` de estado lee la
  * proyección mínima de `get_finalization_status` (propietario; ajeno e inexistente son indistinguibles).
- * Nada de esto envía a Hedera.
+ * Tras publicar, el POST espera el sello; repetirlo recupera el intento persistido sin repetir el PDF.
  */
 
 export const FINALIZATION_RENDERER = "react-pdf-v1";
@@ -42,6 +43,8 @@ export interface FinalizationHttpDeps {
   statusStoreFor?(userId: string, rpc: DocumentRpc): FinalizationStatusStore;
   /** Avance de fases del dueño del claim; sin él el POST solo reclama. Puede lanzar si falta el canal del ejecutor. */
   advancerFor?(userId: string): FinalizationAdvancer;
+  /** Solo después de publicación confirmada, con el propietario y versionId del claim autorizado. */
+  sealerFor?(userId: string): { seal(versionId: string): Promise<SealResult> };
 }
 
 const CODES = {
@@ -102,6 +105,18 @@ export function createClaimFinalizationHandler(deps: FinalizationHttpDeps) {
           });
           if (!advanced.ok) return advanceProblem(advanced.error);
           dto.operation.phase = advanced.phase;
+        }
+        if (dto.operation.phase === "published" && deps.sealerFor) {
+          // Sin fire-and-forget: intención persistida antes del envío y reconciliación en replay.
+          // Una caída deja la publicación como punto de recuperación, sin regenerar artefactos.
+          let seal: { status: "pendiente" | "registrado" } = { status: "pendiente" };
+          try {
+            const sealed = await deps.sealerFor(userId).seal(result.operation.versionId);
+            if (sealed.status === "registrado") seal = { status: "registrado" };
+          } catch {
+            // INV-18: configuración ausente o HCS indisponible no deshacen la publicación.
+          }
+          return Response.json({ ...dto, seal }, { status, headers: PRIVATE_RESPONSE_HEADERS });
         }
         return Response.json(dto, { status, headers: PRIVATE_RESPONSE_HEADERS });
       }
