@@ -376,3 +376,64 @@ describe("Protocolo HTTP en NDJSON (MVP-052)", () => {
   });
 });
 
+
+describe("Cancelación del flujo y claves de mensaje (MVP-052)", () => {
+  const post = (documentId: string, signal?: AbortSignal, id = "msg-cliente-0001") =>
+    new Request("https://app.invalid/x", { method: "POST", signal, body: JSON.stringify({ clientMessageId: id, content: "Entregamos 10 cajas." }) });
+
+  it("cancelar el consumidor aborta al proveedor pendiente, cierra el intento y conserva al usuario", async () => {
+    let providerAborted = false;
+    const ctx = await setup({
+      drafting: ({ abortSignal } = {} as never) =>
+        new Promise<DraftReply>((resolve) => {
+          abortSignal?.addEventListener("abort", () => {
+            providerAborted = true;
+            resolve(draftFail("AI_ABORTED"));
+          });
+        }),
+    });
+    const handler = createChatTurnHandler(async () => ctx.service);
+    const res = await handler(post(ctx.documentId), ctx.documentId);
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    for (let seen = ""; !seen.includes('"drafting"'); ) seen += decoder.decode((await reader.read()).value);
+    const pending = reader.read(); // las siguientes lecturas hacen avanzar el turno
+    await vi.waitFor(() => expect(ctx.generateDraft).toHaveBeenCalled());
+
+    await Promise.race([reader.cancel(), new Promise((_, rej) => setTimeout(() => rej(new Error("cancel colgado")), 2000))]);
+
+    expect((await pending).done).toBe(true);
+    expect(providerAborted).toBe(true);
+    const closed = ctx.turns.events.filter((e) => e.type === "turn.cancelled");
+    expect(closed).toHaveLength(1);
+    expect(userMessages(ctx)).toHaveLength(1);
+    expect(ctx.turns.agentMessages.size).toBe(0);
+  });
+
+  it("abortar la petición antes de cargar no llama a la IA; el flujo normal no se marca cancelado", async () => {
+    const early = await setup();
+    const controller = new AbortController();
+    controller.abort();
+    const handler = createChatTurnHandler(async () => early.service);
+    const aborted = await handler(new Request("https://app.invalid/x", { method: "POST", signal: controller.signal, body: JSON.stringify({ clientMessageId: "msg-cliente-0002", content: "hola" }) }), early.documentId);
+    await aborted.text();
+    expect(early.generateDraft).not.toHaveBeenCalled();
+    expect(early.turns.events.at(-1)?.type).toBe("turn.cancelled");
+
+    const normal = await setup();
+    const ok = await createChatTurnHandler(async () => normal.service)(post(normal.documentId), normal.documentId);
+    expect(await ok.text()).toContain('"done"');
+    expect(normal.turns.events.map((e) => e.type)).toEqual(["turn.started", "turn.completed"]);
+  });
+
+  it("dos ids de 128 caracteres con el mismo prefijo no colisionan; el reintento repite la clave", async () => {
+    const a = "a".repeat(127) + "X";
+    const b = "a".repeat(127) + "Y";
+    const ctx = await setup();
+    await runTurn(ctx, { clientMessageId: a });
+    await runTurn(ctx, { clientMessageId: b });
+    expect(userMessages(ctx)).toHaveLength(2);
+    await runTurn(ctx, { clientMessageId: a });
+    expect(userMessages(ctx)).toHaveLength(2);
+  });
+});
