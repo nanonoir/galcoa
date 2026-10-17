@@ -7,6 +7,7 @@ const cli = path.join(root, "node_modules/supabase/dist/supabase.js");
 const vitest = path.join(root, "node_modules/vitest/vitest.mjs");
 const auth = path.join(root, "tests/server/auth-flow/run-local-auth.mjs");
 const confirm = path.join(root, "tests/e2e/confirm/run.mjs");
+const review = path.join(root, "tests/e2e/review/run.mjs");
 
 function run(label, file, args, timeout) {
   console.log(`CI local: ${label}`);
@@ -55,6 +56,7 @@ if (process.env.GITHUB_ACTIONS !== "true" || process.env.RUNNER_OS !== "Linux") 
       }
       if (!process.exitCode) run("Auth real local (3 casos, sin trazas)", auth, [], 480_000);
       if (!process.exitCode) run("confirmaciones E2E reales locales (sin trazas)", confirm, [], 480_000);
+      if (!process.exitCode) run("revisión del autor E2E real local (sin trazas)", review, [], 600_000);
       break;
     }
     default:
