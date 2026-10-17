@@ -225,6 +225,21 @@ describe("MVP-092 · localización por ID de transacción", () => {
     expect(t.attempts[1].payloadHash).toBe(t.attempts[0].payloadHash);
   });
 
+  it("DUPLICATE_TRANSACTION: se trata como indisponible, no marca fallido ni reenvía", async () => {
+    let txId = "";
+    const fetchDouble = routed((url) => {
+      if (url.includes("/transactions/")) return Response.json(txBody(txId, "DUPLICATE_TRANSACTION"));
+      return new Response(null, { status: 404 });
+    });
+    const t = setup([timeout, ok()], () => "404", VERSION, fetchDouble);
+    await t.service.seal("v-1");
+    txId = t.attempts[0].transactionId;
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "pendiente", reason: "mirror_indisponible" });
+    expect(t.attempts[0].outcome).toBe("incierto");
+    expect(t.attempts).toHaveLength(1);
+    expect(t.behavior.calls).toHaveLength(1);
+  });
+
   it("404, 5xx o respuesta inválida del Mirror nunca cuentan como ausencia", async () => {
     for (const response of [() => new Response(null, { status: 404 }), () => new Response(null, { status: 503 }), () => Response.json({ x: 1 })]) {
       const t = setup([timeout, ok()], () => "404", VERSION, routed(response));
