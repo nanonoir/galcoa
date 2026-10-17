@@ -1,0 +1,4 @@
+// Healthcheck del contenedor: sin sesión, sin red ni secretos.
+export const dynamic = "force-dynamic";
+
+export const GET = () => Response.json({ status: "ok" }, { headers: { "Cache-Control": "no-store" } });
