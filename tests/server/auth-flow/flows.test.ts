@@ -24,7 +24,7 @@ const USER = { id: "11111111-1111-4111-8111-111111111111", email: EMAIL };
 type Auth = Record<string, ReturnType<typeof vi.fn>>;
 function fakeClient(overrides: Auth = {}) {
   const auth: Auth = {
-    signUp: vi.fn(async () => ({ data: { user: USER }, error: null })),
+    signUp: vi.fn(async () => ({ data: { user: USER, session: { user: USER, access_token: "ficticio" } }, error: null })),
     signInWithPassword: vi.fn(async () => ({ data: { user: USER }, error: null })),
     signOut: vi.fn(async () => ({ error: null })),
     resetPasswordForEmail: vi.fn(async () => ({ data: {}, error: null })),
@@ -176,26 +176,32 @@ describe("Validación en el servidor", () => {
 });
 
 describe("Alta", () => {
-  it("normaliza el correo y pide el enlace de confirmación hacia el callback interno", async () => {
+  it("normaliza el correo y redirige al dashboard con la sesión del registro", async () => {
     const { auth, deps } = fakeClient();
     const response = await handleRegister(post("/api/auth/register", { email: ` ${EMAIL.toUpperCase()} `, password: PASSWORD, confirmPassword: PASSWORD }), deps);
     expect(response.status).toBe(200);
     expect(auth.signUp).toHaveBeenCalledWith({
       email: EMAIL,
       password: PASSWORD,
-      options: { emailRedirectTo: `${ORIGIN}/api/auth/callback?flow=signup` },
     });
-    expect((await read(response)).state).toEqual({ status: "success", message: MESSAGES.registerSent });
+    expect(await read(response)).toEqual({ state: { status: "success", message: MESSAGES.registerOk }, redirectTo: "/dashboard" });
+    expect(auth.signInWithPassword).not.toHaveBeenCalled();
   });
 
-  it("alta repetida de una cuenta existente: misma respuesta que una alta nueva", async () => {
-    const fresh = fakeClient();
+  it("alta sin sesión: no anuncia éxito ni redirige si Auth todavía exige confirmación", async () => {
+    const { deps } = fakeClient({ signUp: vi.fn(async () => ({ data: { user: USER, session: null }, error: null })) });
+    const response = await handleRegister(post("/api/auth/register", { email: EMAIL, password: PASSWORD, confirmPassword: PASSWORD }), deps);
+    expect(response.status).toBe(503);
+    expect(await read(response)).toEqual({ state: { status: "error", message: MESSAGES.unavailable, fieldErrors: [] } });
+  });
+
+  it("alta repetida: error neutral sin redirección ni intento de acceso", async () => {
     const taken = fakeClient({ signUp: vi.fn(async () => ({ data: { user: null }, error: apiError(422, "user_already_exists") })) });
     const body = { email: EMAIL, password: PASSWORD, confirmPassword: PASSWORD };
-    const a = await handleRegister(post("/api/auth/register", body), fresh.deps);
     const b = await handleRegister(post("/api/auth/register", body), taken.deps);
-    expect(b.status).toBe(a.status);
-    expect(await read(b)).toEqual(await read(a));
+    expect(b.status).toBe(422);
+    expect(await read(b)).toEqual({ state: { status: "error", message: MESSAGES.registrationRejected, fieldErrors: [] } });
+    expect(taken.auth.signInWithPassword).not.toHaveBeenCalled();
   });
 
   it("contraseña débil según el proveedor: error en el campo contraseña", async () => {

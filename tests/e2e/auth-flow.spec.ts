@@ -3,8 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { resolveAuthE2eEnv } from "./auth-env";
 
 /**
- * Flujo real de Auth contra Supabase local (MVP-031): registro → buzón local →
- * confirmación → acceso → cierre de sesión → recuperación → enlace → nueva
+ * Flujo real de Auth contra Supabase local (MVP-031): registro → acceso
+ * inmediato → cierre de sesión → recuperación → enlace → nueva
  * contraseña → acceso. Sin servicios remotos ni correo real. Si falta la
  * instancia local, la suite se omite explícitamente (ver `auth.config.ts`).
  *
@@ -58,32 +58,14 @@ test.describe("Auth local real (MVP-031)", () => {
 
   const seen = new Set<string>();
 
-  test("registro, confirmación, acceso, cierre de sesión, recuperación y nueva contraseña", async ({ page }) => {
+  test("registro con acceso inmediato, cierre de sesión, recuperación y nueva contraseña", async ({ page }) => {
     const consoleText: string[] = [];
     page.on("console", (message) => consoleText.push(message.text()));
 
-    // Registro: respuesta neutral.
+    // Registro: sesión real sin correo de confirmación ni login adicional.
     await page.goto("/registro");
     await fill(page, { "Correo electrónico": EMAIL, "Contraseña": PASSWORD, "Confirmar contraseña": PASSWORD });
     await page.getByRole("button", { name: "Crear cuenta" }).click();
-    await expect(page.getByText(/Si el correo puede registrarse/)).toBeVisible();
-
-    // Sin confirmar no hay acceso, y el mensaje es el mismo que con una contraseña errónea.
-    await page.goto("/acceso");
-    await fill(page, { "Correo electrónico": EMAIL, "Contraseña": PASSWORD });
-    await page.getByRole("button", { name: "Ingresar" }).click();
-    await expect(page.getByText("Correo o contraseña incorrectos.")).toBeVisible();
-    expect(await hasSessionCookie(page)).toBe(false);
-
-    // Confirmación desde el buzón local.
-    await page.goto(await nextLinkFor(EMAIL, seen));
-    await expect(page).toHaveURL(/\/acceso\?aviso=confirmado$/);
-    await expect(page.getByTestId("auth-notice")).toContainText("Cuenta confirmada");
-    expect(page.url()).not.toContain("code=");
-
-    // Acceso y guarda de sesión.
-    await fill(page, { "Correo electrónico": EMAIL, "Contraseña": PASSWORD });
-    await page.getByRole("button", { name: "Ingresar" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
     expect(await hasSessionCookie(page)).toBe(true);
     await page.goto("/nueva-contrasena");
@@ -148,7 +130,7 @@ test.describe("Auth local real (MVP-031)", () => {
     expect((await page.goto("/documents/00000000-0000-4000-8000-000000000000"))?.status()).toBe(404);
   });
 
-  test("mensajes uniformes: correo existente y desconocido reciben la misma respuesta", async ({ page, request, baseURL }) => {
+  test("recuperación neutral y alta repetida sin acceso", async ({ page, request, baseURL }) => {
     const origin = new URL(baseURL!).origin;
     const headers = { origin, "content-type": "application/json" };
 
@@ -158,12 +140,15 @@ test.describe("Auth local real (MVP-031)", () => {
     };
     expect(await recovery("nadie-" + stamp + "@galcoa-e2e.test")).toEqual(await recovery(EMAIL));
 
-    // Alta repetida de una cuenta ya confirmada: misma respuesta que un alta nueva.
+    // Alta repetida: no emite sesión ni anuncia una creación exitosa.
     const register = async (email: string) => {
       const response = await request.post("/api/auth/register", { headers, data: { email, password: PASSWORD, confirmPassword: PASSWORD } });
       return { status: response.status(), body: await response.json() };
     };
-    expect(await register(EMAIL)).toEqual(await register(`otra-${stamp}@galcoa-e2e.test`));
+    const repeated = await register(EMAIL);
+    expect(repeated.status).toBe(422);
+    expect(repeated.body.state.status).toBe("error");
+    expect(repeated.body.redirectTo).toBeUndefined();
 
     await page.goto("/acceso");
   });

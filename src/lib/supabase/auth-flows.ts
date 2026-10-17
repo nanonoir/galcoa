@@ -16,8 +16,8 @@ import { verifySession } from "./auth";
 /**
  * Flujos de Auth reales: alta, acceso, cierre de sesión, recuperación y nueva
  * contraseña (MVP-031; REQ-01). Reciben el cliente de sesión por petición y
- * devuelven un resultado **neutral**: ninguna respuesta revela si una cuenta
- * existe, y un fallo del proveedor nunca se presenta como éxito. No registran
+ * devuelven errores **neutrales**, sin confirmar si una cuenta existe;
+ * un fallo del proveedor nunca se presenta como éxito. No registran
  * correos, contraseñas ni tokens.
  */
 
@@ -51,8 +51,8 @@ export function callbackUrl(origin: string, flow: CallbackFlow): string {
 }
 
 export const MESSAGES = {
-  registerSent:
-    "Si el correo puede registrarse, te enviamos un mensaje para confirmar la cuenta. Revisa tu bandeja.",
+  registerOk: "Cuenta creada. Redirigiendo…",
+  registrationRejected: "No se pudo completar el registro. Intenta ingresar o recuperar tu contraseña.",
   recoverySent:
     "Si el correo corresponde a una cuenta, te enviamos un mensaje con el enlace para elegir una nueva contraseña.",
   loginOk: "Ingreso correcto. Redirigiendo…",
@@ -157,15 +157,18 @@ const passwordRejected = (message: string) => fail("invalid", null, [{ field: "p
 export async function registerFlow(
   client: AuthClient,
   values: z.infer<typeof registerSchema>,
-  ctx: { origin: string },
 ): Promise<FlowResult> {
   try {
-    const { error } = await client.auth.signUp({
+    const { data, error } = await client.auth.signUp({
       email: values.email,
       password: values.password,
-      options: { emailRedirectTo: callbackUrl(ctx.origin, "signup") },
     });
-    if (!error) return { ok: true, message: MESSAGES.registerSent };
+    // Solo una sesión emitida por Auth habilita el ingreso. No se confirma por
+    // API privilegiada ni se intenta iniciar sesión en una cuenta preexistente.
+    if (!error) {
+      if (!data.session) return fail("unavailable", MESSAGES.unavailable);
+      return { ok: true, message: MESSAGES.registerOk, redirectTo: AUTH_PATHS.afterLogin };
+    }
     switch (classifyProviderError(error)) {
       case "weak_password":
         return passwordRejected("La contraseña es demasiado débil. Elige una más larga o distinta.");
@@ -178,8 +181,8 @@ export async function registerFlow(
       case "unavailable":
         return fail("unavailable", MESSAGES.unavailable);
       default:
-        // Cuenta ya existente u otro rechazo 4xx: misma respuesta que un alta nueva (sin enumeración).
-        return { ok: true, message: MESSAGES.registerSent };
+        // Cuenta existente u otro rechazo 4xx: error neutral, sin acceso ni éxito ficticio.
+        return fail("invalid", MESSAGES.registrationRejected);
     }
   } catch {
     return fail("unavailable", MESSAGES.unavailable);

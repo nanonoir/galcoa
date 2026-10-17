@@ -43,7 +43,7 @@ const missing = [
 ].filter(([, value]) => !value).map(([name]) => name);
 if (missing.length > 0) fail(`faltan datos de \`supabase status\`: ${missing.join(", ")}.`);
 
-// El buzón debe responder: sin él no se puede leer el correo de confirmación.
+// El buzón debe responder: sigue siendo necesario para recuperar la contraseña.
 try {
   const response = await fetch(`${mailUrl}/api/v1/messages?limit=1`, { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) throw new Error(String(response.status));
