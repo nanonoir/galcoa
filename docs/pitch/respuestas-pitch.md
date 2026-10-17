@@ -105,41 +105,7 @@ Planillas y papel (baratos, sin rastro); sistemas de gestión de lotes/ERP (caro
 
 **Validación (sin inventar):** experiencia directa del integrante + feedback de mentores + consultas a contactos del rubro. Cuando lleguen respuestas, citarlas con permiso y decir «N de M consultados». Mientras tanto: «validamos el problema desde adentro; la validación con clientes es el próximo paso».
 
-## 6. Caso de uso agro (pendiente de Gastón)
-El agro incluye **cultivos, animales y productos derivados**. Preguntas para Gastón, para cerrar un caso concreto:
-
-**A. Elegir el caso**
-1. ¿Qué rubro: cultivos, ganadería, aves, cerdos, apicultura, acuicultura, lácteos u otro?
-2. ¿Qué auditoría o exigencia aplica (BPA/BPG, GACP, exportación, orgánico, SENASA, trazabilidad ganadera, cadena de frío)?
-3. ¿Quién audita y qué le piden mostrar?
-
-**B. Cultivos**
-4. ¿Qué registra el productor por lote o campaña (siembra, insumos, aplicaciones, riego, cosecha, poscosecha, traslado)?
-5. ¿Qué evidencia se adjunta (fotos, remitos, análisis de laboratorio, recetas de agroquímicos)?
-
-**C. Animales**
-6. ¿Qué se registra por animal o por lote (identificación, nacimiento, movimientos, sanidad, vacunas, tratamientos y tiempos de espera, alimentación, peso, faena)?
-7. ¿Qué documentos acompañan el traslado o la venta (guías, certificados sanitarios, remitos)?
-8. ¿Hay medicamentos veterinarios o antibióticos que deban quedar registrados?
-
-**D. Cadena y partes**
-9. ¿Quiénes son las partes que no confían del todo entre sí (productor, transportista, frigorífico o acopio, comprador, auditor)?
-10. ¿Quién confirma cada registro y en qué momento?
-11. ¿Hay cadena de frío o condiciones (temperatura, tiempos) que haya que probar?
-
-**E. Dolor y valor**
-12. ¿Qué es lo que más falla o más se pierde en la auditoría (registros faltantes, cargados tarde, discrepancias, lotes rechazados)?
-13. ¿Cuánto tiempo y costo implica hoy preparar la documentación?
-14. ¿Cómo se registra hoy (papel, planillas, WhatsApp, sistema propio)?
-
-**F. Demo y validación**
-15. ¿Qué lote o animal mostraríamos en la demo, de productor a comprador?
-16. ¿Conoce 2 o 3 productores o empresas a quienes consultar rápido, para tener validación real?
-17. ¿Quién decidiría la compra de una herramienta así y cuánto estaría dispuesto a pagar?
-
-Hasta que responda, el caso se presenta como **«lote de producción agropecuaria (cultivo o animal): productor → comprador»**, marcado como ilustrativo.
-
-## 7. Bloque para el README (Hedera)
+## 6. Bloque para el README (Hedera)
 > ### Uso de Hedera
 > Usamos **Hedera Consensus Service (HCS)** en **Testnet**, enviado desde el servidor con el SDK `@hiero-ledger/sdk`. Por cada versión finalizada se publica **un solo mensaje** con `schemaVersion`, `reference` y `manifestHash`. Nunca se envían datos, nombres ni archivos. Solo el servidor tiene la clave; los agentes de IA no tienen herramientas de envío.
 >
@@ -156,17 +122,17 @@ Hasta que responda, el caso se presenta como **«lote de producción agropecuari
 
 Reglas para completarlo: salen de una **transacción real** hecha por Nahuel; no se inventan ni se usa una ajena. El `manifestHash` se ve en el mensaje del Topic en HashScan.
 
-## 8. Dónde va cada cosa
+## 7. Dónde va cada cosa
 | Lugar | Qué lleva |
 |---|---|
 | Deck | §1 a §5, una idea por slide |
 | Video (≤ 5 min) | §2 en 3 minutos; escena de HashScan |
 | README | §7 + problema → solución → demo |
 | Formulario de entrega | Frase de una línea, Topic, transacción, **hash**, HashScan, uso de IA |
-| Formulario NEA Productivo Digital | §2 con el caso agro (§6) |
+| Formulario NEA Productivo Digital | §2 con un caso agro (lote de producción agropecuaria, ilustrativo) |
 | Mapa del camino feliz y roadmap | Paso «Sellar» = HCS Testnet vía `@hiero-ledger/sdk`; Fase 3 = Mainnet |
 
-## 9. Sugerencias
+## 8. Sugerencias
 1. Empezar por el problema, no por la tecnología.
 2. Mostrar la demo en los primeros 60 s del video.
 3. Ensayar con cronómetro: 3 minutos.
