@@ -7,9 +7,10 @@ import type { TechnicalError } from "@/lib/contracts/technical";
 import type { ContrastReport, ContrastDeps } from "@/lib/ai/groq/contrast";
 import type { DraftingDeps, GeneratedDraft } from "@/lib/ai/drafting/service";
 import type { ContrastStore, SaveReportInput } from "@/lib/documents/contrast/ports";
-import type { DraftStore, ExtractionReader } from "@/lib/documents/drafting/ports";
+import type { DraftStager, ExtractionReader } from "@/lib/documents/drafting/ports";
 import type { SessionPort } from "@/lib/documents/ports";
 import type { ServiceResult } from "@/lib/documents/result";
+import type { TurnClaimRef } from "@/lib/documents/turns/ports";
 
 import {
   CasesFileSchema,
@@ -70,7 +71,7 @@ export function loadDataset(dir: string = DATASET_DIR): Dataset {
 /** Fábricas de los servicios reales (MVP-051 y MVP-053) y sus puertos de proveedor. */
 export type EvalServices = {
   createDraftingService(deps: DraftingDeps): {
-    generateDraft(command: { documentId: string; expectedDraftRevision: number; correlationId?: string }): Promise<
+    generateDraft(command: { documentId: string; expectedDraftRevision: number; claim: TurnClaimRef; correlationId?: string }): Promise<
       ServiceResult<GeneratedDraft>
     >;
   };
@@ -85,7 +86,9 @@ export type CasePorts = {
   session: SessionPort;
   messages: { listMessages(documentId: string): Promise<ServiceResult<Message[]>> };
   extractions: ExtractionReader;
-  drafts: DraftStore;
+  stager: DraftStager;
+  /** Equivale a completar el turno: convierte el staging en el borrador oficial del caso (solo en memoria). */
+  publishStaged(): void;
   contrast: ContrastStore;
   /** Lo que guardaron los servicios (para inspección; nunca se escribe en la base). */
   saved: { draft: Draft | null; report: SaveReportInput | null };
@@ -97,6 +100,7 @@ export type CasePorts = {
  */
 export function buildCasePorts(evalCase: EvalCase, ids: { ownerId: string; documentId: string; newId: () => string }): CasePorts {
   const saved: CasePorts["saved"] = { draft: null, report: null };
+  let staged: { content: Draft["content"]; draftId: string; revision: number } | null = null;
   const messages: Message[] = evalCase.sources
     .filter((s) => s.kind === "mensaje")
     .map((s) => ({
@@ -123,20 +127,32 @@ export function buildCasePorts(evalCase: EvalCase, ids: { ownerId: string; docum
       },
     },
     extractions: { listExtractions: async (ownerId, documentId) => (own(ownerId, documentId) ? extractions : []) },
-    drafts: {
-      async saveProposal(input) {
+    stager: {
+      async stageProposal(input) {
         if (!own(input.ownerId, input.documentId)) return { status: "not_available" };
-        const current = saved.draft?.draftRevision ?? 0;
-        if (input.expectedDraftRevision !== current) return { status: "stale_draft" };
-        saved.draft = {
-          draftId: ids.newId(),
-          documentId: ids.documentId,
-          draftRevision: current + 1,
-          content: input.content,
-          updatedAt: new Date().toISOString(),
+        if (input.expectedDraftRevision !== (saved.draft?.draftRevision ?? 0)) return { status: "stale_draft" };
+        staged = { content: input.content, draftId: saved.draft?.draftId ?? ids.newId(), revision: input.expectedDraftRevision };
+        return {
+          status: "staged",
+          replayed: false,
+          turn: {
+            turnId: input.claim.turnId, documentId: ids.documentId, clientMessageId: "eval-case", attempt: input.claim.attempt,
+            state: "en_curso", userMessageId: null, agentMessageId: null, leaseExpiresAt: new Date().toISOString(),
+          },
+          staged: { proposalId: ids.newId(), draftId: staged.draftId, expectedDraftRevision: staged.revision, nextDraftRevision: staged.revision + 1 },
         };
-        return { status: "created", draft: saved.draft, proposalId: ids.newId() };
       },
+    },
+    publishStaged() {
+      if (!staged) return;
+      saved.draft = {
+        draftId: staged.draftId,
+        documentId: ids.documentId,
+        draftRevision: staged.revision + 1,
+        content: staged.content,
+        updatedAt: new Date().toISOString(),
+      };
+      staged = null;
     },
     contrast: {
       getCurrentDraft: async (ownerId, documentId) => (own(ownerId, documentId) ? saved.draft : null),
@@ -212,12 +228,16 @@ export async function runEvaluation(options: RunOptions): Promise<CaseRun[]> {
       const drafting = services.createDraftingService({
         session: ports.session,
         messages: ports.messages,
-        drafts: ports.drafts,
+        stager: ports.stager,
         gemini: services.gemini,
         extractions: ports.extractions,
       });
       const drafted = await withOneRetry(() =>
-        drafting.generateDraft({ documentId: ids.documentId, expectedDraftRevision: ports.saved.draft?.draftRevision ?? 0 }),
+        drafting.generateDraft({
+          documentId: ids.documentId,
+          expectedDraftRevision: ports.saved.draft?.draftRevision ?? 0,
+          claim: { turnId: ids.newId(), attempt: 1 },
+        }),
       );
 
       let run: CaseRun;
@@ -232,6 +252,7 @@ export async function runEvaluation(options: RunOptions): Promise<CaseRun[]> {
         };
       } else {
         const d = drafted.result.value;
+        ports.publishStaged();
         const contrast = services.createContrastService({
           session: ports.session,
           messages: ports.messages,

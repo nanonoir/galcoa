@@ -27,6 +27,9 @@ export type TurnRecord = {
   leaseExpiresAt: string | null;
 };
 
+/** Intento reclamado: fencing explícito en cada operación posterior (sin identidad global). */
+export type TurnClaimRef = { turnId: string; attempt: number };
+
 export type ClaimTurnResult =
   /** Turno nuevo o nuevo intento tras fallo, cancelación o claim vencido. */
   | { status: "claimed"; turn: TurnRecord; retried: boolean }
