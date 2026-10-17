@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { readdirSync } from "node:fs";
 import { Client } from "pg";
-import { afterAll, beforeAll, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
 import { createExecutorRpcFactory } from "@/lib/documents/persistence/executor-rpc";
 import { createEvidenceStore } from "@/lib/documents/evidence/persistence";
 import { createEvidenceStorage } from "@/lib/documents/evidence/storage";
@@ -26,12 +26,14 @@ const bytes = pdfBytes(1);
 const hash = createHash("sha256").update(bytes).digest("hex");
 const audit = () => ({ actorScope: a.id, correlationId: randomUUID() });
 let privateUrl: string;
+let localAdminUrl: string;
 
 beforeAll(async () => {
   const stack = readLocalStack();
   const line = supabaseCli(["status", "-o", "env"]).split(/\r?\n/).find((v) => v.startsWith("DB_URL="));
   const raw = line?.slice(7).replace(/^"|"$/g, "");
   if (!raw || new URL(raw).hostname !== "127.0.0.1") throw new Error("Se requiere DB local");
+  localAdminUrl = raw;
   admin = new Client({ connectionString: raw });
   try {
     await admin.connect();
@@ -57,6 +59,15 @@ async function doc() {
   const r = await a.client.rpc("create_document", { p_title: "Evidencia ficticia", p_key: randomUUID(), p_correlation_id: randomUUID() });
   expect(r.error).toBeNull(); return r.data.value.documentId as string;
 }
+afterEach(async () => {
+  if (!a) return;
+  for (const candidate of await store.listDiscards(a.id)) {
+    const claimed = await store.claimDiscard(a.id, candidate.evidenceId, false);
+    if (!claimed) continue;
+    await storage.remove(claimed.privateLocation);
+    await store.discardReservation({ownerId:a.id,evidenceId:claimed.evidenceId});
+  }
+});
 function input(documentId: string, byteLength = bytes.length): ReserveEvidenceInput {
   return { ownerId: a.id, documentId, kind: "pdf", mimeType: "application/pdf", byteLength,
     sha256: hash, privateLocation: `${documentId}/${randomUUID()}`, declaredEventDate: { kind: "unknown" },
@@ -239,8 +250,10 @@ it("vencimiento no renueva replay ni libera cuota retenida; descarte libera una 
   expect((await store.reserveEvidence(input(documentId))).status).toBe("limit_exceeded");
   await admin.query("update public.evidences set upload_expires_at=clock_timestamp()-interval '1 second' where id=$1",[first.evidence.evidenceId]);
   expect(await store.reserveEvidence(command)).toEqual({status:"not_available"});
-  expect(await store.reserveEvidence(input(documentId))).toEqual({status:"limit_exceeded",limit:"files"});
+  expect(await store.reserveEvidence(input(documentId))).toEqual({status:"discard_pending"});
   expect(await store.acceptEvidence({ownerId:a.id,evidenceId:first.evidence.evidenceId,audit:audit()})).toBeNull();
+  expect(await store.claimDiscard(a.id, first.evidence.evidenceId, false)).not.toBeNull();
+  await storage.remove(first.evidence.privateLocation);
   await store.discardReservation({ownerId:a.id,evidenceId:first.evidence.evidenceId});
   expect(await store.getEvidence(a.id,documentId,first.evidence.evidenceId)).toBeNull();
   expect((await store.reserveEvidence(input(documentId))).status).toBe("reserved");
@@ -254,7 +267,107 @@ it("bytes de reservas vencidas siguen contando aunque no se haya completado la s
   expect(first.status).toBe("reserved");
   expect(second.status).toBe("reserved");
   await admin.query("update public.evidences set upload_expires_at=clock_timestamp()-interval '1 second' where document_id=$1", [documentId]);
-  expect(await store.reserveEvidence(input(documentId, 1))).toEqual({status:"limit_exceeded",limit:"total_bytes"});
+  expect(await store.reserveEvidence(input(documentId, 1))).toEqual({status:"discard_pending"});
+  expect((await admin.query("select sum(byte_length)::text as bytes from public.evidences where document_id=$1", [documentId])).rows[0].bytes).toBe("20971520");
+});
+
+it("complete tardío elimina bytes tras claim; una reserva nueva recupera abandonos propios", async () => {
+  const documentId = await doc(); const e = await reserve(documentId);
+  expect((await upload(e)).error).toBeNull();
+  await admin.query("update public.evidences set upload_expires_at=clock_timestamp()-interval '1 second' where id=$1", [e.evidenceId]);
+  expect(await service.completeUpload({documentId,evidenceId:e.evidenceId})).toMatchObject({ok:false,error:{code:"NOT_AVAILABLE"}});
+  expect(await store.getEvidence(a.id,documentId,e.evidenceId)).toBeNull();
+  expect((await a.client.storage.from("evidences-private").download(e.privateLocation)).error).not.toBeNull();
+  const abandoned = await reserve(documentId); expect((await upload(abandoned)).error).toBeNull();
+  await admin.query("update public.evidences set upload_expires_at=clock_timestamp()-interval '1 second' where id=$1", [abandoned.evidenceId]);
+  expect((await service.requestUpload({documentId,mimeType:"application/pdf",byteLength:bytes.length,sha256:hash,declaredEventDate:{kind:"unknown"},idempotencyKey:randomUUID()})).ok).toBe(true);
+  expect(await store.getEvidence(a.id,documentId,abandoned.evidenceId)).toBeNull();
+});
+
+it("claim terminal bloquea aceptación e INSERT Storage; si aceptación gana jamás concede claim", async () => {
+  const documentId = await doc(); const e = await reserve(documentId);
+  await expect(storage.remove(e.privateLocation)).rejects.toThrow("Descarte no reclamado");
+  expect(await store.claimDiscard(b.id,e.evidenceId,true).catch(() => null)).toBeNull();
+  const claimed = await store.claimDiscard(a.id,e.evidenceId,true);
+  expect(claimed?.cleanupClaimedAt).toBeTruthy();
+  expect(await store.claimDiscard(a.id,e.evidenceId,true)).toEqual(claimed);
+  expect(await store.acceptEvidence({ownerId:a.id,evidenceId:e.evidenceId,audit:audit()})).toBeNull();
+  expect((await upload(e)).error).not.toBeNull();
+  await storage.remove(e.privateLocation); await store.discardReservation({ownerId:a.id,evidenceId:e.evidenceId});
+  const accepted = await reserve(documentId); expect((await upload(accepted)).error).toBeNull();
+  expect((await service.completeUpload({documentId,evidenceId:accepted.evidenceId})).ok).toBe(true);
+  expect(await store.claimDiscard(a.id,accepted.evidenceId,true)).toBeNull();
+  await expect(storage.remove(accepted.privateLocation)).rejects.toThrow("Original inmutable");
+  expect(await storage.download(accepted.privateLocation)).toEqual(bytes);
+});
+
+it("aceptación y claim concurrentes producen un solo ganador sin destruir original aceptado", async () => {
+  const documentId = await doc(); const e = await reserve(documentId); expect((await upload(e)).error).toBeNull();
+  const [accepted, claimed] = await Promise.all([
+    store.acceptEvidence({ownerId:a.id,evidenceId:e.evidenceId,audit:audit()}),
+    store.claimDiscard(a.id,e.evidenceId,true),
+  ]);
+  expect(Number(accepted !== null) + Number(claimed !== null)).toBe(1);
+  if (accepted) {
+    await expect(storage.remove(e.privateLocation)).rejects.toThrow("Original inmutable");
+    expect(await storage.download(e.privateLocation)).toEqual(bytes);
+  } else {
+    await storage.remove(e.privateLocation); await store.discardReservation({ownerId:a.id,evidenceId:e.evidenceId});
+    expect(await store.getEvidence(a.id,documentId,e.evidenceId)).toBeNull();
+  }
+});
+
+it("autorización RLS espera el lock y revalida vencimiento con reloj posterior a la espera", async () => {
+  const documentId = await doc(); const e = await reserve(documentId);
+  const waiting = new Client({connectionString:localAdminUrl});
+  await waiting.connect();
+  try {
+    await waiting.query("select set_config('request.jwt.claims',$1,false)", [JSON.stringify({sub:a.id,role:"authenticated"})]);
+    const pid = (await waiting.query("select pg_backend_pid() as pid")).rows[0].pid as number;
+    await admin.query("begin");
+    await admin.query("select id from public.documents where id=$1 for update", [documentId]);
+    const authorization = waiting.query("select private.can_upload_evidence_object($1) as allowed", [e.privateLocation])
+      .catch(() => ({rows:[{allowed:null}]}));
+    // Espera acotada de readiness: verificar un bloqueo real, no confiar en un sleep fijo.
+    await admin.query(`do $$ begin
+      for attempt in 1..100 loop
+        if cardinality(pg_blocking_pids(${pid}))>0 then return; end if;
+        perform pg_sleep(0.01);
+      end loop;
+      raise exception 'No apareció el bloqueo esperado';
+    end $$`);
+    await admin.query("update public.evidences set upload_expires_at=clock_timestamp()-interval '1 second' where id=$1", [e.evidenceId]);
+    await admin.query("commit");
+    expect((await authorization).rows[0].allowed).toBe(false);
+  } finally {
+    await admin.query("rollback");
+    await waiting.end();
+  }
+});
+
+it("carga HTTP con cuerpo pendiente no publica el objeto después del claim", async () => {
+  const documentId = await doc(); const e = await reserve(documentId);
+  const stack = readLocalStack(); const session = (await a.client.auth.getSession()).data.session;
+  if (!session) throw new Error("Se requiere sesión local");
+  let finish = () => {};
+  const body = new ReadableStream<Uint8Array>({start(controller) {
+    controller.enqueue(bytes.slice(0, 8));
+    finish = () => { controller.enqueue(bytes.slice(8)); controller.close(); };
+  }});
+  const options = {method:"POST",body,duplex:"half" as const,signal:AbortSignal.timeout(10_000),headers:{
+    apikey:stack.anonKey,authorization:`Bearer ${session.access_token}`,"Content-Type":e.mimeType,
+    "Content-Length":String(bytes.byteLength),"x-upsert":"false",
+  }};
+  const response = fetch(`${stack.apiUrl}/storage/v1/object/evidences-private/${e.privateLocation}`, options).catch(() => null);
+  try {
+    // Cuerpo abierto mientras el claim se confirma; no prueba por sí solo el instante del preflight.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect((await store.claimDiscard(a.id,e.evidenceId,true))?.cleanupClaimedAt).toBeTruthy();
+  } finally { finish(); }
+  const result = await response;
+  expect(result).not.toBeNull();
+  expect(result?.ok).toBe(false);
+  expect((await a.client.storage.from("evidences-private").download(e.privateLocation)).error).not.toBeNull();
 });
 
 it("hash no coincidente con longitud válida rechaza y limpia; bucket impone 10 MiB/tipos", async () => {

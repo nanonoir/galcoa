@@ -39,12 +39,13 @@ export const RequestUploadCommandSchema = z.strictObject({
   idempotencyKey: z.string().regex(IDEMPOTENCY_KEY_PATTERN),
 });
 
-export type EvidenceSummary = Omit<StoredEvidence, "privateLocation">;
+export type EvidenceSummary = Omit<StoredEvidence, "privateLocation" | "cleanupClaimedAt">;
 
 /** Proyección sin la clave privada del objeto. */
 export function toEvidenceSummary(evidence: StoredEvidence): EvidenceSummary {
-  const { privateLocation, ...rest } = evidence;
+  const { privateLocation, cleanupClaimedAt, ...rest } = evidence;
   void privateLocation;
+  void cleanupClaimedAt;
   return rest;
 }
 
@@ -60,6 +61,13 @@ const isMime = (m: string): m is (typeof EVIDENCE_MIME_TYPES)[number] => (EVIDEN
 export function createEvidenceService(deps: EvidenceServiceDeps) {
   const correlation = deps.newCorrelationId ?? newId;
   const objectId = deps.newObjectId ?? newId;
+  async function discard(owner: string, id: string, rejected = false) {
+    const claimed = await deps.store.claimDiscard(owner, id, rejected);
+    if (!claimed) return false;
+    await deps.storage.remove(claimed.privateLocation);
+    await deps.store.discardReservation({ ownerId: owner, evidenceId: id });
+    return true;
+  }
 
   return {
     async requestUpload(command: unknown): Promise<
@@ -80,6 +88,9 @@ export function createEvidenceService(deps: EvidenceServiceDeps) {
       const privateLocation = `${documentId}/${objectId()}`;
       let reserved;
       try {
+        for (const candidate of await deps.store.listDiscards(ownerId)) {
+          await discard(ownerId, candidate.evidenceId);
+        }
         reserved = await deps.store.reserveEvidence({
           ownerId,
           documentId,
@@ -99,6 +110,7 @@ export function createEvidenceService(deps: EvidenceServiceDeps) {
         return failure("TECHNICAL_FAILURE", "persistencia", true, correlationId);
       }
       if (reserved.status === "not_available") return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
+      if (reserved.status === "discard_pending") return failure("TECHNICAL_FAILURE", "persistencia", true, correlationId);
       if (reserved.status === "idempotency_conflict") return failure("IDEMPOTENCY_CONFLICT", "persistencia", false, correlationId);
       if (reserved.status === "limit_exceeded") {
         return failure(reserved.limit === "files" ? "EVIDENCE_LIMIT_FILES" : "EVIDENCE_LIMIT_TOTAL", "validacion", false, correlationId);
@@ -132,6 +144,10 @@ export function createEvidenceService(deps: EvidenceServiceDeps) {
       }
       if (!evidence) return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
       if (evidence.uploadState === "accepted") return { ok: true, value: toEvidenceSummary(evidence), replayed: true };
+      // La DB decide vencimiento y claim; no confiar en el reloj de Node.
+      try {
+        if (await discard(ownerId, evidence.evidenceId)) return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
+      } catch { return failure("STORAGE_FAILURE", "persistencia", true, correlationId); }
 
       let bytes: Uint8Array | null;
       try {
@@ -153,8 +169,7 @@ export function createEvidenceService(deps: EvidenceServiceDeps) {
       if (rejection) {
         // El objeto rechazado no es evidencia conservada: se borra y se libera el cupo.
         try {
-          await deps.storage.remove(evidence.privateLocation);
-          await deps.store.discardReservation({ ownerId, evidenceId: evidence.evidenceId });
+          await discard(ownerId, evidence.evidenceId, true);
         } catch {
           return failure("STORAGE_FAILURE", "persistencia", true, correlationId);
         }
@@ -163,7 +178,10 @@ export function createEvidenceService(deps: EvidenceServiceDeps) {
 
       try {
         const accepted = await deps.store.acceptEvidence({ ownerId, evidenceId: evidence.evidenceId, audit: { actorScope: ownerId, correlationId } });
-        if (!accepted) return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
+        if (!accepted) {
+          await discard(ownerId, evidence.evidenceId);
+          return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
+        }
         return { ok: true, value: toEvidenceSummary(accepted) };
       } catch {
         // El objeto queda en su ruta reservada; reintentar `completeUpload` lo adopta.
