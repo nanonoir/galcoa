@@ -114,7 +114,15 @@ export function createVersionPublishService(deps: { store: VersionPublishStore; 
           if (digest(bytes) !== artifact.sha256 || bytes.byteLength !== artifact.byteLength || staged.sha256 !== artifact.sha256) return fail("ARTIFACT_CONFLICT");
 
           // Sin overwrite: «exists» no es error, se decide por la relectura (hash y longitud) antes de aceptar.
-          await deps.storage.upload(artifact.objectPath, bytes, CONTENT_TYPES[artifact.kind]);
+          try {
+            await deps.storage.upload(artifact.objectPath, bytes, CONTENT_TYPES[artifact.kind]);
+          } catch {
+            // Storage puede responder 400 o 409 por duplicado, o perder la respuesta tras guardar.
+            // Solo la relectura de los bytes permite aceptar ese resultado incierto.
+            const existing = await deps.storage.download(artifact.objectPath);
+            if (!existing) return fail("TECHNICAL_FAILURE", true);
+            if (existing.byteLength !== artifact.byteLength || digest(existing) !== artifact.sha256) return fail("ARTIFACT_CONFLICT");
+          }
           const stored = await deps.storage.download(artifact.objectPath);
           if (!stored) return fail("TECHNICAL_FAILURE", true);
           if (stored.byteLength !== artifact.byteLength || digest(stored) !== artifact.sha256) return fail("ARTIFACT_CONFLICT");
