@@ -56,7 +56,10 @@ export function createSupabaseRevisionAdapters(context: { verifiedUserId: string
       requireOwner(ownerId);
       const raw = await call("get_freeze_source", { p_document_id: documentId });
       if (raw === null) return null;
-      const source = FreezeSourceSchema.parse(raw);
+      // Un reporte vigente corrupto llega sin normalizar y se rechaza aquí: nunca se congela omitiéndolo.
+      const parsed = FreezeSourceSchema.safeParse(raw);
+      if (!parsed.success) throw new Error("Respuesta de persistencia inválida");
+      const source = parsed.data;
       if (source.draft.documentId !== documentId) throw new Error("Respuesta de persistencia inválida");
       return toFreezeSource(source);
     },

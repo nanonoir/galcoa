@@ -101,4 +101,21 @@ describe("forma desconocida: falla cerrado", () => {
     ];
     for (const candidate of bad) expect(FreezeSourceSchema.safeParse(candidate).success).toBe(false);
   });
+
+  it("rechaza un reporte vigente corrupto tal como lo entrega la base (no se omite)", () => {
+    const corrupt = [
+      { ...raw(), report: { result: "aprobado", findings: [] } },
+      { ...raw(), report: { result: "con_advertencias", findings: "roto" } },
+      { ...raw(), report: { result: "con_advertencias", findings: null } },
+      { ...raw(), agent1: { warnings: "no es una lista", refs: [] } },
+      { ...raw(), agent1: { warnings: null, refs: [] } },
+    ];
+    for (const candidate of corrupt) expect(FreezeSourceSchema.safeParse(candidate).success).toBe(false);
+  });
+
+  it("la severidad crítica no bloquea: solo informa el estado", () => {
+    const out = toFreezeSource(raw({ report: contrast, refs: contrastRefs }));
+    expect(out.controlStatus).toBe("contradiccion_critica");
+    expect(out.warnings).toHaveLength(1);
+  });
 });

@@ -109,7 +109,6 @@ describe("get_freeze_source: reportes discriminados", () => {
       [contrastInput(w), contrastOutput(w, { draftId: randomUUID() })],
       [contrastInput(w), contrastOutput(w, { kind: "desconocido" })],
       [contrastInput(w), contrastOutput(w, { schemaVersion: 2 })],
-      [contrastInput(w), contrastOutput(w, { result: "aprobado" })],
     ];
     for (const [input, output] of stale) await insertReport(w, input, output);
     expect((await read(ana, w)).report).toBeNull();
@@ -137,9 +136,30 @@ describe("get_freeze_source: reportes discriminados", () => {
     const unknown = await world(ana);
     await publishDraftingReport(unknown, { kind: "futuro" });
     expect(await read(ana, unknown)).toMatchObject({ report: null, agent1: null });
-    const malformed = await world(ana);
-    await publishDraftingReport(malformed, { warnings: "no es una lista" });
-    expect((await read(ana, malformed)).agent1).toBeNull();
+  });
+
+  it("un reporte vigente corrupto se devuelve sin normalizar (no se omite) y congelar falla sin advertir en silencio", async () => {
+    const badDrafting = await world(ana);
+    await publishDraftingReport(badDrafting, { warnings: "no es una lista" });
+    expect((await read(ana, badDrafting)).agent1.warnings).toBe("no es una lista");
+
+    const badContrast = await world(ana);
+    await insertReport(badContrast, contrastInput(badContrast), contrastOutput(badContrast, { result: "aprobado" }));
+    expect((await read(ana, badContrast)).report.result).toBe("aprobado");
+
+    const masksOlder = await world(ana);
+    await insertReport(masksOlder, contrastInput(masksOlder), contrastOutput(masksOlder, { result: "con_advertencias", findings: [] }));
+    await insertReport(masksOlder, contrastInput(masksOlder), contrastOutput(masksOlder, { findings: "roto" }));
+    expect((await read(ana, masksOlder)).report.findings).toBe("roto");
+
+    for (const w of [badDrafting, badContrast, masksOlder]) {
+      const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: ana.id, session: ana.client });
+      const service = createRevisionService({ session: { currentUserId: async () => ana.id }, source: reader, revisions: store });
+      const frozen = await service.freeze({ documentId: w.documentId, expectedDraftRevision: 3, selection: ["comprador"], idempotencyKey: `freeze-${randomUUID()}` });
+      expect(frozen.ok).toBe(false);
+      if (!frozen.ok) expect(frozen.error.code).toBe("TECHNICAL_FAILURE");
+      expect(await psqlOk(`select count(*) from public.document_revisions where document_id = '${w.documentId}';`)).toEqual([["0"]]);
+    }
   });
 
   it("conserva el reporte histórico sin kind de la revisión vigente", async () => {
