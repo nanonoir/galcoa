@@ -194,9 +194,9 @@ describe("complete: publicación atómica", () => {
     expect(await published(w.documentId)).toEqual([1, 1, 1]);
     expect(await count(`public.audit_events where resource_id = ${lit(turnId)} and action = 'chat_turn.completed'`)).toBe(1);
 
-    // F7 aún no discrimina tipos de reporte: este historial no debe parecer un contraste.
+    // F7 discrimina tipos de reporte (02503): este historial es una redacción, no un contraste.
     const source = await ana.client.rpc("get_freeze_source", { p_document_id: w.documentId });
-    expect(source.data).toMatchObject({ draft: { draftId: staged.staged.draftId, draftRevision: 1 }, report: null });
+    expect(source.data).toMatchObject({ draft: { draftId: staged.staged.draftId, draftRevision: 1 }, report: null, agent1: { warnings: [] } });
   });
 
   it("el segundo borrador conserva el ID y avanza; el replay devuelve el original aunque la cabeza avance", async () => {

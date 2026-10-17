@@ -2,13 +2,11 @@ import "server-only";
 
 import { z } from "zod";
 
-import { DraftSchema } from "@/lib/contracts/core";
-import { ControlStatusSchema } from "@/lib/contracts/document";
 import { ParticipantSelectionSchema, RevisionSchema, SnapshotSchema } from "@/lib/contracts/review";
-import { consolidateWarnings, type WarningInput } from "@/lib/rules/consolidate";
 
 import type { DocumentRpc } from "../persistence/store";
 
+import { FreezeSourceSchema, toFreezeSource } from "./freeze-source";
 import type { FreezeReader, FreezeResult, RevisionBundle, RevisionStore } from "./ports";
 
 /**
@@ -43,15 +41,6 @@ const AuthorResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.enum(["snapshot_mismatch", "revision_not_active", "already_responded", "idempotency_conflict", "not_available"]) }),
 ]);
 
-const FreezeSourceSchema = z.strictObject({
-  draft: DraftSchema,
-  report: z.strictObject({
-    result: ControlStatusSchema.exclude(["sin_evaluar"]),
-    findings: z.array(z.strictObject({ message: z.string().min(1), severity: z.enum(["warning", "critical"]), sourceRefs: z.array(z.string()) })),
-  }).nullable(),
-  refs: z.array(z.strictObject({ ref: z.string(), kind: z.enum(["mensaje", "evidencia"]), id: z.string().nullable() })),
-});
-
 export function createSupabaseRevisionAdapters(context: { verifiedUserId: string; session: DocumentRpc }): { store: RevisionStore; reader: FreezeReader } {
   async function call(name: string, args: Record<string, unknown>): Promise<unknown> {
     const { data, error } = await context.session.rpc(name, args);
@@ -67,33 +56,12 @@ export function createSupabaseRevisionAdapters(context: { verifiedUserId: string
       requireOwner(ownerId);
       const raw = await call("get_freeze_source", { p_document_id: documentId });
       if (raw === null) return null;
-      const source = FreezeSourceSchema.parse(raw);
+      // Un reporte vigente corrupto llega sin normalizar y se rechaza aquí: nunca se congela omitiéndolo.
+      const parsed = FreezeSourceSchema.safeParse(raw);
+      if (!parsed.success) throw new Error("Respuesta de persistencia inválida");
+      const source = parsed.data;
       if (source.draft.documentId !== documentId) throw new Error("Respuesta de persistencia inválida");
-
-      const sourceRefs: Record<string, { kind: "mensaje" | "evidencia"; id: string }> = {};
-      const sourceDescriptions: Record<string, string> = {};
-      for (const entry of source.refs) {
-        if (!entry.id) continue;
-        sourceRefs[entry.ref] = { kind: entry.kind, id: entry.id };
-        // Descripción compartible genérica: sin nombres de archivo, rutas ni contenido privado.
-        sourceDescriptions[entry.ref] = entry.kind === "mensaje" ? "mensaje del chat" : "evidencia aportada";
-      }
-      const revision = source.draft.draftRevision;
-      const inputs: WarningInput[] = (source.report?.findings ?? []).map((finding) => ({
-        origin: "agente2",
-        draftRevision: revision,
-        code: null,
-        message: finding.message,
-        severity: finding.severity,
-        sources: finding.sourceRefs,
-      }));
-      return {
-        draft: source.draft,
-        warnings: consolidateWarnings(inputs, revision).current,
-        sourceDescriptions,
-        sourceRefs,
-        controlStatus: source.report?.result ?? "sin_evaluar",
-      };
+      return toFreezeSource(source);
     },
   };
 
