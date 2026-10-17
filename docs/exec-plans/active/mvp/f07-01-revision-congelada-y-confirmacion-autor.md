@@ -127,6 +127,14 @@ Hallazgo de auditoría: `confirm_as_author` no comprobaba que la revisión perte
 
 Evidencia: `typecheck`, ESLint de los archivos tocados, `test:boundaries` y Vitest de `tests/server/revisions` e `invitations` en verde (62 pruebas). **No ejecutado:** las pruebas con Supabase local (`tests/server/local/review-confirmation.test.ts`, catálogo RLS) por no contar con reserva de la base; quedan para el CI de GitHub. Esto no cierra MVP-070/071/077/078 por el resto de la brecha de finalización.
 
+### 9.2 Corrección de cierre — lectura congelada con reportes discriminados (etapa B)
+
+`get_freeze_source` elegía el último reporte con `output.draftRevision` igual a la revisión, sin distinguir tipo. La migración aditiva `20261016002503_freeze_warning_sources.sql` reemplaza la función (misma firma, propietario y grants; sin tablas ni RPC nuevas) y lee por separado: el **contraste** vigente (`kind = 'contraste'` v1 con el mismo `draftId`, revisión **y contenido** del borrador, o el formato histórico sin `kind`, compatibilidad explícita que solo compara la revisión) y la **redacción** vigente (`kind = 'redaccion'` v1 con `publishedDraftRevision` = revisión y cuyo id figura en `drafts.source_refs`). Otra revisión, otro contenido, `kind` desconocido o forma inválida se ignoran. Nueva clave `agent1` ({warnings, refs}); `report` y `refs` conservan su forma.
+
+El adaptador (`src/lib/documents/revisions/freeze-source.ts`) unifica los refs por fuente real (tipo + id), de modo que el mismo `m1` de dos reportes no se mezcla, y consolida Agente 1 + Agente 2 con `consolidateWarnings`; el estado de control sale de `controlStatus` (una advertencia de la redacción sube el estado, pero la redacción sola no equivale a un contraste: sin contraste ni reglas queda `sin_evaluar`). **Reglas deterministas: no se ejecutan ni se afirman** (no hay umbrales aprobados ni ejecutor que registre su versión); `rulesEvaluated = false`. Refs sin fuente resoluble se descartan del `sources` y del texto («fuente no identificada») sin perder la advertencia.
+
+Evidencia: Vitest de `tests/server/revisions` y `rules` (66 pruebas, incluidas 8 nuevas de `freeze-source.test.ts`), ESLint de los archivos tocados y `typecheck`. **No ejecutado:** `tests/server/local/freeze-warning-sources.test.ts` y el catálogo RLS contra Supabase local (sin reserva de la base); los validará el CI aislado. Nada de esto acredita el flujo de chat de extremo a extremo.
+
 ## 10. Rollback y recuperación
 
 - **Antes de integrar:** descartar la rama; sin remoto no hay otra consecuencia. La base local se recrea desde cero con las migraciones.
