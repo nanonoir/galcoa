@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { createTestUser, expectRejected, psql, psqlAs, psqlOk, readLocalStack, SQLSTATE, type TestUser } from "../rls/harness";
+import { createTestUser, expectRejected, psql, psqlAs, psqlOk, readLocalStack, seedDocument, SQLSTATE, type TestUser } from "../rls/harness";
 
 /**
  * Turnos de chat durables, checkpoint 2 (migración 02501): staging por intento y publicación
@@ -245,6 +245,30 @@ commit;`,
     expect(await count(`public.idempotency_records where resource_id = ${lit(w.documentId)} and action = 'message.record_agent'`)).toBe(0);
     expect((await psqlOk(`select state, agent_message_id is null, completion_result is null from public.chat_turns where id = ${lit(turnId)};`))[0]).toEqual(["en_curso", "t", "t"]);
     expect((await complete(ana, turnId, 1)).status).toBe("completed");
+  });
+
+  it("documento finalizado: no publica nada, conserva el borrador existente y el turno sigue en curso", async () => {
+    // Estado técnico inmutable producido por la semilla real de finalización (sin tocar triggers ni guardas).
+    // La evidencia sembrada no está aceptada, así que la propuesta cita solo el mensaje del documento.
+    const seeded = await seedDocument(ana.id, { withVersion: true });
+    const w: World = { documentId: seeded.documentId, messageId: seeded.messageId, extractionId: seeded.extractionId };
+    const { turnId } = await openTurn(ana, w);
+    const snapshot = () => psqlOk(`select d.draft_revision::text, d.content::text, d.source_refs::text, doc.document_status, doc.last_version_id::text
+      from public.drafts d join public.documents doc on doc.id = d.document_id where d.document_id = ${lit(w.documentId)};`);
+    const before = await snapshot();
+    expect(before[0][3]).toBe("finalizado");
+    const baseline = await published(w.documentId);
+
+    const staged = await stage(ana, turnId, 1, Number(before[0][0]), w, "Titulo", { inputs: [{ ref: "m1", kind: "mensaje", id: w.messageId }] });
+    expect(staged.status).toBe("staged");
+    const audits = () => count(`public.audit_events where resource_id = ${lit(turnId)} and action = 'chat_turn.completed'`);
+
+    expect(await complete(ana, turnId, 1)).toEqual({ status: "document_finalized" });
+    expect(await published(w.documentId)).toEqual(baseline);
+    expect(await audits()).toBe(0);
+    expect(await snapshot()).toEqual(before);
+    expect((await psqlOk(`select state, agent_message_id is null, completion_result is null, staged_proposal_id::text = ${lit(staged.staged.proposalId)}
+      from public.chat_turns where id = ${lit(turnId)};`))[0]).toEqual(["en_curso", "t", "t", "t"]);
   });
 
   it("A/B: otro actor no publica ni ve el resultado", async () => {
