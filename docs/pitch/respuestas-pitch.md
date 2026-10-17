@@ -10,6 +10,22 @@
 
 ---
 
+## 0. Qué es el producto (y qué no)
+**GALCOA+ no es un modelo ni una IA: es un *harness*.** Un harness es el **marco que ordena el trabajo**: un proceso fijo con pasos, reglas, controles y confirmaciones, igual que un *skill* empaqueta un procedimiento. Los modelos de IA (Gemini, Groq) son **ayudantes que el harness llama dentro de ese proceso**; no deciden por su cuenta ni sellan nada. El valor está en el proceso, no en el modelo.
+
+Qué hace el harness, siempre igual:
+1. Ordena la conversación en un documento con estructura fija.
+2. Aplica los mismos controles en cada operación (diferencias entre lo declarado y las pruebas).
+3. Exige que las personas elegidas confirmen **el mismo** documento.
+4. Congela la versión y publica solo su huella en Hedera.
+
+**Cómo decirlo según la audiencia**
+- **Jurado técnico / README:** «GALCOA+ es un *harness*: un marco de proceso con controles y confirmaciones que usa IA como ayudante. Puede cambiar de modelo sin cambiar el proceso.»
+- **Público general (pitch, deck):** no decir «harness». Decir: «**es un proceso que se aplica igual todas las veces**: se cuenta por chat, se controla, las partes confirman y queda la prueba.»
+- **Nunca decir:** «una IA que valida» ni «el modelo garantiza»: el control informa diferencias; las personas confirman.
+
+---
+
 ## 1. La frase de una línea
 > **GALCOA+ convierte una conversación de trabajo en un registro que nadie puede cambiar sin que se note: se habla por chat, las partes confirman y la prueba queda en Hedera.**
 
@@ -32,7 +48,7 @@ En industrias reguladas los datos de cada lote se anotan **a mano, tarde y en pl
 ### 2.3 Solución (qué construimos)
 Cuatro pasos, que son también el recorrido de la interfaz:
 1. **Contás** qué pasó y adjuntás el remito o la evidencia (chat).
-2. **La IA arma el documento y marca las diferencias** (por ejemplo, 10 toneladas declaradas contra 12 del remito). No frena el trabajo: lo deja a la vista.
+2. **El proceso arma el documento (con la IA como ayudante) y marca las diferencias** (por ejemplo, 10 toneladas declaradas contra 12 del remito). No frena el trabajo: lo deja a la vista.
 3. **Las partes confirman** lo mismo, con un enlace. Quedan nombre declarado, rol y hora del servidor.
 4. **Se sella:** a Hedera sube **solo una huella**. El dato nunca sale; sale la prueba.
 
