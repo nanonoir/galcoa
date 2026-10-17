@@ -41,6 +41,25 @@ describe("MVP-093 · localizar por ID de transacción", () => {
     expect(await mirror.locateTransaction(SDK_ID, "0.0.5005")).toEqual({ result: "fallo_terminal", status: "INVALID_TOPIC_ID" });
   });
 
+  it("DUPLICATE_TRANSACTION antes de SUCCESS: devuelve el localizado exitoso", async () => {
+    const dup = tx({ result: "DUPLICATE_TRANSACTION" }).transactions;
+    const ok = tx().transactions;
+    const { mirror } = reader(Response.json({ transactions: [...dup, ...ok] }), Response.json({ messages: [{ sequence_number: "12" }] }));
+    expect(await mirror.locateTransaction(SDK_ID, "0.0.5005")).toMatchObject({ result: "exitoso", sequenceNumber: "12" });
+  });
+
+  it("solo DUPLICATE_TRANSACTION o UNKNOWN: no concluyente, nunca fallo terminal", async () => {
+    for (const result of ["DUPLICATE_TRANSACTION", "UNKNOWN"]) {
+      const lookup = await reader(Response.json(tx({ result }))).mirror.locateTransaction(SDK_ID, "0.0.5005");
+      expect(lookup).toEqual({ result: "indisponible", reason: "transaccion_duplicada" });
+    }
+  });
+
+  it("una entrada programada se ignora", async () => {
+    const { mirror } = reader(Response.json(tx({ result: "INVALID_TOPIC_ID", scheduled: true })));
+    expect(await mirror.locateTransaction(SDK_ID, "0.0.5005")).toEqual({ result: "aun_no_disponible" });
+  });
+
   it("404, 5xx, timeout y cuerpo inválido no son fallo ni ausencia", async () => {
     expect(await reader(new Response(null, { status: 404 })).mirror.locateTransaction(SDK_ID, "0.0.5005")).toEqual({ result: "aun_no_disponible" });
     expect((await reader(new Response(null, { status: 503 })).mirror.locateTransaction(SDK_ID, "0.0.5005")).result).toBe("indisponible");

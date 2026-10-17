@@ -63,6 +63,7 @@ const TransactionsSchema = z.object({
       consensus_timestamp: z.string().regex(/^\d+\.\d{9}$/),
       transaction_id: z.string(),
       nonce: z.number().int().optional(),
+      scheduled: z.boolean().optional(),
     }),
   ),
 });
@@ -121,11 +122,19 @@ export function createMirrorReader(deps: MirrorDeps = {}) {
       if (!tx.ok) return tx.lookup;
       const parsed = TransactionsSchema.safeParse(tx.body);
       if (!parsed.success) return { result: "indisponible", reason: "respuesta_invalida" };
-      // Solo la transacción raíz de ese ID (nonce 0); hijas o programadas no cuentan.
-      const entry = parsed.data.transactions.find((t) => t.transaction_id === mirrorId && (t.nonce ?? 0) === 0);
-      if (!entry) return { result: "aun_no_disponible" };
+      // Solo las transacciones raíz de ese ID (nonce 0); hijas o programadas no cuentan.
+      const roots = parsed.data.transactions.filter((t) => t.transaction_id === mirrorId && (t.nonce ?? 0) === 0 && t.scheduled !== true);
+      if (roots.length === 0) return { result: "aun_no_disponible" };
+      // Un duplicado puede listarse antes que el original exitoso: se prioriza SUCCESS.
+      const entry = roots.find((t) => t.result === "SUCCESS") ?? roots[0];
       if (entry.name !== "CONSENSUSSUBMITMESSAGE") return { result: "indisponible", reason: "transaccion_inesperada" };
-      if (entry.result !== "SUCCESS") return { result: "fallo_terminal", status: entry.result };
+      if (entry.result !== "SUCCESS") {
+        // DUPLICATE_TRANSACTION/UNKNOWN no prueban fracaso (manifest-hcs §5): no concluyente.
+        if (roots.some((t) => t.result === "DUPLICATE_TRANSACTION" || t.result === "UNKNOWN")) {
+          return { result: "indisponible", reason: "transaccion_duplicada" };
+        }
+        return { result: "fallo_terminal", status: entry.result };
+      }
       if (entry.entity_id !== expectedTopicId) return { result: "indisponible", reason: "topic_inesperado" };
 
       // La transacción no trae la secuencia: se obtiene por su marca de consenso exacta.
