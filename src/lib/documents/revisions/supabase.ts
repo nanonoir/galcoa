@@ -2,8 +2,11 @@ import "server-only";
 
 import { z } from "zod";
 
+import { MessageSchema } from "@/lib/contracts/core";
 import { ParticipantSelectionSchema, RevisionSchema, SnapshotSchema } from "@/lib/contracts/review";
+import type { SeriesSource } from "@/lib/rules/repeated-values";
 
+import { createEvidenceStore } from "../evidence/persistence";
 import type { DocumentRpc } from "../persistence/store";
 
 import { FreezeSourceSchema, toFreezeSource } from "./freeze-source";
@@ -41,7 +44,12 @@ const AuthorResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.enum(["snapshot_mismatch", "revision_not_active", "already_responded", "idempotency_conflict", "not_available"]) }),
 ]);
 
-export function createSupabaseRevisionAdapters(context: { verifiedUserId: string; session: DocumentRpc }): { store: RevisionStore; reader: FreezeReader } {
+export function createSupabaseRevisionAdapters(context: {
+  verifiedUserId: string;
+  session: DocumentRpc;
+  /** Canal del ejecutor para leer extracciones; sin él solo se evalúan los mensajes. */
+  executor?: DocumentRpc;
+}): { store: RevisionStore; reader: FreezeReader } {
   async function call(name: string, args: Record<string, unknown>): Promise<unknown> {
     const { data, error } = await context.session.rpc(name, args);
     if (error) throw new Error("Persistencia no disponible");
@@ -49,6 +57,19 @@ export function createSupabaseRevisionAdapters(context: { verifiedUserId: string
   }
   function requireOwner(ownerId: string) {
     if (!ownerId || ownerId !== context.verifiedUserId) throw new Error("Operación no autorizada");
+  }
+
+  /** Textos del autor y extracciones del documento: insumo del indicador de valores repetidos. */
+  async function readSeriesSources(documentId: string): Promise<SeriesSource[]> {
+    const messages = (await call("list_messages", { p_document_id: documentId })) ?? [];
+    const parsed = z.array(MessageSchema).parse(messages);
+    if (parsed.some((m) => m.documentId !== documentId)) throw new Error("Respuesta de persistencia inválida");
+    const sources: SeriesSource[] = parsed.filter((m) => m.sender === "autor").map((m) => ({ kind: "mensaje", id: m.messageId, text: m.content }));
+    if (context.executor) {
+      const extractions = await createEvidenceStore({ verifiedUserId: context.verifiedUserId, executor: context.executor }).listExtractions(context.verifiedUserId, documentId);
+      for (const e of extractions ?? []) sources.push({ kind: "evidencia", id: e.evidenceId, text: e.text });
+    }
+    return sources;
   }
 
   const reader: FreezeReader = {
@@ -61,7 +82,7 @@ export function createSupabaseRevisionAdapters(context: { verifiedUserId: string
       if (!parsed.success) throw new Error("Respuesta de persistencia inválida");
       const source = parsed.data;
       if (source.draft.documentId !== documentId) throw new Error("Respuesta de persistencia inválida");
-      return toFreezeSource(source);
+      return toFreezeSource(source, await readSeriesSources(documentId));
     },
   };
 

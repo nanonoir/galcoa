@@ -5,7 +5,8 @@ import { z } from "zod";
 import { DraftSchema } from "@/lib/contracts/core";
 import { ControlStatusSchema } from "@/lib/contracts/document";
 import { controlStatus } from "@/lib/rules/dimensions";
-import { consolidateWarnings, type WarningInput } from "@/lib/rules/consolidate";
+import { consolidateWarnings, ruleWarnings, type WarningInput } from "@/lib/rules/consolidate";
+import { evaluateRepeatedValues, type SeriesSource } from "@/lib/rules/repeated-values";
 
 import type { FreezeSource } from "./ports";
 
@@ -18,8 +19,9 @@ import type { FreezeSource } from "./ports";
  * Cada reporte numera sus refs (`m1`, `e1`…) por su cuenta, así que dos reportes
  * pueden usar el mismo ref para fuentes distintas. Se unifican por **fuente real**
  * (tipo + id): una misma fuente conserva un único ref y una fuente distinta nunca
- * hereda el de otra. Las reglas deterministas no se ejecutan aquí (no hay umbrales
- * aprobados ni un ejecutor que las registre): no se aporta ni se afirma ninguna.
+ * hereda el de otra. De las reglas deterministas solo corre `valores_repetidos`
+ * (umbral 4, decisión de producto de MVP-013) sobre `ruleSources`; los demás
+ * indicadores están descartados. Sin datos suficientes `rulesEvaluated` queda falso.
  */
 
 const RefSchema = z.string().regex(/^[me]\d{1,3}$/);
@@ -37,7 +39,7 @@ export const FreezeSourceSchema = z.strictObject({
 
 export type RawFreezeSource = z.infer<typeof FreezeSourceSchema>;
 
-export function toFreezeSource(source: RawFreezeSource): FreezeSource {
+export function toFreezeSource(source: RawFreezeSource, ruleSources: readonly SeriesSource[] = []): FreezeSource {
   const sourceRefs: FreezeSource["sourceRefs"] = {};
   const sourceDescriptions: Record<string, string> = {};
   const canonicalByKey = new Map<string, string>();
@@ -89,6 +91,14 @@ export function toFreezeSource(source: RawFreezeSource): FreezeSource {
   if (source.report) collect("agente2", register(source.refs), source.report.findings);
   if (source.agent1) collect("agente1", register(source.agent1.refs), source.agent1.warnings);
 
+  // Reglas: solo `valores_repetidos` (umbral 4, decisión de producto 2026-10-17). Sin datos suficientes no corre.
+  const rules = evaluateRepeatedValues(ruleSources);
+  for (const { source: found, finding } of rules.signals) {
+    const key = `${found.kind}:${found.id}`;
+    const canonical = register([{ ref: key, kind: found.kind, id: found.id }]).get(key);
+    if (canonical) inputs.push(...ruleWarnings([{ ...finding, sources: [canonical] }], revision));
+  }
+
   const warnings = consolidateWarnings(inputs, revision).current;
   return {
     draft: source.draft,
@@ -99,7 +109,7 @@ export function toFreezeSource(source: RawFreezeSource): FreezeSource {
       draftRevision: revision,
       agent2: source.report ? { draftRevision: revision, result: source.report.result } : null,
       findings: warnings.map((w) => ({ severity: w.severity, draftRevision: w.draftRevision })),
-      rulesEvaluated: false,
+      rulesEvaluated: rules.evaluated,
     }),
   };
 }
