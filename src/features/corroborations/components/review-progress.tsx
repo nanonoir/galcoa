@@ -19,8 +19,8 @@ export interface ReviewProgressProps {
   revisionLabel: string;
   confirmationStatus: ConfirmationStatus;
   participants: { role: ParticipantRole; progress: ParticipantProgress }[];
-  /** `null` mientras la revisión no se finalizó. */
-  finalizedVersionNumber: number | null;
+  /** `null` mientras no se finalizó; `no_disponible` si el origen de datos no trae el número. */
+  finalizedVersionNumber: number | null | "no_disponible";
   hcsStatus: HcsStatus;
   refreshing: boolean;
   onRefresh: () => void;
@@ -75,7 +75,11 @@ export function ReviewProgress({ revisionLabel, confirmationStatus, participants
         </div>
         <div className="flex min-w-0 flex-col gap-2 rounded-xl border bg-card p-3">
           <dt className="text-xs text-muted-foreground">Finalización</dt>
-          <dd className="text-sm">{finalizedVersionNumber === null ? "Todavía no finalizada" : `Versión ${finalizedVersionNumber} finalizada`}</dd>
+          <dd className="text-sm">{finalizedVersionNumber === null
+              ? "Todavía no finalizada"
+              : finalizedVersionNumber === "no_disponible"
+                ? "Número de versión finalizada no disponible en esta pantalla"
+                : `Versión ${finalizedVersionNumber} finalizada`}</dd>
         </div>
         <div className="flex min-w-0 flex-col gap-2 rounded-xl border bg-card p-3">
           <dt className="text-xs text-muted-foreground">Sello HCS</dt>

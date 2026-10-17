@@ -79,6 +79,12 @@ describe("ReviewProgress", () => {
     expect(screen.queryByText("Sello registrado")).not.toBeInTheDocument();
   });
 
+  it("si el origen no trae el número de versión lo dice en vez de afirmar que no está finalizada", () => {
+    render(<ReviewProgress {...base} participants={[...base.participants]} confirmationStatus="completa" finalizedVersionNumber="no_disponible" hcsStatus="registrado" />);
+    expect(screen.getByText(/número de versión finalizada no disponible/i)).toBeInTheDocument();
+    expect(screen.queryByText(/todavía no finalizada/i)).not.toBeInTheDocument();
+  });
+
   it("rechazo se comunica como respuesta de negocio con su siguiente paso", () => {
     render(<ReviewProgress {...base} participants={[{ role: "autor", progress: "confirmada" }, { role: "comprador", progress: "rechazada" }]} confirmationStatus="rechazada" finalizedVersionNumber={null} hcsStatus="no_iniciado" />);
     expect(screen.getByText(/abrí otra revisión/i)).toBeInTheDocument();
