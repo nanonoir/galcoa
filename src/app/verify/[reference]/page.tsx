@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import Link from "next/link";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PublicBrandHeader } from "@/components/ui/public-brand-header";
 import { VerifierContainer } from "@/features/documents/containers/verifier-container";
 import type { PublicVerification } from "@/lib/contracts/public";
 import { createPublicVerification } from "@/lib/documents/verification/runtime";
@@ -42,14 +45,29 @@ export default async function VerifyPage({ params }: { params: Promise<{ referen
   const { reference } = await params;
   const initial = await load(reference);
   return (
-    <main className="min-h-dvh bg-background px-4 py-8 text-foreground">
-      {initial.status === "ready" ? (
-        <VerifierContainer reference={reference} initial={initial.verification} />
-      ) : (
-        <p role="alert" className="mx-auto max-w-2xl text-sm">
-          {initial.message}
-        </p>
-      )}
-    </main>
+    <div className="min-h-dvh bg-background text-foreground">
+      <PublicBrandHeader context="Verificación pública · Hedera Testnet" />
+      <main className="motion-enter px-4 py-8">
+        {initial.status === "ready" ? (
+          <VerifierContainer reference={reference} initial={initial.verification} />
+        ) : (
+          <div className="mx-auto flex max-w-2xl flex-col gap-4">
+            <h1 className="font-heading text-xl font-semibold">Verificación pública</h1>
+            <Alert>
+              <AlertTitle>No pudimos completar la verificación</AlertTitle>
+              <AlertDescription>{initial.message}</AlertDescription>
+            </Alert>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <a href={`/verify/${encodeURIComponent(reference)}`} className="inline-flex min-h-11 items-center underline underline-offset-4">
+                Reintentar
+              </a>
+              <Link href="/" className="inline-flex min-h-11 items-center underline underline-offset-4">
+                Volver al inicio
+              </Link>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
