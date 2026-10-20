@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, History, RotateCcw } from "lucide-react";
+import { AlertTriangle, Check, Download, History, RotateCcw } from "lucide-react";
 import { useId } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -49,18 +49,20 @@ function VersionItem({
   previous,
   selected,
   onSelect,
+  pdfHref,
 }: {
   version: VersionHistoryItem;
   previous: string;
   selected: boolean;
   onSelect: (versionId: string) => void;
+  pdfHref?: string;
 }) {
   const seal = sealLabels[version.hcsStatus];
   const finalizedAt = formatDate(version.finalizedAt);
   // Nombre accesible corto («Versión N»); estados y antecedente como descripción.
   const id = useId();
   return (
-    <li>
+    <li className="flex min-w-0 flex-col">
       <button
         type="button"
         aria-current={selected ? "true" : undefined}
@@ -68,8 +70,9 @@ function VersionItem({
         aria-describedby={`${id}-details`}
         onClick={() => onSelect(version.versionId)}
         className={
-          "flex w-full min-w-0 flex-col gap-2 rounded-xl border p-3 text-left text-sm transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 " +
-          (selected ? "border-primary bg-primary/5" : "border-border bg-card")
+          "flex w-full min-w-0 flex-col gap-2 border p-4 text-left text-sm transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 " +
+          (selected ? "border-ring bg-accent" : "border-border bg-card") +
+          (pdfHref ? " border-b-0" : "")
         }
       >
         <span className="flex flex-wrap items-center justify-between gap-2">
@@ -91,13 +94,13 @@ function VersionItem({
           <span className="text-xs break-words text-muted-foreground">{previous}</span>
           {/* Dos estados independientes (PRD §5): la finalización no se deriva del sello. */}
           <span className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
-            <span className="flex min-w-0 flex-col gap-1 rounded-lg bg-muted/40 p-2">
+            <span className="flex min-w-0 flex-col gap-1 bg-muted/40 p-2">
               <span className="tech-label">Finalización</span>
               <span className="break-words">
                 Versión finalizada · <time dateTime={version.finalizedAt}>{finalizedAt}</time>
               </span>
             </span>
-            <span className="flex min-w-0 flex-col gap-1 rounded-lg bg-muted/40 p-2">
+            <span className="flex min-w-0 flex-col gap-1 bg-muted/40 p-2">
               <span className="tech-label">Sello HCS</span>
               <span>
                 <Badge variant={seal.registered ? "secondary" : "outline"} className="h-auto max-w-full text-left break-words whitespace-normal">
@@ -109,11 +112,26 @@ function VersionItem({
           </span>
         </span>
       </button>
+      {/* Hermano del botón (no anidado): descarga el PDF final ya almacenado de esta versión. */}
+      {pdfHref && (
+        <a
+          href={pdfHref}
+          download
+          aria-label={`Descargar PDF de la versión ${version.number}`}
+          className={
+            "inline-flex min-h-11 items-center gap-2 border px-4 text-sm font-medium transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 " +
+            (selected ? "border-ring" : "border-border")
+          }
+        >
+          <Download aria-hidden="true" className="size-4" />
+          Descargar PDF
+        </a>
+      )}
     </li>
   );
 }
 
-export function VersionHistory({ state, selectedVersionId, onSelect, onRetry }: VersionHistoryViewProps) {
+export function VersionHistory({ state, selectedVersionId, onSelect, onRetry, pdfHref }: VersionHistoryViewProps & { pdfHref?: (versionNumber: number) => string }) {
   return (
     <section aria-labelledby="version-history-title" className="flex min-w-0 flex-col gap-4">
       <header className="flex min-w-0 flex-col gap-1">
@@ -148,14 +166,16 @@ export function VersionHistory({ state, selectedVersionId, onSelect, onRetry }: 
       )}
 
       {state.status === "ready" && state.versions.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-6 text-center">
+        <div className="flex flex-col items-center gap-2 border border-dashed p-6 text-center">
           <History aria-hidden="true" className="size-6 text-muted-foreground" />
           <p className="font-medium">Todavía no hay versiones finalizadas.</p>
           <p className="text-sm text-muted-foreground">Cada versión aparecerá acá cuando se finalice.</p>
         </div>
       )}
 
-      {state.status === "ready" && state.versions.length > 0 && <VersionList versions={state.versions} selectedVersionId={selectedVersionId} onSelect={onSelect} />}
+      {state.status === "ready" && state.versions.length > 0 && (
+        <VersionList versions={state.versions} selectedVersionId={selectedVersionId} onSelect={onSelect} pdfHref={pdfHref} />
+      )}
     </section>
   );
 }
@@ -164,10 +184,12 @@ function VersionList({
   versions,
   selectedVersionId,
   onSelect,
+  pdfHref,
 }: {
   versions: readonly VersionHistoryItem[];
   selectedVersionId: string | null;
   onSelect: (versionId: string) => void;
+  pdfHref?: (versionNumber: number) => string;
 }) {
   const numbers = new Map(versions.map((v) => [v.versionId, v.number]));
   // Más reciente primero, sin mutar el estado recibido.
@@ -181,6 +203,7 @@ function VersionList({
           previous={previousLabel(version, numbers)}
           selected={version.versionId === selectedVersionId}
           onSelect={onSelect}
+          pdfHref={pdfHref?.(version.number)}
         />
       ))}
     </ul>
