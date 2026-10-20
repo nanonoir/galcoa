@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { BrandLockup } from "@/components/ui/brand-lockup";
 import type { LandingContent } from "@/lib/contracts/landing";
 
 /**
@@ -21,11 +22,11 @@ export function siteNavigationProps(content: LandingContent): SiteNavigationProp
 
 export function SiteNavigation({ brand, action }: SiteNavigationProps) {
   return (
-    <header className="h-16 border-b">
+    <header className="surface-inverse h-16 border-b">
       <div className="mx-auto flex h-full w-full max-w-6xl items-stretch justify-between gap-4 pl-4">
         <div className="flex items-center gap-4">
-          <span className="galcoa-brand"><span className="sr-only">{brand}</span></span>
-          <span aria-hidden="true" className="tech-label hidden sm:inline">Hedera · Testnet</span>
+          <BrandLockup label={brand} />
+          <span aria-hidden="true" className="tech-label hidden xl:inline">Testnet</span>
         </div>
         {action}
       </div>
