@@ -9,12 +9,12 @@ Este documento es la fuente de decisiones arquitectónicas. El [PRD v1.5](exec-p
 | Área | Hoy |
 | --- | --- |
 | `src/app/` | Base Next y rutas funcionales de Auth (`/registro`, `/acceso`, `/recuperar`, `/nueva-contrasena`), cinco POST y callback; páginas privadas de producto en MVP-116 |
-| UI | shadcn `base-nova` en `src/components/ui/`, hook `use-mobile`; `src/lib/utils.ts` reexporta `cn`, que está en uso |
+| UI | shadcn `base-nova` en `src/components/ui/`, hook `use-mobile`; evolución visual profesional integrada localmente (Manrope variable + IBM Plex Mono locales, tokens consolidados, bordes rectos y titulares neutros reconciliados en `design.md`); `src/lib/utils.ts` reexporta `cn`, que está en uso |
 | Configuración | Next 16.4.2, React 19, React Compiler, Tailwind v4, alias `@/*` → `src/*` |
 | Dependencias | SDK de Supabase, IA, PDF y Hedera instalados; no constituyen integraciones implementadas |
 | Verificación | Vitest para contratos/componentes/barreras y Playwright para Chromium; CI Linux base y ampliación servidor/RLS/Auth local verificadas ([MVP-131](exec-plans/active/mvp/f13-release-security-and-ci.md)); matriz de negocio MVP-121 pendiente y protección de ramas opcional posthackathon |
 | Base compartida | Contratos Zod de dominio completos, paquete frontend delegado con escenarios en `src/mocks/` y fixtures validados con Zod, presentación mínima de referencia y preview Vite aislado |
-| Integración local de Auth y datos | Migraciones/RLS, clientes Supabase y guardas integrados; Auth real local con Supabase + Mailpit por PR #70 (MVP-031). Adaptadores de servidor, sin cliente Auth de navegador. [Operación y límites](auth-local.md); [evidencia](exec-plans/completed/f03-auth-flujos-reales.md). No acredita correo remoto, Vercel ni integraciones reales de IA/PDF/Hedera |
+| Integración local de Auth y datos | Migraciones/RLS, clientes Supabase y guardas integrados; Auth real local con Supabase + Mailpit por PR #70 (MVP-031). Adaptadores de servidor, sin cliente Auth de navegador. Descarga segura de PDF GET/HEAD y lector de versiones del historial estabilizados localmente ([ui-ux-profesional.md](exec-plans/completed/ui-ux-profesional.md)). [Operación y límites](auth-local.md); [evidencia](exec-plans/completed/f03-auth-flujos-reales.md). No acredita correo remoto, Vercel ni integraciones reales de IA/PDF/Hedera |
 | Entorno | Node 24.18.0, npm >=11 y plantilla `.env.example` sanitizada versionable; único archivo local privado `.env` (ignorado; guard `env:check` contra `.env.local` y similares), sin inspeccionar secretos |
 
 No se deduce seguridad ni funcionamiento por la presencia de un SDK. Las desviaciones conocidas están en la [deuda técnica](exec-plans/tech-debt-tracker.md); sus resultados de auditoría son históricos, no checks ejecutados en esta definición.
