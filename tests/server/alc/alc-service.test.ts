@@ -159,6 +159,14 @@ describe("evaluación de servidor (F-1)", () => {
     if (r.ok) expect(r.value.shared.claims).toHaveLength(1);
   });
 
+  it("un número en el nombre del producto cubre la cobertura y se ignora la autoevaluación del modelo", async () => {
+    const named = { ...draft, body: "Se entregan 12 cajas de alfajor 55 g." };
+    const out = claimOutput({ coverage: false });
+    out.claims[0].subject = "alfajor 55 g";
+    const r = await setup([out]).evaluator.evaluate({ ownerId: OWNER, documentId: DOC, draft: named, selection: ["autor", "comprador"] });
+    expect(r).toMatchObject({ ok: true, value: { color: "verde" } });
+  });
+
   it("una fecha del borrador cubre sus números aunque no sea numérica", async () => {
     const dated = { ...draft, body: "Se entregan 12 cajas el 20/10/2026." };
     const out = claimOutput();
