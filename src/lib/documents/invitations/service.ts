@@ -129,7 +129,7 @@ export function createInvitationService(deps: InvitationDeps) {
           case "vigente": {
             // Allowlist estricta: ningún id privado, chat ni evidencia.
             const invitation = PublicInvitationSchema.parse({
-              schemaVersion: 1,
+              schemaVersion: "alc" in record.content ? 2 : 1,
               revisionId: record.revisionId,
               snapshotId: record.snapshotId,
               snapshotHash: record.snapshotHash,
@@ -137,6 +137,7 @@ export function createInvitationService(deps: InvitationDeps) {
               selection: record.content.selection,
               operation: record.content.operation,
               warnings: record.content.warnings,
+              ...("alc" in record.content ? { alc: record.content.alc, rectifications: record.content.rectifications } : {}),
               availability: "disponible",
               expiresAt: record.expiresAt,
             });
@@ -219,6 +220,8 @@ export function createInvitationService(deps: InvitationDeps) {
             );
           case "snapshot_mismatch":
             return failure("SNAPSHOT_MISMATCH", "confirmacion", false, correlationId);
+          case "confirmation_order":
+            return failure("CONFIRMATION_ORDER", "confirmacion", false, correlationId);
           case "idempotency_conflict":
             return failure("IDEMPOTENCY_CONFLICT", "persistencia", false, correlationId);
           default:

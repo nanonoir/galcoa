@@ -39,6 +39,13 @@ export default defineConfig({
         reuseExistingServer: false,
         timeout: 180_000,
         env: {
+          // Este perfil usa el puente Node para evaluar/congelar con fixtures.
+          // No hereda conexiones privilegiadas ni proveedores del entorno de la app.
+          GALCOA_EXECUTOR_DATABASE_URL: "",
+          GALCOA_EXECUTOR_DATABASE_CA: "",
+          GOOGLE_GENERATIVE_AI_API_KEY: "",
+          GROQ_API_KEY: "",
+          HEDERA_OPERATOR_KEY: "",
           NEXT_TELEMETRY_DISABLED: "1",
           NEXT_PUBLIC_APP_URL: `http://127.0.0.1:${PORT}`,
           NEXT_PUBLIC_SUPABASE_URL: process.env.REVIEW_E2E_SUPABASE_URL ?? "",

@@ -5,6 +5,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createRevisionService } from "@/lib/documents/revisions/service";
 import { createSupabaseRevisionAdapters } from "@/lib/documents/revisions/supabase";
 
+import { localAlc } from "./alc-support";
+
 import { anonClient, createTestUser, psqlOk, readLocalStack, type LocalStack, type TestUser } from "../rls/harness";
 
 /**
@@ -154,7 +156,7 @@ describe("get_freeze_source: reportes discriminados", () => {
 
     for (const w of [badDrafting, badContrast, masksOlder]) {
       const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: ana.id, session: ana.client });
-      const service = createRevisionService({ session: { currentUserId: async () => ana.id }, source: reader, revisions: store });
+      const service = createRevisionService({ session: { currentUserId: async () => ana.id }, source: reader, revisions: store, alc: localAlc(ana.id) });
       const frozen = await service.freeze({ documentId: w.documentId, expectedDraftRevision: 3, selection: ["comprador"], idempotencyKey: `freeze-${randomUUID()}` });
       expect(frozen.ok).toBe(false);
       if (!frozen.ok) expect(frozen.error.code).toBe("TECHNICAL_FAILURE");
@@ -186,15 +188,17 @@ describe("congelado con ambos agentes", () => {
     await insertReport(w, contrastInput(w), contrastOutput(w));
     await publishDraftingReport(w);
     const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: ana.id, session: ana.client });
-    const service = createRevisionService({ session: { currentUserId: async () => ana.id }, source: reader, revisions: store });
+    const service = createRevisionService({ session: { currentUserId: async () => ana.id }, source: reader, revisions: store, alc: localAlc(ana.id) });
     const frozen = await service.freeze({ documentId: w.documentId, expectedDraftRevision: 3, selection: ["comprador"], idempotencyKey: `freeze-${randomUUID()}` });
     if (!frozen.ok) throw new Error(`freeze: ${frozen.error.code}`);
     const warnings = frozen.value.snapshot.content.warnings;
     expect(warnings).toHaveLength(2);
     expect(warnings.map((x) => x.severity).sort()).toEqual(["critical", "warning"]);
-    expect(frozen.value.revision.controlStatus).toBe("contradiccion_critica");
+    // El control documental se deriva de la evaluación ALC (verde en este fixture), no de la severidad de las advertencias.
+    expect(frozen.value.revision.controlStatus).toBe("sin_inconsistencias_criticas_detectadas");
     expect(JSON.stringify(frozen.value.snapshot.content)).not.toMatch(/\b[me]\d+\b|b1/);
-    // Tres fuentes reales distintas: mensaje 1, mensaje 2 y la evidencia.
-    expect(await psqlOk(`select count(*) from public.snapshot_sources where revision_id = '${frozen.value.revision.revisionId}';`)).toEqual([["3"]]);
+    // Tres fuentes reales distintas de las advertencias (mensaje 1, mensaje 2 y evidencia) más las dos que cita la evaluación ALC (`ALC-n`).
+    expect(await psqlOk(`select count(*) from public.snapshot_sources where revision_id = '${frozen.value.revision.revisionId}';`)).toEqual([["5"]]);
+    expect(await psqlOk(`select alias from public.snapshot_sources where revision_id = '${frozen.value.revision.revisionId}' and alias like 'ALC-%' order by 1;`)).toEqual([["ALC-1"], ["ALC-2"]]);
   });
 });

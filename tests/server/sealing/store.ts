@@ -1,6 +1,7 @@
 import type {
   AttemptRecord,
   RecordIntentResult,
+  SealEligibility,
   SealIntent,
   SealRegistration,
   SealableVersion,
@@ -12,9 +13,16 @@ export function memorySealingStore(version: SealableVersion) {
   const attempts: (AttemptRecord & { intent: SealIntent })[] = [];
   const registrations: SealRegistration[] = [];
   const events: string[] = [];
-  const failures = { intent: false, outcome: false, registration: false };
+  const failures = { intent: false, outcome: false, registration: false, eligibility: false };
+  /** Resultado de la guarda ALC; por defecto permite (revisión verde/amarilla vigente). */
+  const eligibility: { value: SealEligibility; calls: number } = { value: { allowed: true }, calls: 0 };
 
   const store: SealingStore = {
+    async checkEligibility() {
+      if (failures.eligibility) throw new Error("db caída");
+      eligibility.calls++;
+      return eligibility.value;
+    },
     async loadVersion(id) {
       return id === version.versionId ? version : null;
     },
@@ -53,5 +61,5 @@ export function memorySealingStore(version: SealableVersion) {
       events.push("registered");
     },
   };
-  return { store, attempts, registrations, events, failures };
+  return { store, attempts, registrations, events, failures, eligibility };
 }

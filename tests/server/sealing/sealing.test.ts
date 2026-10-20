@@ -251,3 +251,36 @@ describe("MVP-092 · localización por ID de transacción", () => {
     }
   });
 });
+
+describe("F-1 - guarda ALC del sello", () => {
+  it("una revisión roja no prepara, persiste ni envía nada", async () => {
+    const t = setup([ok()], () => "coincide");
+    t.eligibility.value = { allowed: false, code: "red" };
+    const result = await t.service.seal("v-1");
+    expect(result).toEqual({ status: "bloqueado", code: "red" });
+    expect(t.events).toEqual([]);
+    expect(t.behavior.calls).toHaveLength(0);
+    expect(t.attempts).toHaveLength(0);
+  });
+
+  it("una versión heredada sin evaluación no inicia intentos nuevos", async () => {
+    const t = setup([ok()], () => "coincide");
+    t.eligibility.value = { allowed: false, code: "legacy_without_alc" };
+    expect(await t.service.seal("v-1")).toEqual({ status: "bloqueado", code: "legacy_without_alc" });
+    expect(t.behavior.calls).toHaveLength(0);
+  });
+
+  it("si la guarda no responde no se envía (fallo técnico previo)", async () => {
+    const t = setup([ok()], () => "coincide");
+    t.failures.eligibility = true;
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "fallido", sent: false, code: "ELEGIBILIDAD_NO_VERIFICADA" });
+    expect(t.behavior.calls).toHaveLength(0);
+    expect(t.attempts).toHaveLength(0);
+  });
+
+  it("permitida: consulta la guarda una vez y sella como antes", async () => {
+    const t = setup([ok()], () => "coincide");
+    expect(await t.service.seal("v-1")).toMatchObject({ status: "registrado" });
+    expect(t.eligibility.calls).toBe(1);
+  });
+});

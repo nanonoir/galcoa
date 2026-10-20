@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { AlcBlockCode } from "@/lib/contracts/alc";
 import type { createHcsClient } from "@/lib/hedera/client";
 import type { createMirrorReader } from "@/lib/hedera/mirror";
 
@@ -68,7 +69,12 @@ export type SealIntent = {
 
 export type RecordIntentResult = { ok: true; attemptId: string; claimFencing: number } | { ok: false; reason: "active_attempt" };
 
+/** Resultado de la guarda ALC previa a un envío nuevo; el adaptador persiste la denegación en auditoría. */
+export type SealEligibility = { allowed: true } | { allowed: false; code: AlcBlockCode | "legacy_without_alc" };
+
 export type SealingStore = {
+  /** Debe resolver antes de preparar o enviar cualquier intento nuevo. No aplica a la reconciliación. */
+  checkEligibility(versionId: string): Promise<SealEligibility>;
   loadVersion(versionId: string): Promise<SealableVersion | null>;
   /** Registro probado (si hay) y el último intento de la versión. */
   loadSealState(versionId: string): Promise<{ registration: SealRegistration | null; latestAttempt: AttemptRecord | null }>;

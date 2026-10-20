@@ -4,6 +4,7 @@
 | --- | --- |
 | [Plan maestro del MVP P0](mvp-master-plan.md) | Activo. Tablero único de seguimiento del MVP (`MVP-NNN`) hasta el despliegue validado |
 | [Catálogo de planes derivados](mvp/README.md) | Índice (no es un ExecPlan) de los 36 planes derivados (26 activos bajo `mvp/` + 10 archivados en `completed/`); estados por ID únicamente en el maestro |
+| [Alineación con distribuidoras](alineacion-distribuidoras.md) | Activo. Lote 1 (comunicación y documentación) en ejecución; lote 2 funcional pendiente de decisiones D1–D4 |
 | [Dependencias IA y `server-only`](../completed/deps-ai-sdk-server-only.md) | Cerrado y archivado. Instaló dependencias IA y `server-only`; entrega autorizada pendiente de commit en `develop`. No cambia estados del maestro |
 | [Preparación de los planes del MVP](../completed/mvp-planning-pack.md) | Cerrado y archivado. Trabajo documental completado; preparó los 36 planes derivados, specs y diseños |
 | [Integración de base y CI remoto](../completed/f00-integracion-base-ci.md) | Cerrado y archivado. Completó MVP-006: base integrada en `develop` y CI remoto en Linux verificado |

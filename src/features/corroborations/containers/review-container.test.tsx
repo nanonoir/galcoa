@@ -39,7 +39,6 @@ describe("ReviewContainer", () => {
     const user = userEvent.setup();
     render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="no_iniciado" />);
 
-    await user.click(screen.getByRole("checkbox", { name: "Comprador" }));
     await user.click(screen.getByRole("button", { name: /congelar y generar enlaces/i }));
 
     await screen.findByText(/compartir con los participantes/i);
@@ -47,7 +46,7 @@ describe("ReviewContainer", () => {
     expect(freeze).toMatchObject({ url: "/api/documents/doc-1/revisions", method: "POST", body: { expectedDraftRevision: 3, selection: ["comprador"] } });
     expect(invite).toMatchObject({ url: "/api/revisions/rev-1/invitations", method: "POST", body: { role: "comprador" } });
     expect(screen.getByText(/\/confirm\/tok-comprador/)).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Comprador" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: /^Comprador/ })).toBeDisabled();
     expect(screen.getByRole("img", { name: /código qr del enlace de comprador/i })).toBeInTheDocument();
   });
 
@@ -58,41 +57,41 @@ describe("ReviewContainer", () => {
     await user.click(screen.getByRole("button", { name: /congelar y generar enlaces/i }));
     expect(await screen.findByText(/el borrador cambió/i)).toBeInTheDocument();
     expect(screen.queryByText(/tu confirmación/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Comprador" })).toBeEnabled();
+    expect(screen.getByRole("checkbox", { name: /^Transportista/ })).toBeEnabled();
   });
 
-  it("solo autor: no emite enlaces y permite confirmar tras marcar la casilla", async () => {
-    fetchMock
-      .mockResolvedValueOnce(json({ revision: REVISION, snapshot: SNAPSHOT, unchanged: false }, 201))
-      .mockResolvedValueOnce(json({ confirmationStatus: "pendiente", missingRoles: ["autor"], confirmed: 0, rejected: 0 }))
-      .mockResolvedValueOnce(json({ responseId: "r1", confirmationStatus: "completa" }, 201))
-      .mockResolvedValueOnce(json({ confirmationStatus: "completa", missingRoles: [], confirmed: 1, rejected: 0 }));
+  it("proveedor y comprador son obligatorios: emite el enlace del comprador y permite confirmar tras marcar la casilla", async () => {
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (init?.method === "POST" && u.endsWith("/revisions")) return json({ revision: REVISION, snapshot: SNAPSHOT, unchanged: false }, 201);
+      if (u.endsWith("/invitations")) return json({ token: "tok-comprador", role: "comprador" }, 201);
+      if (u.endsWith("/revisions/confirm")) return json({ responseId: "r1", confirmationStatus: "parcial" }, 201);
+      return json({ confirmationStatus: "pendiente", missingRoles: fetchMock.mock.calls.some(([x]) => String(x).endsWith("/revisions/confirm")) ? ["comprador"] : ["autor", "comprador"], confirmed: 0, rejected: 0 });
+    });
     const user = userEvent.setup();
     render(<ReviewContainer documentId="doc-1" draftRevision={0} hcsStatus="no_iniciado" />);
     await user.click(screen.getByRole("button", { name: /congelar y generar enlaces/i }));
 
-    const confirm = await screen.findByRole("button", { name: "Confirmar como autor" });
+    const confirm = await screen.findByRole("button", { name: "Confirmar como proveedor" });
     expect(confirm).toBeDisabled();
-    await user.click(screen.getByRole("checkbox", { name: /revisé la operación/i }));
+    await user.click(screen.getByRole("checkbox", { name: /revis. la operaci.n/i }));
     await user.click(confirm);
 
     await waitFor(() => expect(screen.getByRole("button", { name: "Ya confirmaste" })).toBeDisabled());
-    const [, , confirmCall, aggregate] = calls();
+    const confirmCall = calls().find((c) => c.url.endsWith("/revisions/confirm"))!;
     expect(confirmCall).toMatchObject({
       url: "/api/documents/doc-1/revisions/confirm",
       body: { revisionId: "rev-1", snapshotId: "snap-1", decision: "confirmar", checkboxChecked: true, schemaVersion: 1 },
     });
-    expect(aggregate.url).toBe("/api/revisions/rev-1/confirmations");
-    expect(screen.getByText("Todos confirmaron")).toBeInTheDocument();
+    expect(calls().find((c) => c.url.endsWith("/invitations"))).toMatchObject({ body: { role: "comprador" } });
   });
-
   it("si falla emitir un enlace lo informa sin simular éxito", async () => {
     fetchMock
       .mockResolvedValueOnce(json({ revision: REVISION, snapshot: SNAPSHOT, unchanged: false }, 201))
       .mockResolvedValueOnce(json({ error: { code: "TECHNICAL_FAILURE" } }, 503));
     const user = userEvent.setup();
     render(<ReviewContainer documentId="doc-1" draftRevision={1} hcsStatus="no_iniciado" />);
-    await user.click(screen.getByRole("checkbox", { name: "Intermediario" }));
+    await user.click(screen.getByRole("checkbox", { name: /^Transportista/ }));
     await user.click(screen.getByRole("button", { name: /congelar y generar enlaces/i }));
     expect(await screen.findByText(/no se pudo generar el enlace/i)).toBeInTheDocument();
     expect(screen.queryByText(/\/confirm\//)).not.toBeInTheDocument();
@@ -105,7 +104,6 @@ describe("ReviewContainer", () => {
       .mockResolvedValueOnce(json({ confirmationStatus: "rechazada", missingRoles: [], confirmed: 1, rejected: 1 }));
     const user = userEvent.setup();
     render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="no_iniciado" />);
-    await user.click(screen.getByRole("checkbox", { name: "Comprador" }));
     await user.click(screen.getByRole("button", { name: /congelar y generar enlaces/i }));
 
     expect(await screen.findByText(/un participante rechazó/i)).toBeInTheDocument();
@@ -123,8 +121,7 @@ describe("ReviewContainer", () => {
       .mockResolvedValueOnce(json({ token: "tok-comprador", role: "comprador" }, 201));
     const user = userEvent.setup();
     render(<ReviewContainer documentId="doc-1" draftRevision={1} hcsStatus="no_iniciado" />);
-    await user.click(screen.getByRole("checkbox", { name: "Intermediario" }));
-    await user.click(screen.getByRole("checkbox", { name: "Comprador" }));
+    await user.click(screen.getByRole("checkbox", { name: /^Transportista/ }));
     await user.click(screen.getByRole("button", { name: /congelar y generar enlaces/i }));
 
     expect(await screen.findByText(/comprador: no se pudo generar el enlace/i)).toBeInTheDocument();
@@ -165,7 +162,7 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
     await screen.findByText(/faltan confirmaciones/i);
     expect(calls()).toEqual([{ url: "/api/revisions/rev-1/confirmations", method: "GET", body: null }]);
     expect(screen.queryByRole("button", { name: /congelar/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Comprador" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: /^Comprador/ })).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: /generar enlace nuevo para comprador/i }));
     expect(await screen.findByText(/\/confirm\/tok-nuevo/)).toBeInTheDocument();
@@ -183,13 +180,13 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
       await openEditor(user);
       expect(screen.getByText(/la revisión anterior sigue vigente/i)).toBeInTheDocument();
-      await user.click(screen.getByRole("checkbox", { name: "Intermediario" }));
+      await user.click(screen.getByRole("checkbox", { name: /^Transportista/ }));
       await user.click(screen.getByRole("button", { name: /cancelar y conservar/i }));
 
       expect(calls().filter((c) => c.method !== "GET")).toEqual([]);
-      expect(screen.getByRole("checkbox", { name: "Intermediario" })).toBeDisabled();
-      expect(screen.getByRole("checkbox", { name: "Intermediario" })).not.toBeChecked();
-      expect(screen.getByRole("checkbox", { name: "Comprador" })).toBeChecked();
+      expect(screen.getByRole("checkbox", { name: /^Transportista/ })).toBeDisabled();
+      expect(screen.getByRole("checkbox", { name: /^Transportista/ })).not.toBeChecked();
+      expect(screen.getByRole("checkbox", { name: /^Comprador/ })).toBeChecked();
     });
 
     it("sin cambio material no permite crear otra revisión", async () => {
@@ -198,7 +195,7 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={{ ...ACTIVE, frozenFromDraftRevision: 3 }} />);
       await openEditor(user);
       expect(screen.getByRole("button", { name: /crear nueva revisión/i })).toBeDisabled();
-      await user.click(screen.getByRole("checkbox", { name: "Intermediario" }));
+      await user.click(screen.getByRole("checkbox", { name: /^Transportista/ }));
       expect(screen.getByRole("button", { name: /crear nueva revisión/i })).toBeEnabled();
     });
 
@@ -272,10 +269,10 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       const user = userEvent.setup();
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
       await openEditor(user);
-      await user.click(screen.getByRole("checkbox", { name: "Intermediario" }));
+      await user.click(screen.getByRole("checkbox", { name: /^Transportista/ }));
       await user.click(screen.getByRole("button", { name: /cancelar y conservar/i }));
       expect(calls().filter((c) => c.method !== "GET")).toEqual([]);
-      expect(screen.getByRole("checkbox", { name: "Comprador" })).toBeChecked();
+      expect(screen.getByRole("checkbox", { name: /^Comprador/ })).toBeChecked();
     });
 
     it("con confirmación completa, cambiar la selección congela solo la selección nueva y no hereda confirmaciones", async () => {
@@ -288,12 +285,12 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       const user = userEvent.setup();
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={{ ...ACTIVE, frozenFromDraftRevision: 3 }} />);
       await openEditor(user);
-      await user.click(screen.getByRole("checkbox", { name: "Intermediario" }));
+      await user.click(screen.getByRole("checkbox", { name: /^Transportista/ }));
       await user.click(screen.getByRole("button", { name: /crear nueva revisión/i }));
       await screen.findAllByText(/\/confirm\/tok-n/);
       const freeze = calls().find((c) => c.method === "POST" && c.url.endsWith("/revisions"))!;
       expect(freeze.body).toEqual({ expectedDraftRevision: 3, selection: ["intermediario", "comprador"], idempotencyKey: expect.any(String) });
-      expect(await screen.findByRole("button", { name: "Confirmar como autor" })).toBeDisabled();
+      expect(await screen.findByRole("button", { name: "Confirmar como proveedor" })).toBeDisabled();
       expect(screen.queryByText("Ya confirmaste")).not.toBeInTheDocument();
     });
 
@@ -309,7 +306,7 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
       expect(await screen.findByRole("button", { name: /recargar la revisión vigente/i })).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /modificar participantes|incorporar el borrador/i })).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Confirmar como autor" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Confirmar como proveedor" })).toBeDisabled();
     });
 
     it("una revisión rechazada ofrece editar", async () => {

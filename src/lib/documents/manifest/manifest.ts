@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 
 import { z } from "zod";
 
-import { FrozenOperationSchema } from "@/lib/contracts/review";
+import { FrozenContentSchema } from "@/lib/contracts/review";
 
 import { canonicalHash, sha256Hex } from "./jcs";
 
@@ -25,6 +25,7 @@ const Instant = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 
 export const MANIFEST_SCHEMA_VERSION = "galcoa.manifest.v1";
 export const PRIVATE_DETAIL_SCHEMA_VERSION = "galcoa.private-detail.v1";
+export const PRIVATE_DETAIL_SCHEMA_VERSION_V2 = "galcoa.private-detail.v2";
 
 export const ReferenceSchema = z.string().regex(/^[0-9a-f]{32}$/);
 export const NonceSchema = z.string().regex(/^[0-9a-f]{64}$/);
@@ -32,9 +33,7 @@ export const NonceSchema = z.string().regex(/^[0-9a-f]{64}$/);
 const RoleSchema = z.enum(["autor", "intermediario", "comprador"]);
 const ROLE_ORDER = RoleSchema.options;
 
-export const PrivateDetailSchema = z
-  .strictObject({
-    schemaVersion: z.literal(PRIVATE_DETAIL_SCHEMA_VERSION),
+const detailShape = {
     versionId: z.string().min(1),
     revisionId: z.string().min(1),
     snapshotId: z.string().min(1),
@@ -68,8 +67,16 @@ export const PrivateDetailSchema = z
     ),
     previousVersion: z.strictObject({ versionId: z.string().min(1), manifestHash: Sha256 }).nullable(),
     nonce: NonceSchema,
-  })
-  .superRefine((d, ctx) => {
+};
+
+type DetailCheck = {
+  snapshotHash: string;
+  confirmations: { role: z.infer<typeof RoleSchema>; snapshotHash: string; declaredName: string | null }[];
+  evidences: { evidenceId: string }[];
+  reports: { reportId: string }[];
+};
+
+const refineDetail = (d: DetailCheck, ctx: z.RefinementCtx) => {
     const roles = d.confirmations.map((c) => c.role);
     const sorted = [...roles].sort((a, b) => ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b));
     if (new Set(roles).size !== roles.length) ctx.addIssue({ code: "custom", message: "Constancias duplicadas por rol" });
@@ -83,8 +90,24 @@ export const PrivateDetailSchema = z
       const sortedIds = [...list].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
       if (list.join("\u0000") !== sortedIds.join("\u0000")) ctx.addIssue({ code: "custom", message: `${key} fuera de orden por ID` });
     }
-  });
 
+  };
+
+export const PrivateDetailV1Schema = z
+  .strictObject({ schemaVersion: z.literal(PRIVATE_DETAIL_SCHEMA_VERSION), ...detailShape })
+  .superRefine(refineDetail);
+
+/** v2: agrega el compromiso a la evaluación ALC de la revisión (id, versión de reglas, color y huella del insumo). */
+export const PrivateDetailV2Schema = z
+  .strictObject({
+    schemaVersion: z.literal(PRIVATE_DETAIL_SCHEMA_VERSION_V2),
+    ...detailShape,
+    alc: z.strictObject({ evaluationId: z.string().min(1), rulesVersion: z.string().min(1), color: z.enum(["verde", "amarillo", "rojo"]), inputHash: Sha256 }),
+  })
+  .superRefine(refineDetail);
+
+/** Lector explícito v1/v2: el detalle de una versión ya sellada no se reinterpreta. */
+export const PrivateDetailSchema = z.union([PrivateDetailV1Schema, PrivateDetailV2Schema]);
 export const EnvelopeSchema = z.strictObject({
   schemaVersion: z.literal(MANIFEST_SCHEMA_VERSION),
   reference: ReferenceSchema,
@@ -97,7 +120,7 @@ export type Envelope = z.infer<typeof EnvelopeSchema>;
 
 /** Hash del contenido congelado (preimage `content` de `FrozenOperationSchema`). */
 export function snapshotHash(content: unknown): { bytes: Uint8Array; hash: string } {
-  return canonicalHash(FrozenOperationSchema.parse(content));
+  return canonicalHash(FrozenContentSchema.parse(content));
 }
 
 /** SHA-256 de los **bytes** del PDF persistido, nunca de su texto. */

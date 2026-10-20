@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
+import { PublicBrandHeader } from "@/components/ui/public-brand-header";
 import { ConfirmationContainer } from "@/features/corroborations/containers/confirmation-container";
 import type { ConfirmationViewState } from "@/features/corroborations/contracts/confirmation-screen";
 import { createPublicReview } from "@/lib/documents/review-runtime";
@@ -42,8 +43,11 @@ export default async function ConfirmPage({ params }: { params: Promise<{ token:
   const { token } = await params;
   const initial = await loadInitialState(token);
   return (
-    <main className="min-h-dvh bg-background text-foreground">
-      <ConfirmationContainer token={token} initial={initial} />
-    </main>
+    <div className="min-h-dvh bg-background text-foreground">
+      <PublicBrandHeader context="Confirmación de una operación" />
+      <main>
+        <ConfirmationContainer token={token} initial={initial} />
+      </main>
+    </div>
   );
 }

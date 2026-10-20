@@ -192,6 +192,16 @@ export function newId(): string {
 }
 
 /**
+ * Inserta (como superusuario) una evaluación ALC ficticia con el inventario vigente del documento. Las revisiones nuevas
+ * la exigen (`trg_revisions_require_alc`): selección y `draft_revision` deben coincidir con los de la revisión.
+ */
+export function alcEvaluationSql(documentId: string, evaluationId: string, selection: string[], draftRevision = 0, color: "verde" | "amarillo" | "rojo" = "verde"): string {
+  const sel = `array[${selection.map((role) => `'${role}'`).join(",")}]::text[]`;
+  return `insert into public.alc_evaluations (id, document_id, draft_revision, rules_version, selection, input, input_hash, color, result, shared, inventory)
+  values ('${evaluationId}', '${documentId}', ${draftRevision}, 'alc-test', ${sel}, '{}'::jsonb, '${sha256Hex(evaluationId)}', '${color}', '{"findings":[]}'::jsonb, '{}'::jsonb, private.alc_inventory('${documentId}'));`;
+}
+
+/**
  * Inserta (como superusuario, en una sola transacción) un documento con selección
  * autor + comprador, ambas respuestas, operación de finalización, y —si se pide—
  * versión publicada, constancias, artefactos e intento/registro HCS.
@@ -201,7 +211,7 @@ export async function seedDocument(ownerId: string, options: { withVersion: bool
     documentId: newId(), messageId: newId(), evidenceId: newId(), extractionId: newId(), draftId: newId(),
     reportId: newId(), revisionId: newId(), snapshotId: newId(), authorParticipantId: newId(),
     buyerParticipantId: newId(), requestId: newId(), authorResponseId: newId(), buyerResponseId: newId(),
-    operationId: newId(), versionId: newId(), attemptId: newId(),
+    operationId: newId(), versionId: newId(), attemptId: newId(), alcEvaluationId: newId(),
   };
   const content = JSON.stringify({ operation: { title: `Operación ficticia ${id.documentId}`, body: "Cuerpo", corrections: [] } });
   const bytes = Buffer.from(content, "utf8");
@@ -229,8 +239,9 @@ insert into public.drafts (id, document_id, content) values ('${id.draftId}', '$
 insert into public.verification_reports (id, document_id, input, output, model, prompt_version, rules_version)
   values ('${id.reportId}', '${id.documentId}', '{}', '{}', 'm', 'p1', 'r1');
 insert into public.report_sources (document_id, report_id, message_id) values ('${id.documentId}', '${id.reportId}', '${id.messageId}');
-insert into public.document_revisions (id, document_id, sequence, snapshot_id, snapshot_hash, selection, frozen_from_draft_revision)
-  values ('${id.revisionId}', '${id.documentId}', 1, '${id.snapshotId}', '${snapshotHash}', array['autor','comprador'], 0);
+${alcEvaluationSql(id.documentId, id.alcEvaluationId, ["autor", "comprador"])}
+insert into public.document_revisions (id, document_id, sequence, snapshot_id, snapshot_hash, selection, frozen_from_draft_revision, alc_evaluation_id)
+  values ('${id.revisionId}', '${id.documentId}', 1, '${id.snapshotId}', '${snapshotHash}', array['autor','comprador'], 0, '${id.alcEvaluationId}');
 insert into public.revision_snapshots (id, document_id, revision_id, schema_version, canonical_bytes, snapshot_hash, content)
   values ('${id.snapshotId}', '${id.documentId}', '${id.revisionId}', 1, '\\x${bytes.toString("hex")}', '${snapshotHash}', '${content}'::jsonb);
 insert into public.revision_participants (id, document_id, revision_id, snapshot_id, snapshot_hash, role, user_id) values

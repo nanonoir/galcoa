@@ -5,6 +5,21 @@ import { ConfirmationScreen } from "./confirmation-screen";
 
 // Interruptor de la demo encendido (valor real): la pantalla de terceros no muestra advertencias.
 describe("ConfirmationScreen · advertencias ocultas (demo)", () => {
+  it("no oculta el semáforo ni las rectificaciones del snapshot v2 al comprador", () => {
+    render(<ConfirmationScreen state={{ status: "ready", invitation: {
+      schemaVersion: 2, revisionId: "rev-v2", snapshotId: "snap-v2", snapshotHash: "b".repeat(64),
+      role: "comprador", selection: ["autor", "comprador"], availability: "disponible",
+      expiresAt: "2026-10-19T12:00:00.000Z", warnings: [],
+      operation: { title: "Entrega ficticia", body: "Se entregan 12 cajas.", corrections: [] },
+      alc: { rulesVersion: "galcoa.alc.v1", color: "rojo", inputHash: "c".repeat(64),
+        findings: [{ ruleId: "ALC-CONTRADICCION", claimId: "quantity", sources: ["ALC-1"] }], claims: [] },
+      rectifications: [{ claimId: "quantity", previousValue: "10", correctedValue: "12", reason: "Corrección explícita ficticia",
+        originalSources: ["ALC-1"], correctedSources: ["ALC-2"] }],
+    } }} onConfirm={vi.fn()} onReject={vi.fn()} onRetry={vi.fn()} />);
+    expect(screen.getByRole("region", { name: "Contraste de fuentes" })).toHaveTextContent("Semáforo Rojo");
+    expect(screen.getByText(/Corrección explícita ficticia/)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Advertencias" })).not.toBeInTheDocument();
+  });
   it("no renderiza la sección ni el texto de las advertencias aunque la invitación las traiga", () => {
     const { container } = render(
       <ConfirmationScreen

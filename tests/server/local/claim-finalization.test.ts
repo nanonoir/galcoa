@@ -7,6 +7,8 @@ import { createSupabaseInvitationStore } from "@/lib/documents/invitations/supab
 import { createRevisionService } from "@/lib/documents/revisions/service";
 import { createSupabaseRevisionAdapters } from "@/lib/documents/revisions/supabase";
 
+import { buyerConfirms, localAlc, type LocalAlcColor } from "./alc-support";
+
 import { anonClient, createTestUser, psqlOk, readLocalStack, type LocalStack, type TestUser } from "../rls/harness";
 
 import { runIndependent } from "./concurrency";
@@ -46,17 +48,18 @@ async function world(user: TestUser) {
 const changeDraft = (documentId: string, revision: number) =>
   psqlOk(`update public.drafts set draft_revision = ${revision}, content = '${JSON.stringify(operation(`Versión ${revision}`))}'::jsonb, updated_at = now() where document_id = '${documentId}';`);
 
-function revisions(user: TestUser) {
+function revisions(user: TestUser, color: LocalAlcColor = "verde") {
   const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: user.id, session: user.client });
-  return createRevisionService({ session: { currentUserId: async () => user.id }, source: reader, revisions: store });
+  return createRevisionService({ session: { currentUserId: async () => user.id }, source: reader, revisions: store, alc: localAlc(user.id, color) });
 }
 
 async function frozen(user: TestUser, documentId: string, expectedDraftRevision = 1) {
-  const r = await revisions(user).freeze({ documentId, expectedDraftRevision, selection: ["autor"], idempotencyKey: key("freeze") });
+  const r = await revisions(user).freeze({ documentId, expectedDraftRevision, selection: ["autor", "comprador"], idempotencyKey: key("freeze") });
   if (!r.ok) throw new Error(`freeze: ${r.error.code}`);
   return r.value;
 }
 
+/** Autor primero y, después, el comprador por su invitación: la revisión queda completa. */
 async function confirmed(user: TestUser, documentId: string, expectedDraftRevision = 1) {
   const b = await frozen(user, documentId, expectedDraftRevision);
   const r = await revisions(user).confirmAsAuthor({
@@ -64,6 +67,7 @@ async function confirmed(user: TestUser, documentId: string, expectedDraftRevisi
     snapshotHash: b.revision.snapshotHash, idempotencyKey: key("author"), decision: "confirmar", checkboxChecked: true,
   });
   if (!r.ok) throw new Error(`confirm: ${r.error.code}`);
+  await buyerConfirms(user, stack, b.revision);
   return b.revision.revisionId;
 }
 
@@ -133,6 +137,22 @@ describe("MVP-080 · claim_finalization sobre la base real", () => {
     expect(await psqlOk(`select count(*) from public.finalization_operations where revision_id = '${revisionId}';`)).toEqual([["0"]]);
   });
 
+  it("una evaluación roja bloquea el reclamo aun con todas las confirmaciones, y queda auditado", async () => {
+    const w = await world(ana);
+    const f = await revisions(ana, "rojo").freeze({ documentId: w.documentId, expectedDraftRevision: 1, selection: ["autor", "comprador"], idempotencyKey: key("freeze") });
+    if (!f.ok) throw new Error(`freeze: ${f.error.code}`);
+    const { revisionId, snapshotId, snapshotHash } = f.value.revision;
+    const own = await revisions(ana).confirmAsAuthor({
+      schemaVersion: 1, actor: "autor", documentId: w.documentId, revisionId, snapshotId, snapshotHash, idempotencyKey: key("author"), decision: "confirmar", checkboxChecked: true,
+    });
+    expect(own.ok).toBe(true);
+    await buyerConfirms(ana, stack, f.value.revision);
+    expect(await claim(ana, w.documentId, revisionId)).toEqual({ status: "blocked", code: "red" });
+    expect(await operations(w.documentId)).toEqual([]);
+    expect(await psqlOk(`select action, outcome, metadata->>'code' from public.audit_events where document_id = '${w.documentId}' and action = 'finalization.blocked';`))
+      .toEqual([["finalization.blocked", "rechazado", "red"]]);
+  });
+
   it("dos reclamos simultáneos: un ganador y la misma operación para el resto, sin fencing", async () => {
     const w = await world(ana);
     const revisionId = await confirmed(ana, w.documentId);
@@ -165,7 +185,7 @@ describe("MVP-080 · claim_finalization sobre la base real", () => {
     await claim(ana, w.documentId, revisionId);
     await changeDraft(w.documentId, 2);
     // El restrict_violation del respaldo sale como resultado controlado, no como fallo técnico genérico.
-    expect(await revisions(ana).freeze({ documentId: w.documentId, expectedDraftRevision: 2, selection: ["autor"], idempotencyKey: key("freeze") }))
+    expect(await revisions(ana).freeze({ documentId: w.documentId, expectedDraftRevision: 2, selection: ["autor", "comprador"], idempotencyKey: key("freeze") }))
       .toMatchObject({ ok: false, error: { code: "FINALIZATION_IN_PROGRESS", retryable: false } });
     expect(await psqlOk(`select lifecycle, (select active_revision_id::text from public.documents where id = '${w.documentId}') from public.document_revisions where id = '${revisionId}';`))
       .toEqual([["activa", revisionId]]);

@@ -55,7 +55,7 @@ function pdfText(bytes: Uint8Array): string {
 }
 
 describe("MVP-080 · elegibilidad del claim", () => {
-  const base = { revisionActive: true, snapshotHash: SNAP, selection: ["autor", "comprador"] as ParticipantSelection };
+  const base = { revisionActive: true, snapshotHash: SNAP, selection: ["autor", "comprador"] as ParticipantSelection, alcEvaluation: { color: "verde" as const, current: true } };
   const r = (role: "autor" | "comprador", decision: "confirmar" | "rechazar" = "confirmar", snapshotHash = SNAP) => ({ role, decision, snapshotHash });
 
   it("todas las confirmaciones del mismo snapshot: se puede reclamar", () => {
@@ -69,6 +69,29 @@ describe("MVP-080 · elegibilidad del claim", () => {
     ["revisión no activa", { revisionActive: false, responses: [r("autor"), r("comprador")] }, "REVISION_NOT_ACTIVE"],
   ])("%s → %s", (_, over, code) => {
     expect(canClaim({ ...base, ...over })).toEqual({ ok: false, code });
+  });
+});
+
+describe("F-1 - veredicto ALC en el claim", () => {
+  const base = { revisionActive: true, snapshotHash: SNAP, selection: ["autor", "comprador"] as ParticipantSelection };
+  const responses = [
+    { role: "autor" as const, decision: "confirmar" as const, snapshotHash: SNAP },
+    { role: "comprador" as const, decision: "confirmar" as const, snapshotHash: SNAP },
+  ];
+  it.each([
+    ["sin evaluación", null, "evaluation_required"],
+    ["evaluación vencida", { color: "verde" as const, current: false }, "stale_evaluation"],
+    ["rojo, aunque todos confirmaron", { color: "rojo" as const, current: true }, "red"],
+  ])("bloquea: %s", (_, alcEvaluation, reason) => {
+    expect(canClaim({ ...base, responses, alcEvaluation })).toEqual({ ok: false, code: "ALC_BLOCKED", reason });
+  });
+  it("amarillo vigente no bloquea", () => {
+    expect(canClaim({ ...base, responses, alcEvaluation: { color: "amarillo", current: true } })).toEqual({ ok: true });
+  });
+  it("selección sin comprador (nueva escritura) bloquea", () => {
+    expect(canClaim({ ...base, selection: ["autor"], responses: [responses[0]], alcEvaluation: { color: "verde", current: true } })).toEqual({
+      ok: false, code: "ALC_BLOCKED", reason: "selection_invalid",
+    });
   });
 });
 

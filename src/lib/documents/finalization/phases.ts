@@ -1,6 +1,8 @@
 import "server-only";
 
+import type { AlcBlockCode, AlcColor } from "@/lib/contracts/alc";
 import type { ParticipantRole, ParticipantSelection } from "@/lib/contracts/review";
+import { alcBlock } from "@/lib/rules/alc";
 
 /**
  * Máquina de fases de la finalización (MVP-080; data-transactions, migración
@@ -24,20 +26,27 @@ export type FinalizationOperation = {
 
 export type Eligibility =
   | { ok: true }
-  | { ok: false; code: "REVISION_NOT_ACTIVE" | "CONFIRMATION_REJECTED" | "CONFIRMATIONS_MISSING" | "SNAPSHOT_MISMATCH" };
+  | { ok: false; code: "REVISION_NOT_ACTIVE" | "CONFIRMATION_REJECTED" | "CONFIRMATIONS_MISSING" | "SNAPSHOT_MISMATCH" }
+  /** Veredicto ALC: bloquea el sello; `reason` es el código estructurado compartido con SQL. */
+  | { ok: false; code: "ALC_BLOCKED"; reason: AlcBlockCode };
 
 /**
  * Se puede reclamar solo con la revisión activa y **todas** las confirmaciones
- * seleccionadas persistidas del mismo snapshot, sin ninguna negativa. Una
- * advertencia crítica del contenido no bloquea (INV-02): no se consulta aquí.
+ * seleccionadas persistidas del mismo snapshot, sin ninguna negativa y con una
+ * evaluación ALC vigente que no sea roja (F-1). Las advertencias heredadas del
+ * contenido siguen siendo informativas.
  */
 export function canClaim(input: {
   revisionActive: boolean;
   snapshotHash: string;
   selection: ParticipantSelection;
   responses: readonly { role: ParticipantRole; snapshotHash: string; decision: "confirmar" | "rechazar" }[];
+  /** Evaluación ALC persistida de la revisión; `null` si no existe. */
+  alcEvaluation: { color: AlcColor; current: boolean } | null;
 }): Eligibility {
   if (!input.revisionActive) return { ok: false, code: "REVISION_NOT_ACTIVE" };
+  const reason = alcBlock({ evaluation: input.alcEvaluation, selection: input.selection });
+  if (reason) return { ok: false, code: "ALC_BLOCKED", reason };
   if (input.responses.some((r) => r.snapshotHash !== input.snapshotHash)) return { ok: false, code: "SNAPSHOT_MISMATCH" };
   if (input.responses.some((r) => r.decision === "rechazar")) return { ok: false, code: "CONFIRMATION_REJECTED" };
   const confirmed = new Set(input.responses.filter((r) => r.decision === "confirmar").map((r) => r.role));

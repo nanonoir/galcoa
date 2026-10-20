@@ -2,55 +2,41 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { ParticipantSelection } from "@/lib/contracts/review";
-
 import { ParticipantSelector } from "./participant-selector";
 import { ReviewProgress } from "./review-progress";
 import { ShareLinksPanel } from "./share-links-panel";
 
 describe("ParticipantSelector", () => {
-  it("el autor está siempre incluido y no se puede quitar", () => {
-    render(<ParticipantSelector value={["autor"]} locked={false} onChange={vi.fn()} />);
-    const author = screen.getByRole("checkbox", { name: /autor \(vos\)/i });
-    expect(author).toBeChecked();
-    expect(author).toBeDisabled();
+  it("proveedor y comprador están siempre incluidos y no se pueden quitar", () => {
+    render(<ParticipantSelector value={["autor", "comprador"]} locked={false} onChange={vi.fn()} />);
+    for (const name of [/^Proveedor/, /^Comprador/]) {
+      const box = screen.getByRole("checkbox", { name });
+      expect(box).toBeChecked();
+      expect(box).toBeDisabled();
+    }
   });
 
-  it.each<[string[], ParticipantSelection, ParticipantSelection]>([
-    [["Intermediario"], ["autor"], ["autor", "intermediario"]],
-    [["Comprador"], ["autor"], ["autor", "comprador"]],
-    [["Intermediario", "Comprador"], ["autor"], ["autor", "intermediario", "comprador"]],
-  ])("elige %j y emite una de las cuatro combinaciones canónicas", async (clicks, start, expected) => {
+  it("el transportista es opcional y emite una de las dos selecciones válidas", async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
-    const { rerender } = render(<ParticipantSelector value={start} locked={false} onChange={onChange} />);
-    let current = start;
-    for (const name of clicks) {
-      await user.click(screen.getByRole("checkbox", { name }));
-      current = onChange.mock.lastCall![0] as ParticipantSelection;
-      rerender(<ParticipantSelector value={current} locked={false} onChange={onChange} />);
-    }
-    expect(current).toEqual(expected);
-  });
-
-  it("deseleccionar vuelve a solo autor", async () => {
-    const onChange = vi.fn();
-    render(<ParticipantSelector value={["autor", "comprador"]} locked={false} onChange={onChange} />);
-    await userEvent.setup().click(screen.getByRole("checkbox", { name: "Comprador" }));
-    expect(onChange).toHaveBeenCalledWith(["autor"]);
+    const { rerender } = render(<ParticipantSelector value={["autor", "comprador"]} locked={false} onChange={onChange} />);
+    await user.click(screen.getByRole("checkbox", { name: /^Transportista/ }));
+    expect(onChange).toHaveBeenLastCalledWith(["autor", "intermediario", "comprador"]);
+    rerender(<ParticipantSelector value={["autor", "intermediario", "comprador"]} locked={false} onChange={onChange} />);
+    await user.click(screen.getByRole("checkbox", { name: /^Transportista/ }));
+    expect(onChange).toHaveBeenLastCalledWith(["autor", "comprador"]);
   });
 
   it("con la selección fija no permite cambios y lo explica", () => {
-    render(<ParticipantSelector value={["autor", "intermediario"]} locked onChange={vi.fn()} />);
-    expect(screen.getByRole("checkbox", { name: "Intermediario" })).toBeDisabled();
-    expect(screen.getByRole("checkbox", { name: "Comprador" })).toBeDisabled();
+    render(<ParticipantSelector value={["autor", "intermediario", "comprador"]} locked onChange={vi.fn()} />);
+    expect(screen.getByRole("checkbox", { name: /^Transportista/ })).toBeDisabled();
     expect(screen.getByText(/no se heredan/i)).toBeInTheDocument();
   });
 
   it("la sugerencia de la IA solo informa", () => {
-    render(<ParticipantSelector value={["autor"]} locked={false} suggestion={["autor", "comprador"]} onChange={vi.fn()} />);
+    render(<ParticipantSelector value={["autor", "comprador"]} locked={false} suggestion={["autor", "intermediario", "comprador"]} onChange={vi.fn()} />);
     expect(screen.getByText(/sugerido por el asistente/i)).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: /^Comprador/ })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /^Transportista/ })).not.toBeChecked();
   });
 });
 
@@ -126,7 +112,7 @@ describe("ShareLinksPanel", () => {
     const onReissue = vi.fn();
     render(<ShareLinksPanel links={[{ role: "intermediario", url: null, whatsappUrl: null, mailtoUrl: null }]} onCopy={vi.fn()} onReissue={onReissue} />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole("button", { name: /generar enlace nuevo para intermediario/i }));
+    await userEvent.setup().click(screen.getByRole("button", { name: /generar enlace nuevo para transportista/i }));
     expect(onReissue).toHaveBeenCalledWith("intermediario");
   });
 

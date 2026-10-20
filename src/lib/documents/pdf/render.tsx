@@ -6,7 +6,7 @@ import { Document, Page, renderToBuffer, StyleSheet, Text, View } from "@react-p
 
 import { OperationContentSchema, type OperationContent } from "@/lib/contracts/core";
 import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
-import { FrozenOperationSchema, type FrozenOperation } from "@/lib/contracts/review";
+import { FrozenContentSchema, type FrozenContent } from "@/lib/contracts/review";
 import type { Receipt } from "@/lib/contracts/version";
 
 import { receiptsHeadline } from "../finalization/receipts";
@@ -23,6 +23,16 @@ import { receiptsHeadline } from "../finalization/receipts";
 export const RENDERER_VERSION = "galcoa-pdf-v1";
 
 const ROLE_LABEL = { autor: "Autor", intermediario: "Intermediario", comprador: "Comprador" } as const;
+/** Snapshots v2: los roles internos se muestran como proveedor / transportista / comprador. */
+const ROLE_LABEL_V2 = { autor: "Proveedor", intermediario: "Transportista", comprador: "Comprador" } as const;
+
+const ALC_COLOR_LABEL = { verde: "VERDE", amarillo: "AMARILLO", rojo: "ROJO" } as const;
+const ALC_STATUS_LABEL = {
+  declarado: "declarado (sin original conservado que lo respalde)",
+  confirmado: "coincide con un original conservado",
+  contradicho: "contradicho por una fuente",
+  ambiguo: "ambiguo",
+} as const;
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 11, fontFamily: "Helvetica", lineHeight: 1.4 },
@@ -36,7 +46,7 @@ const styles = StyleSheet.create({
 });
 
 export type PdfInput = {
-  content: FrozenOperation;
+  content: FrozenContent;
   receipts: readonly Receipt[];
   revisionId: string;
   snapshotHash: string;
@@ -47,6 +57,33 @@ export type PdfInput = {
 };
 
 const formatInstant = (iso: string) => `${iso.replace("T", " ").replace(/\.\d+Z$|Z$/, "")} UTC`;
+
+/** Semáforo ALC de la revisión (solo snapshots v2). Describe el contraste entre fuentes; no certifica los hechos. */
+function AlcSection({ content }: { content: Extract<FrozenContent, { alc: unknown }> }) {
+  const { alc, rectifications } = content;
+  return (
+    <View>
+      <Text style={styles.h2}>Contraste de fuentes: semáforo {ALC_COLOR_LABEL[alc.color]}</Text>
+      <Text style={styles.item}>Reglas {alc.rulesVersion}. El semáforo compara lo declarado con los originales conservados; no verifica que los hechos sean ciertos.</Text>
+      {alc.claims.map((c) => (
+        <Text key={c.id} style={styles.item}>
+           {c.subject} / {c.field}: {c.value}
+          {c.unit ? ` ${c.unit}` : ""} - {ALC_STATUS_LABEL[c.status]}
+        </Text>
+      ))}
+      {rectifications.length > 0 && (
+        <View>
+          <Text style={styles.h2}>Rectificaciones</Text>
+          {rectifications.map((r) => (
+            <Text key={r.claimId} style={styles.item}>
+               {r.previousValue} {"->"} {r.correctedValue}. Motivo: {r.reason}. Se conserva el registro original.
+            </Text>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 function FinalDocument({ input }: { input: PdfInput }) {
   const { operation, warnings } = input.content;
@@ -83,6 +120,8 @@ function FinalDocument({ input }: { input: PdfInput }) {
           </View>
         )}
 
+        {"alc" in input.content && <AlcSection content={input.content} />}
+
         {!DEMO_HIDE_WARNINGS && (
           <View>
             <Text style={styles.h2}>Advertencias informativas</Text>
@@ -117,7 +156,7 @@ function FinalDocument({ input }: { input: PdfInput }) {
         <Text style={styles.item}>{receiptsHeadline(input.receipts)}</Text>
         {input.receipts.map((r) => (
           <View key={r.responseId} style={{ marginTop: 8 }}>
-            <Text style={{ fontFamily: "Helvetica-Bold" }}>{ROLE_LABEL[r.role]}</Text>
+            <Text style={{ fontFamily: "Helvetica-Bold" }}>{("alc" in input.content ? ROLE_LABEL_V2 : ROLE_LABEL)[r.role]}</Text>
             <Text>
               {r.role === "autor"
                 ? "Confirmó desde su sesión."
@@ -176,7 +215,7 @@ export async function renderPreviewPdf(operation: OperationContent): Promise<Uin
 
 /** Bytes del PDF final con su hash y longitud, listos para staging. */
 export async function renderFinalPdf(input: PdfInput): Promise<{ bytes: Uint8Array; sha256: string; byteLength: number; renderer: string }> {
-  const content = FrozenOperationSchema.parse(input.content);
+  const content = FrozenContentSchema.parse(input.content);
   if (input.receipts.length < 1 || input.receipts.length !== content.selection.length) {
     throw new Error("Las constancias no corresponden a la selección congelada");
   }

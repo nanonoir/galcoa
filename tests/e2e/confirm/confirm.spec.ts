@@ -20,7 +20,8 @@ test("confirmar: persiste, no muestra éxito antes y el enlace queda usado", asy
   const { confirm } = seed();
   await page.goto(`/confirm/${confirm}`);
   await expect(page.getByRole("heading", { name: "Acuerdo ficticio de entrega" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Advertencias" })).toContainText("Las fuentes no coinciden");
+  await expect(page.getByRole("region", { name: "Contraste de fuentes" })).toContainText("Semáforo Amarillo");
+  await expect(page.getByRole("region", { name: "Contraste de fuentes" })).toContainText("declarados");
   await expect(page.getByRole("checkbox")).not.toBeChecked();
   await expect(confirmBtn(page)).toBeDisabled();
   await expect(page.getByText(/Registramos/)).toHaveCount(0);

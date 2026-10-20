@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import {
-  createTestUser, expectRejected, newId, psql, psqlOk, readLocalStack, seedDocument, SQLSTATE,
+  alcEvaluationSql, createTestUser, expectRejected, newId, psql, psqlOk, readLocalStack, seedDocument, SQLSTATE,
   type SeededDocument,
 } from "./harness";
 
@@ -31,18 +31,20 @@ type NextRevision = { revisionId: string; snapshotId: string; responseId: string
 async function seedRevision(
   target: SeededDocument, sequence: number, versionNumber: number, previous: string | null,
 ): Promise<NextRevision> {
-  const ids = { revisionId: newId(), snapshotId: newId(), participantId: newId(), responseId: newId(), operationId: newId(), versionId: newId() };
+  const ids = { revisionId: newId(), snapshotId: newId(), participantId: newId(), responseId: newId(), operationId: newId(), versionId: newId(), alcId: newId() };
   const bytes = Buffer.from(JSON.stringify({ operation: { title: `rev ${ids.revisionId}` } }));
   const hash = sha(bytes);
   const reference = `ref-${randomUUID()}`;
   await psqlOk(`
 begin;
-insert into public.document_revisions (id, document_id, sequence, snapshot_id, snapshot_hash, selection, frozen_from_draft_revision)
-  values ('${ids.revisionId}', '${target.documentId}', ${sequence}, '${ids.snapshotId}', '${hash}', array['autor'], 0);
+${alcEvaluationSql(target.documentId, ids.alcId, ["autor", "comprador"])}
+insert into public.document_revisions (id, document_id, sequence, snapshot_id, snapshot_hash, selection, frozen_from_draft_revision, alc_evaluation_id)
+  values ('${ids.revisionId}', '${target.documentId}', ${sequence}, '${ids.snapshotId}', '${hash}', array['autor','comprador'], 0, '${ids.alcId}');
 insert into public.revision_snapshots (id, document_id, revision_id, schema_version, canonical_bytes, snapshot_hash, content)
   values ('${ids.snapshotId}', '${target.documentId}', '${ids.revisionId}', 1, '\\x${bytes.toString("hex")}', '${hash}', convert_from('\\x${bytes.toString("hex")}'::bytea, 'UTF8')::jsonb);
-insert into public.revision_participants (id, document_id, revision_id, snapshot_id, snapshot_hash, role, user_id)
-  values ('${ids.participantId}', '${target.documentId}', '${ids.revisionId}', '${ids.snapshotId}', '${hash}', 'autor', '${target.ownerId}');
+insert into public.revision_participants (id, document_id, revision_id, snapshot_id, snapshot_hash, role, user_id) values
+  ('${ids.participantId}', '${target.documentId}', '${ids.revisionId}', '${ids.snapshotId}', '${hash}', 'autor', '${target.ownerId}'),
+  ('${newId()}', '${target.documentId}', '${ids.revisionId}', '${ids.snapshotId}', '${hash}', 'comprador', null);
 insert into public.corroboration_responses (id, document_id, revision_id, snapshot_id, snapshot_hash, participant_id, role, decision, checkbox_checked, ratified_rejection)
   values ('${ids.responseId}', '${target.documentId}', '${ids.revisionId}', '${ids.snapshotId}', '${hash}', '${ids.participantId}', 'autor', 'confirmada', true, false);
 insert into public.finalization_operations (id, document_id, revision_id, snapshot_id, snapshot_hash, reserved_version_id, version_number, previous_version_id, renderer, public_reference, nonce, lease_expires_at)
@@ -235,20 +237,44 @@ describe("FK compuestas: no se mezcla documento / revisión / snapshot / partici
 });
 
 describe("revisión, snapshot y selección (restricciones al commit)", () => {
-  const revision = (selection: string, ids = { rev: newId(), snap: newId() }, hash = sha("x")) => ({
+  // La evaluación (válida, autor + comprador) se inserta antes de la revisión: el trigger `trg_revisions_require_alc` la exige.
+  const revision = (selection: string, ids = { rev: newId(), snap: newId(), alc: newId() }, hash = sha("x")) => ({
     ids, hash,
-    sql: `insert into public.document_revisions (id, document_id, sequence, snapshot_id, snapshot_hash, selection, frozen_from_draft_revision)
-      values ('${ids.rev}', '${doc.documentId}', 50, '${ids.snap}', '${hash}', ${selection}, 0);`,
+    alc: alcEvaluationSql(doc.documentId, ids.alc, ["autor", "comprador"]),
+    sql: `insert into public.document_revisions (id, document_id, sequence, snapshot_id, snapshot_hash, selection, frozen_from_draft_revision, alc_evaluation_id)
+      values ('${ids.rev}', '${doc.documentId}', 50, '${ids.snap}', '${hash}', ${selection}, 0, '${ids.alc}');`,
   });
 
-  it("solo las cuatro selecciones canónicas con autor", async () => {
+  it("solo las selecciones canónicas con autor (CHECK de la tabla, aislado del trigger de evaluación)", async () => {
     for (const selection of ["array['comprador']", "array['comprador','autor']", "array['autor','autor']", "array['autor','tercero']", "array[]::text[]"]) {
-      await expectRejected(revision(selection).sql, SQLSTATE.check);
+      const r = revision(selection);
+      await expectRejected(
+        `begin; alter table public.document_revisions disable trigger trg_revisions_require_alc; ${r.alc} ${r.sql} commit;`,
+        SQLSTATE.check,
+      );
     }
   });
 
+  it("una revisión nueva exige una evaluación coherente (trigger)", async () => {
+    const r = revision("array['autor','comprador']");
+    const missing = await psql(r.sql.replace(`'${r.ids.alc}'`, "null"));
+    expect(missing.ok).toBe(false);
+    expect(missing.error).toContain(`ERROR:  ${SQLSTATE.check}:`);
+    expect(missing.error).toContain("alc: la revisión requiere una evaluación");
+    // Evaluación de otra selección (tres roles) o de otro borrador: no corresponde a la revisión.
+    const threeRoles = revision("array['autor','comprador']");
+    const mismatch = await psql(`${alcEvaluationSql(doc.documentId, threeRoles.ids.alc, ["autor", "intermediario", "comprador"])} ${threeRoles.sql}`);
+    expect(mismatch.ok).toBe(false);
+    expect(mismatch.error).toContain("alc: la evaluación no corresponde a la revisión");
+    const otherDraft = revision("array['autor','comprador']");
+    const stale = await psql(`${alcEvaluationSql(doc.documentId, otherDraft.ids.alc, ["autor", "comprador"], 7)} ${otherDraft.sql}`);
+    expect(stale.ok).toBe(false);
+    expect(stale.error).toContain("alc: la evaluación no corresponde a la revisión");
+  });
+
   it("una revisión no queda huérfana de snapshot ni de participantes al commit", async () => {
-    await expectRejected(`begin; ${revision("array['autor']").sql} commit;`, SQLSTATE.foreignKey);
+    const r = revision("array['autor','comprador']");
+    await expectRejected(`begin; ${r.alc} ${r.sql} commit;`, SQLSTATE.foreignKey);
   });
 
   it("los participantes deben coincidir exactamente con la selección", async () => {
@@ -256,7 +282,7 @@ describe("revisión, snapshot y selección (restricciones al commit)", () => {
     const bytes = Buffer.from('{"a":1}');
     const hash = sha(bytes);
     const full = revision("array['autor','comprador']", r.ids, hash);
-    const base = `begin; ${full.sql}
+    const base = `begin; ${full.alc} ${full.sql}
       insert into public.revision_snapshots (id, document_id, revision_id, schema_version, canonical_bytes, snapshot_hash, content)
         values ('${r.ids.snap}', '${doc.documentId}', '${r.ids.rev}', 1, '\\x${bytes.toString("hex")}', '${hash}', '{"a":1}');`;
     const author = `insert into public.revision_participants (document_id, revision_id, snapshot_id, snapshot_hash, role, user_id)
@@ -271,17 +297,20 @@ describe("revisión, snapshot y selección (restricciones al commit)", () => {
   });
 
   it("el autor enlaza al propietario del documento, no a otro usuario", async () => {
-    const ids = { rev: newId(), snap: newId() };
+    const ids = { rev: newId(), snap: newId(), alc: newId() };
     const bytes = Buffer.from('{"c":3}');
     const hash = sha(bytes);
     await expectRejected(
       `begin;
-       insert into public.document_revisions (id, document_id, sequence, snapshot_id, snapshot_hash, selection, frozen_from_draft_revision)
-         values ('${ids.rev}', '${doc.documentId}', 60, '${ids.snap}', '${hash}', array['autor'], 0);
+       ${alcEvaluationSql(doc.documentId, ids.alc, ["autor", "comprador"])}
+       insert into public.document_revisions (id, document_id, sequence, snapshot_id, snapshot_hash, selection, frozen_from_draft_revision, alc_evaluation_id)
+         values ('${ids.rev}', '${doc.documentId}', 60, '${ids.snap}', '${hash}', array['autor','comprador'], 0, '${ids.alc}');
        insert into public.revision_snapshots (id, document_id, revision_id, schema_version, canonical_bytes, snapshot_hash, content)
          values ('${ids.snap}', '${doc.documentId}', '${ids.rev}', 1, '\\x${bytes.toString("hex")}', '${hash}', '{"c":3}');
        insert into public.revision_participants (document_id, revision_id, snapshot_id, snapshot_hash, role, user_id)
          values ('${doc.documentId}', '${ids.rev}', '${ids.snap}', '${hash}', 'autor', '${other.ownerId}');
+       insert into public.revision_participants (document_id, revision_id, snapshot_id, snapshot_hash, role)
+         values ('${doc.documentId}', '${ids.rev}', '${ids.snap}', '${hash}', 'comprador');
        commit;`,
       SQLSTATE.foreignKey,
     );

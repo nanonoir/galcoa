@@ -10,6 +10,8 @@ import { createEvidenceStore } from "../evidence/persistence";
 import type { DocumentRpc } from "../persistence/store";
 
 import { FreezeSourceSchema, toFreezeSource } from "./freeze-source";
+import type { AlcSourceReader } from "../alc/service";
+
 import type { FreezeReader, FreezeResult, RevisionBundle, RevisionStore } from "./ports";
 
 /**
@@ -27,7 +29,7 @@ const FreezeResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("created"), value: Bundle, supersededRevisionId: z.string().nullable(), invalidatedInvitations: z.number().int().nonnegative() }),
   z.strictObject({ status: z.literal("replayed"), value: Bundle }),
   z.strictObject({ status: z.literal("unchanged"), value: Bundle }),
-  z.strictObject({ status: z.enum(["stale_draft", "idempotency_conflict", "not_available", "finalization_in_progress"]) }),
+  z.strictObject({ status: z.enum(["stale_draft", "idempotency_conflict", "not_available", "finalization_in_progress", "evaluation_not_found", "stale_evaluation"]) }),
 ]);
 
 const AuthorResultSchema = z.discriminatedUnion("status", [
@@ -55,7 +57,7 @@ export function createSupabaseRevisionAdapters(context: {
   session: DocumentRpc;
   /** Canal del ejecutor para leer extracciones; sin él solo se evalúan los mensajes. */
   executor?: DocumentRpc;
-}): { store: RevisionStore; reader: FreezeReader } {
+}): { store: RevisionStore; reader: FreezeReader; alcSources: AlcSourceReader } {
   async function call(name: string, args: Record<string, unknown>, onError?: (error: unknown) => unknown): Promise<unknown> {
     const { data, error } = await context.session.rpc(name, args);
     if (error) {
@@ -82,6 +84,25 @@ export function createSupabaseRevisionAdapters(context: {
     return sources;
   }
 
+  /** Inventario completo para el ALC: mensajes del autor, originales aceptados y extracciones. Sin ejecutor no se puede leer: falla cerrado. */
+  const alcSources: AlcSourceReader = {
+    async read(ownerId, documentId) {
+      requireOwner(ownerId);
+      if (!context.executor) throw new Error("Persistencia no disponible");
+      const parsed = z.array(MessageSchema).parse((await call("list_messages", { p_document_id: documentId })) ?? []);
+      if (parsed.some((m) => m.documentId !== documentId)) throw new Error("Respuesta de persistencia inválida");
+      const evidence = createEvidenceStore({ verifiedUserId: context.verifiedUserId, executor: context.executor });
+      const evidences = await evidence.listEvidences(ownerId, documentId);
+      const extractions = await evidence.listExtractions(ownerId, documentId);
+      if (!evidences || !extractions) throw new Error("Persistencia no disponible");
+      return {
+        messages: parsed.filter((m) => m.sender === "autor").map((m) => ({ id: m.messageId, content: m.content })),
+        evidences: evidences.filter((e) => e.uploadState === "accepted").map((e) => ({ evidenceId: e.evidenceId, sha256: e.sha256 })),
+        extractions: extractions.map((x) => ({ extractionId: x.extractionId, evidenceId: x.evidenceId, text: x.text, extractedAt: x.extractedAt })),
+      };
+    },
+  };
+
   const reader: FreezeReader = {
     async getFreezeSource(ownerId, documentId) {
       requireOwner(ownerId);
@@ -105,7 +126,7 @@ export function createSupabaseRevisionAdapters(context: {
           p_document_id: input.documentId,
           p_expected_draft_revision: input.expectedDraftRevision,
           p_canonical_hex: input.canonicalHex,
-          p_control_status: input.controlStatus,
+          p_evaluation_id: input.evaluationId,
           p_sources: input.sources,
           p_key: input.idempotency.key,
           p_fingerprint: input.idempotency.fingerprint,
@@ -154,5 +175,5 @@ export function createSupabaseRevisionAdapters(context: {
     },
   };
 
-  return { store, reader };
+  return { store, reader, alcSources };
 }

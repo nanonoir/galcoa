@@ -22,6 +22,7 @@ import type { ConfirmationScreenProps, ConfirmationViewState, UnavailableReason 
 import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 import type { PublicInvitation } from "@/lib/contracts/public";
 import type { ParticipantRole, SharedWarning } from "@/lib/contracts/review";
+import { AlcTrafficLight } from "@/features/documents/components/alc-traffic-light";
 
 /**
  * Pantalla pública de confirmación (MVP-076; PRD §10, INV-12/13/14). Sin login.
@@ -36,8 +37,8 @@ import type { ParticipantRole, SharedWarning } from "@/lib/contracts/review";
  */
 
 const roleLabels: Record<ParticipantRole, string> = {
-  autor: "Autor",
-  intermediario: "Intermediario",
+  autor: "Proveedor",
+  intermediario: "Transportista",
   comprador: "Comprador",
 };
 
@@ -67,7 +68,7 @@ function formatInstant(iso: string) {
 function WarningItem({ warning }: { warning: SharedWarning }) {
   const critical = warning.severity === "critical";
   return (
-    <li className={critical ? "flex gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3" : "flex gap-2 rounded-lg border border-border bg-muted/40 p-3"}>
+    <li className={critical ? "flex gap-2 border border-destructive/40 bg-destructive/5 p-3" : "flex gap-2 border border-border bg-muted/40 p-3"}>
       {critical ? (
         <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-destructive" />
       ) : (
@@ -117,7 +118,7 @@ function OperationSummary({ invitation }: { invitation: PublicInvitation }) {
         <h3 id="confirmation-operation-title" className="text-base font-semibold">
           Operación
         </h3>
-        <p className="rounded-lg border p-3 text-sm break-words whitespace-pre-line">{operation.body}</p>
+        <p className="border border-border p-3 text-base break-words whitespace-pre-line">{operation.body}</p>
         {operation.corrections.length > 0 && (
           <div className="flex flex-col gap-1 text-sm">
             <p className="font-medium">Correcciones aplicadas</p>
@@ -131,6 +132,8 @@ function OperationSummary({ invitation }: { invitation: PublicInvitation }) {
           </div>
         )}
       </section>
+
+      {invitation.schemaVersion === 2 && <AlcTrafficLight alc={invitation.alc} rectifications={invitation.rectifications} />}
 
       {!DEMO_HIDE_WARNINGS && (
         <section aria-labelledby="confirmation-warnings-title" className="flex min-w-0 flex-col gap-2">
@@ -236,7 +239,7 @@ function ResponseForm({
           checked={checked}
           disabled={busy}
           onChange={(event) => setChecked(event.target.checked)}
-          className="mt-0.5 size-5 shrink-0 accent-primary"
+          className="mt-0.5 size-6 shrink-0 accent-success"
         />
         <Label htmlFor={checkId} className="items-start leading-snug font-normal">
           Leí la operación y coincide con lo que conozco.
@@ -294,7 +297,7 @@ function DoneCard({ state }: { state: Extract<ConfirmationViewState, { status: "
   const { result } = state;
   const confirmed = result.outcome.decision === "confirmar";
   return (
-    <div role="status" aria-live="polite" className="flex flex-col gap-3 rounded-xl border p-4">
+    <div role="status" aria-live="polite" className="panel flex flex-col gap-3 p-4">
       <p className="flex items-center gap-2 text-base font-semibold">
         <CheckCircle2 aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
         {confirmed ? "Registramos tu confirmación" : "Registramos que no coincide"}
@@ -315,7 +318,7 @@ export function ConfirmationScreen({ state, onConfirm, onReject, onRetry }: Conf
   return (
     <section aria-labelledby="confirmation-title" className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4 p-4">
       <header className="flex flex-col gap-1">
-        <h1 id="confirmation-title" className="text-lg font-semibold">
+        <h1 id="confirmation-title" className="page-title">
           Revisión de una operación
         </h1>
         <p className="text-sm text-muted-foreground">Leé la operación y confirmá o rechazá. No hace falta iniciar sesión.</p>

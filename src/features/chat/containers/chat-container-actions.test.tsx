@@ -15,6 +15,7 @@ let hasDraft: boolean;
 let documentTitle: string;
 let aggregates: Record<string, unknown>[];
 let freezeStatus: number;
+let finalizationBody: object;
 const calls: { url: string; init?: RequestInit }[] = [];
 const notFound = () => Response.json({ error: { code: "NO_DRAFT" } }, { status: 409 });
 
@@ -22,6 +23,7 @@ beforeEach(() => {
   hasDraft = true;
   documentTitle = "Documento sin título";
   freezeStatus = 200;
+  finalizationBody = { operation: { phase: "queued", versionNumber: null } };
   aggregates = [{ confirmationStatus: "pendiente", missingRoles: ["autor"] }, { confirmationStatus: "completa", missingRoles: [] }];
   vi.stubGlobal("crypto", { randomUUID: () => "key-1" });
   vi.stubGlobal(
@@ -38,7 +40,7 @@ beforeEach(() => {
       }
       if (url.endsWith("/revisions/confirm")) return Response.json({ ok: true });
       if (url.endsWith("/confirmations")) return Response.json(aggregates.shift());
-      if (url.endsWith("/finalization")) return Response.json({ operation: { phase: "queued", versionNumber: null } });
+      if (url.endsWith("/finalization")) return Response.json(finalizationBody);
       if (url === `/api/documents/${DOC}`) {
         return init?.method === "PATCH" ? Response.json({ result: {} }) : Response.json({ result: { title: documentTitle } });
       }
@@ -83,38 +85,34 @@ describe("Barra de acciones del chat (red simulada, no es integración real)", (
     expect(router.push).toHaveBeenCalledWith(`/documents/${DOC}/review`);
   });
 
-  it("Confirmar exige la casilla; congela solo con el autor, confirma y muestra Subir Contrato", async () => {
+  it("envía a la revisión completa sin congelar ni confirmar solo con el proveedor", async () => {
     render(<ChatContainer documentId={DOC} />);
-    await userEvent.click(await screen.findByRole("button", { name: "Confirmar" }));
-    const accept = screen.getAllByRole("button", { name: "Confirmar" }).at(-1)!;
-    expect(accept).toBeDisabled();
-    await userEvent.click(screen.getByLabelText("Revisé la operación y confirmo esta versión."));
-    await userEvent.click(accept);
+    expect(await screen.findByRole("link", { name: "Revisar y confirmar" })).toHaveAttribute("href", `/documents/${DOC}/review`);
+    expect(screen.queryByRole("button", { name: "Confirmar" })).not.toBeInTheDocument();
+    expect(calls.some((c) => c.url.endsWith("/revisions") || c.url.endsWith("/revisions/confirm"))).toBe(false);
+  });
 
-    expect(await screen.findByRole("button", { name: /Subir Contrato/ })).toBeInTheDocument();
-    const freeze = calls.find((c) => c.url.endsWith("/revisions") && c.init?.method === "POST")!;
-    expect(JSON.parse(freeze.init!.body as string)).toEqual({ expectedDraftRevision: 3, selection: [], idempotencyKey: "key-1" });
-    const confirm = calls.find((c) => c.url.endsWith("/revisions/confirm"))!;
-    expect(JSON.parse(confirm.init!.body as string)).toMatchObject({ revisionId: "rev-1", snapshotId: "snap-1", snapshotHash: "hash-1", decision: "confirmar", checkboxChecked: true });
+  it("el chat no publica una versión ni ofrece un sello antes de las confirmaciones obligatorias", async () => {
+    finalizationBody = { operation: { phase: "published", versionNumber: 4 } };
+    render(<ChatContainer documentId={DOC} />);
+    await screen.findByRole("link", { name: "Revisar y confirmar" });
+    expect(screen.queryByRole("button", { name: /Subir Contrato/ })).not.toBeInTheDocument();
+    expect(calls.some((c) => c.url.endsWith("/finalization"))).toBe(false);
   });
 
   it("si el autor ya había confirmado, no vuelve a confirmar", async () => {
     aggregates = [{ confirmationStatus: "completa", missingRoles: [] }];
     render(<ChatContainer documentId={DOC} />);
-    await userEvent.click(await screen.findByRole("button", { name: "Confirmar" }));
-    await userEvent.click(screen.getByLabelText("Revisé la operación y confirmo esta versión."));
-    await userEvent.click(screen.getAllByRole("button", { name: "Confirmar" }).at(-1)!);
-    expect(await screen.findByRole("button", { name: /Subir Contrato/ })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: /Compartir con terceros/ }));
+    expect(router.push).toHaveBeenCalledWith(`/documents/${DOC}/review`);
     expect(calls.some((c) => c.url.endsWith("/revisions/confirm"))).toBe(false);
   });
 
-  it("un fallo del servidor se muestra como error y no ofrece Subir Contrato", async () => {
+  it("el acceso a revisión no dispara una congelación ni un error de confirmación desde el chat", async () => {
     freezeStatus = 409;
     render(<ChatContainer documentId={DOC} />);
-    await userEvent.click(await screen.findByRole("button", { name: "Confirmar" }));
-    await userEvent.click(screen.getByLabelText("Revisé la operación y confirmo esta versión."));
-    await userEvent.click(screen.getAllByRole("button", { name: "Confirmar" }).at(-1)!);
-    expect((await screen.findAllByText(/El borrador cambió mientras confirmabas/)).length).toBeGreaterThan(0);
+    await screen.findByRole("link", { name: "Revisar y confirmar" });
+    expect(calls.some((c) => c.url.endsWith("/revisions"))).toBe(false);
     expect(screen.queryByRole("button", { name: /Subir Contrato/ })).not.toBeInTheDocument();
   });
 });

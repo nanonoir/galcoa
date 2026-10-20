@@ -5,6 +5,8 @@ import { buildFrozenSnapshot } from "@/lib/documents/revisions/freeze";
 import { ENABLED_INDICATORS } from "@/lib/rules/indicators";
 import { evaluateRepeatedValues, extractNumbers, type SeriesSource } from "@/lib/rules/repeated-values";
 
+import { fakeEvaluation } from "../revisions/alc-double";
+
 // Datos ficticios; sin base ni IA.
 const draft = {
   draftId: "d-1", documentId: "doc-1", draftRevision: 2, updatedAt: "2026-10-17T12:00:00Z",
@@ -71,13 +73,13 @@ describe("valores repetidos en el congelado", () => {
     expect(out.controlStatus).toBe("contradiccion_critica");
   });
 
-  it("no bloquea el congelado y el snapshot no lleva términos prohibidos ni acusaciones", () => {
+  it("no bloquea el congelado y el snapshot no lleva términos prohibidos ni acusaciones", async () => {
     const out = toFreezeSource(raw(), repeated);
     const frozen = buildFrozenSnapshot({
       content: out.draft.content,
       warnings: out.warnings,
       describeSource: (ref) => out.sourceDescriptions[ref] ?? "Fuente aportada",
-      selection: ["autor"],
+      evaluation: fakeEvaluation(),
     });
     expect(frozen.content.warnings).toHaveLength(2);
     expect(frozen.snapshotHash).toMatch(/^[0-9a-f]{64}$/);
