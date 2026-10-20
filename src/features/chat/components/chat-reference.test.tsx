@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -46,6 +46,23 @@ describe("ChatReference", () => {
     expect(log).toHaveTextContent("Entregué 40 bolsas de semilla a Pérez el lunes.");
     expect(log).toHaveTextContent("¿Quién la recibió y en qué lugar?");
     expect(screen.getByRole("status")).toHaveTextContent("Contraste disponible");
+  });
+
+  it("movimiento: el historial no se anima; solo un mensaje propio nuevo entra, y la respuesta del asistente no se reanima", () => {
+    const history = scenarioState("history");
+    const { rerenderState } = renderState(history);
+    const items = () => within(screen.getByRole("log")).getAllByRole("listitem");
+    expect(items().every((li) => !li.classList.contains("motion-enter"))).toBe(true);
+
+    const own = { messageId: "m-new", sender: "autor" as const, content: "Un dato nuevo", sentAt: "2026-01-01T00:00:00.000Z" };
+    rerenderState({ ...history, messages: [...history.messages, own] });
+    expect(items().filter((li) => li.classList.contains("motion-enter"))).toHaveLength(1);
+    expect(screen.getByText("Un dato nuevo").closest("li")).toHaveClass("motion-enter");
+
+    const reply = { messageId: "m-reply", sender: "agente" as const, content: "Respuesta final", sentAt: "2026-01-01T00:00:01.000Z" };
+    rerenderState({ ...history, messages: [...history.messages, own, reply] });
+    expect(screen.getByText("Respuesta final").closest("li")).not.toHaveClass("motion-enter");
+    expect(items().filter((li) => li.classList.contains("motion-enter"))).toHaveLength(1);
   });
 
   it("streaming: muestra el texto parcial, deshabilita enviar y cancela por callback con foco en el composer", async () => {

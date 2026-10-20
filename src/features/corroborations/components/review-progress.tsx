@@ -26,7 +26,7 @@ export interface ReviewProgressProps {
   onRefresh: () => void;
 }
 
-const roleLabels: Record<ParticipantRole, string> = { autor: "Autor", intermediario: "Intermediario", comprador: "Comprador" };
+const roleLabels: Record<ParticipantRole, string> = { autor: "Proveedor", intermediario: "Transportista", comprador: "Comprador" };
 
 const confirmationLabels: Record<ConfirmationStatus, string> = {
   pendiente: "Faltan confirmaciones",
@@ -58,31 +58,38 @@ export function ReviewProgress({ revisionLabel, confirmationStatus, participants
         </Button>
       </header>
 
-      <dl className="grid grid-cols-1 gap-3 min-[640px]:grid-cols-3">
-        <div className="panel flex min-w-0 flex-col gap-2 p-3">
+      <dl className="grid grid-cols-1 gap-3 min-[640px]:grid-cols-2">
+        <div className="panel flex min-w-0 flex-col gap-3 p-4 min-[640px]:col-span-2">
           <dt className="tech-label">Confirmaciones · {revisionLabel}</dt>
-          <dd className="flex flex-col gap-2 text-sm">
-            <span>{confirmationLabels[confirmationStatus]}</span>
-            <ul className="flex flex-col gap-1">
+          <dd className="flex flex-col gap-3 text-sm">
+            <span className="text-base font-semibold">{confirmationLabels[confirmationStatus]}</span>
+            <ul className="flex flex-col divide-y border">
               {participants.map((p) => (
-                <li key={p.role} className="flex items-center justify-between gap-2">
-                  <span>{roleLabels[p.role]}</span>
-                  <Badge variant={p.progress === "confirmada" ? "secondary" : "outline"}>{progressLabels[p.progress]}</Badge>
+                <li key={p.role} className="flex min-h-11 items-center justify-between gap-2 px-3 py-2">
+                  <span className="font-medium">{roleLabels[p.role]}</span>
+                  {/* `key` por estado real: al cambiar (confirmó/rechazó) el distintivo entra con un fundido breve. */}
+                  <Badge
+                    key={p.progress}
+                    variant={p.progress === "confirmada" ? "secondary" : p.progress === "rechazada" ? "destructive" : "outline"}
+                    className={p.progress === "pendiente" ? undefined : "motion-fade"}
+                  >
+                    {progressLabels[p.progress]}
+                  </Badge>
                 </li>
               ))}
             </ul>
           </dd>
         </div>
-        <div className="panel flex min-w-0 flex-col gap-2 p-3">
-          <dt className="tech-label">Finalización</dt>
+        <div className="panel flex min-w-0 flex-col gap-2 p-4">
+          <dt className="tech-label">Finalización de la versión</dt>
           <dd className="text-sm">{finalizedVersionNumber === null
               ? "Todavía no finalizada"
               : finalizedVersionNumber === "no_disponible"
                 ? "Número de versión finalizada no disponible en esta pantalla"
                 : `Versión ${finalizedVersionNumber} finalizada`}</dd>
         </div>
-        <div className="panel flex min-w-0 flex-col gap-2 p-3">
-          <dt className="tech-label">Sello HCS</dt>
+        <div className="panel flex min-w-0 flex-col gap-2 p-4">
+          <dt className="tech-label">Sello HCS (independiente de la finalización)</dt>
           <dd className="text-sm">
             <Badge variant={hcsStatus === "registrado" ? "secondary" : "outline"} className="h-auto max-w-full text-left break-words whitespace-normal">
               {sealLabels[hcsStatus]}

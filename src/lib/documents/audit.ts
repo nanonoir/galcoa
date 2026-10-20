@@ -37,6 +37,19 @@ export const AuditEventSchema = z.discriminatedUnion("type", [
   z.strictObject({ ...BaseEventSchema, type: z.literal("extraction.recorded"), resourceType: z.literal("extraction"), resourceId: IdSchema }),
 ]);
 
+/**
+ * Eventos ALC que escribe SQL dentro de la transacción que los provoca (migración 20261020000100). No pasan por
+ * `appendAuditEvent`: la RPC `append_document_audit` no los acepta a propósito, para que no puedan fabricarse
+ * desde TypeScript. El catálogo existe para lectores y pruebas de paridad con el SQL. Metadatos: ids, color y
+ * códigos; nunca contenido, citas ni valores de las fuentes.
+ */
+export const ALC_AUDIT_ACTIONS = {
+  EVALUATED: "alc.evaluated",
+  REVISION_FROZEN: "revision.frozen",
+  FINALIZATION_BLOCKED: "finalization.blocked",
+  SEAL_BLOCKED: "seal.blocked",
+} as const;
+
 export type AuditEvent = z.infer<typeof AuditEventSchema>;
 export type AuditEventType = AuditEvent["type"];
 

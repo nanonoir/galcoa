@@ -19,6 +19,8 @@
 
 # next.js
 /.next/
+/.next-e2e-confirm/
+/.next-e2e-review/
 /out/
 
 # production
@@ -38,6 +40,9 @@ yarn-error.log*
 .env*
 !.env.example
 !.env.production.example
+
+# local screen recordings / audit captures (Tailwind skips gitignored paths when scanning)
+/recordings/
 
 # vercel
 .vercel

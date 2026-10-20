@@ -74,7 +74,7 @@ export function createMemoryRevisions(options: { now?: () => string } = {}) {
       const snapshotId = randomUUID();
       const bundle: RevisionBundle = {
         snapshot: {
-          schemaVersion: 1,
+          schemaVersion: 2,
           snapshotId,
           revisionId,
           documentId: input.documentId,
@@ -92,7 +92,7 @@ export function createMemoryRevisions(options: { now?: () => string } = {}) {
           frozenFromDraftRevision: input.expectedDraftRevision,
           supersedesRevisionId: current?.bundle.revision.revisionId ?? null,
           documentStatus: "esperando_confirmaciones",
-          controlStatus: "sin_evaluar",
+          controlStatus: ({ rojo: "contradiccion_critica", amarillo: "con_advertencias", verde: "sin_inconsistencias_criticas_detectadas" } as const)[input.content.alc.color],
           confirmationStatus: "pendiente",
           createdAt: at,
         },

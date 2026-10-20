@@ -6,7 +6,9 @@ import { createPdfStagingService, createSupabasePdfStagingStore } from "@/lib/do
 import { createRevisionService } from "@/lib/documents/revisions/service";
 import { createSupabaseRevisionAdapters } from "@/lib/documents/revisions/supabase";
 
-import { createTestUser, psql, psqlAs, psqlOk, readLocalStack, type TestUser } from "../rls/harness";
+import { buyerConfirms, localAlc } from "./alc-support";
+
+import { createTestUser, psql, psqlAs, psqlOk, readLocalStack, type LocalStack, type TestUser } from "../rls/harness";
 
 import { runIndependent } from "./concurrency";
 
@@ -20,11 +22,12 @@ import { runIndependent } from "./concurrency";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type R = Record<string, any>;
 
+let stack: LocalStack;
 let ana: TestUser;
 let luis: TestUser;
 
 beforeAll(async () => {
-  const stack = readLocalStack();
+  stack = readLocalStack();
   ana = await createTestUser(stack, "stg-a");
   luis = await createTestUser(stack, "stg-b");
 });
@@ -69,14 +72,15 @@ async function claimed(user: TestUser) {
   const content = JSON.stringify({ title: "Acuerdo ficticio", body: "Se entregan 12 cajas.", corrections: [] });
   await psqlOk(`insert into public.drafts (document_id, draft_revision, content) values ('${documentId}', 1, '${content}'::jsonb);`);
   const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: user.id, session: user.client });
-  const service = createRevisionService({ session: { currentUserId: async () => user.id }, source: reader, revisions: store });
-  const f = await service.freeze({ documentId, expectedDraftRevision: 1, selection: ["autor"], idempotencyKey: key("freeze") });
+  const service = createRevisionService({ session: { currentUserId: async () => user.id }, source: reader, revisions: store, alc: localAlc(user.id) });
+  const f = await service.freeze({ documentId, expectedDraftRevision: 1, selection: ["autor", "comprador"], idempotencyKey: key("freeze") });
   if (!f.ok) throw new Error(`freeze: ${f.error.code}`);
   const { revisionId, snapshotId, snapshotHash } = f.value.revision;
   const c = await service.confirmAsAuthor({
     schemaVersion: 1, actor: "autor", documentId, revisionId, snapshotId, snapshotHash, idempotencyKey: key("author"), decision: "confirmar", checkboxChecked: true,
   });
   if (!c.ok) throw new Error(`confirm: ${c.error.code}`);
+  await buyerConfirms(user, stack, f.value.revision);
   const claim = await user.client.rpc("claim_finalization", {
     p_document_id: documentId, p_revision_id: revisionId, p_renderer: "react-pdf-v1", p_lease_seconds: 60, p_correlation_id: "corr-claim",
   });
@@ -94,10 +98,11 @@ describe("MVP-081 · entrada de render desde el snapshot persistido", () => {
     const input = await renderInput(ana, w.operationId, w.fencing);
     expect(input).toMatchObject({
       status: "ready", operationId: w.operationId, revisionId: w.revisionId, phase: "reserved", staged: null,
-      content: { operation: { title: "Acuerdo ficticio", body: "Se entregan 12 cajas." }, selection: ["autor"] },
+      content: { operation: { title: "Acuerdo ficticio", body: "Se entregan 12 cajas." }, selection: ["autor", "comprador"] },
     });
-    expect(input.receipts).toHaveLength(1);
+    expect(input.receipts).toHaveLength(2);
     expect(input.receipts[0]).toMatchObject({ role: "autor", decision: "confirmar", declaredName: null });
+    expect(input.receipts[1]).toMatchObject({ role: "comprador", decision: "confirmar", declaredName: "Juan Pérez" });
     expect(await renderInput(ana, w.operationId, w.fencing + 1)).toEqual({ status: "stale_fencing" });
     expect(await renderInput(luis, w.operationId, w.fencing)).toEqual({ status: "not_available" });
     expect(await renderInput(ana, randomUUID(), 1)).toEqual({ status: "not_available" });

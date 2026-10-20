@@ -12,6 +12,8 @@ import { hashInvitationToken } from "@/lib/documents/invitations/token";
 import { createRevisionService } from "@/lib/documents/revisions/service";
 import { createSupabaseRevisionAdapters } from "@/lib/documents/revisions/supabase";
 
+import { localAlc } from "./alc-support";
+
 import { anonClient, createTestUser, psql, psqlOk, readLocalStack, type LocalStack, type TestUser } from "../rls/harness";
 
 import { runIndependent } from "./concurrency";
@@ -72,7 +74,7 @@ function services(user: TestUser, options: { ttlSeconds?: number } = {}) {
   const session = { currentUserId: async () => user.id };
   const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: user.id, session: user.client });
   return {
-    revisions: createRevisionService({ session, source: reader, revisions: store }),
+    revisions: createRevisionService({ session, source: reader, revisions: store, alc: localAlc(user.id) }),
     invitations: createInvitationService({ session, invitations: createSupabaseInvitationStore({ verifiedUserId: user.id, rpc: user.client }), ttlSeconds: options.ttlSeconds }),
     aggregate: createAggregateService({ session, store: createSupabaseAggregateStore({ verifiedUserId: user.id, session: user.client }) }),
     store,
@@ -112,13 +114,16 @@ async function sql(query: string) {
 }
 
 describe("MVP-070 · congelar la revisión sobre la base real", () => {
-  it("persiste snapshot, hash, participantes, fuentes privadas y deja las advertencias críticas sin bloquear", async () => {
+  it("persiste snapshot, hash, participantes, fuentes privadas y no bloquea el congelado por una advertencia crítica", async () => {
     const w = await world(ana);
     const b = await frozen(ana, w);
-    expect(b.revision).toMatchObject({ selection: ["autor", "comprador"], frozenFromDraftRevision: 1, supersedesRevisionId: null, confirmationStatus: "pendiente", controlStatus: "contradiccion_critica", documentStatus: "esperando_confirmaciones" });
+    // El control documental sale de la evaluación ALC enlazada (aquí solo hay un dato declarado: amarillo), no del reporte.
+    expect(b.revision).toMatchObject({ selection: ["autor", "comprador"], frozenFromDraftRevision: 1, supersedesRevisionId: null, confirmationStatus: "pendiente", controlStatus: "con_advertencias", documentStatus: "esperando_confirmaciones" });
+    expect(await sql(`select e.color, e.draft_revision, e.selection::text from public.document_revisions r join public.alc_evaluations e on e.id = r.alc_evaluation_id where r.id = '${b.revision.revisionId}';`))
+      .toEqual([["amarillo", "1", "{autor,comprador}"]]);
     expect(b.snapshot.content.warnings).toHaveLength(1);
     expect(b.snapshot.content.warnings[0]).toMatchObject({ severity: "critical" });
-    expect(JSON.stringify(b.snapshot.content)).not.toMatch(/\b[me]\d+\b|msg-|b1/);
+    expect(JSON.stringify(b.snapshot.content)).not.toMatch(/\b[me]\d+\b|msg-|\bb1\b/);
     expect(b.snapshot.content.warnings[0].sources.map((s) => s.alias)).toEqual(["Fuente A", "Fuente B"]);
 
     const hash = await sql(`select encode(sha256(canonical_bytes), 'hex') = snapshot_hash, snapshot_hash from public.revision_snapshots where revision_id = '${b.revision.revisionId}';`);
@@ -127,8 +132,8 @@ describe("MVP-070 · congelar la revisión sobre la base real", () => {
     const participants = await sql(`select role, user_id is not null from public.revision_participants where revision_id = '${b.revision.revisionId}' order by role;`);
     expect(participants).toEqual([["autor", "t"], ["comprador", "f"]]);
     const sources = await sql(`select alias, message_id is not null, evidence_id is not null from public.snapshot_sources where revision_id = '${b.revision.revisionId}' order by alias;`);
-    // Las fuentes se ordenan por ref privada (e1 < m1): A = evidencia, B = mensaje.
-    expect(sources).toEqual([["Fuente A", "f", "t"], ["Fuente B", "t", "f"]]);
+    // Las fuentes de las advertencias se ordenan por ref privada (e1 < m1): A = evidencia, B = mensaje. `ALC-1` es la que cita la evaluación.
+    expect(sources).toEqual([["ALC-1", "t", "f"], ["Fuente A", "f", "t"], ["Fuente B", "t", "f"]]);
   });
 
   it("conflicto de revisión del borrador, idempotencia y clave con otro contenido", async () => {
@@ -141,7 +146,11 @@ describe("MVP-070 · congelar la revisión sobre la base real", () => {
     if (!a.ok || !b.ok) throw new Error("freeze");
     expect(b).toMatchObject({ replayed: true });
     expect(b.value.revision.revisionId).toBe(a.value.revision.revisionId);
-    expect(await svc.freeze(freezeCmd(w, { idempotencyKey: k, selection: ["intermediario"] }))).toMatchObject({ ok: false, error: { code: "IDEMPOTENCY_CONFLICT" } });
+    expect(await svc.freeze(freezeCmd(w, { idempotencyKey: k, selection: ["intermediario", "comprador"] }))).toMatchObject({ ok: false, error: { code: "IDEMPOTENCY_CONFLICT" } });
+    // Una selección vieja (sin comprador) ya no es válida para revisiones nuevas.
+    for (const selection of [["intermediario"], ["autor"], []]) {
+      expect(await svc.freeze(freezeCmd(w, { selection }))).toMatchObject({ ok: false, error: { code: "INVALID_INPUT" } });
+    }
     const same = await svc.freeze(freezeCmd(w));
     expect(same).toMatchObject({ ok: true, value: { unchanged: true } });
     expect((await sql(`select count(*) from public.document_revisions where document_id = '${w.documentId}';`))[0][0]).toBe("1");
@@ -181,7 +190,7 @@ describe("MVP-070 · congelar la revisión sobre la base real", () => {
     expect(await services(luis).revisions.freeze(freezeCmd(w))).toMatchObject({ ok: false, error: { code: "NOT_AVAILABLE" } });
     const anon = anonClient(stack);
     const denied = await anon.rpc("freeze_revision", {
-      p_document_id: w.documentId, p_expected_draft_revision: 1, p_canonical_hex: "7b7d", p_control_status: "sin_evaluar", p_sources: [],
+      p_document_id: w.documentId, p_expected_draft_revision: 1, p_canonical_hex: "7b7d", p_evaluation_id: randomUUID(), p_sources: [],
       p_key: key("freeze"), p_fingerprint: sha("x"), p_correlation_id: "c",
     });
     expect(denied.error).not.toBeNull();
@@ -194,30 +203,35 @@ describe("MVP-070 · congelar la revisión sobre la base real", () => {
   it("la base rechaza una operación distinta del borrador vigente y un contenido que no es el canónico", async () => {
     const w = await world(ana);
     const adapters = createSupabaseRevisionAdapters({ verifiedUserId: ana.id, session: ana.client });
-    const content = { operation: operation("Otro texto no redactado"), warnings: [], selection: ["autor"] };
-    const hex = Buffer.from(JSON.stringify(content), "utf8").toString("hex");
-    const bad = await ana.client.rpc("freeze_revision", {
-      p_document_id: w.documentId, p_expected_draft_revision: 1, p_canonical_hex: hex, p_control_status: "sin_evaluar", p_sources: [],
-      p_key: key("freeze"), p_fingerprint: sha("y"), p_correlation_id: "c",
+    // Evaluación real y contenido con la forma v2 completa: lo único incorrecto es la operación.
+    const evaluated = await localAlc(ana.id).evaluate({
+      ownerId: ana.id, documentId: w.documentId, draft: { revision: 1, title: "Acuerdo ficticio", body: "Se entregan 12 cajas de ejemplo." },
+      selection: ["autor", "comprador"], rectifications: [], correlationId: "corr-eval",
     });
+    if (!evaluated.ok) throw new Error("evaluate");
+    const freezeWith = (operationContent: unknown, fingerprint: string) => ana.client.rpc("freeze_revision", {
+      p_document_id: w.documentId, p_expected_draft_revision: 1, p_evaluation_id: evaluated.value.evaluationId, p_sources: [],
+      p_canonical_hex: Buffer.from(JSON.stringify({ operation: operationContent, warnings: [], selection: ["autor", "comprador"], alc: evaluated.value.shared, rectifications: [] }), "utf8").toString("hex"),
+      p_key: key("freeze"), p_fingerprint: sha(fingerprint), p_correlation_id: "c",
+    });
+    const bad = await freezeWith(operation("Otro texto no redactado"), "y");
     expect(bad.error).not.toBeNull();
+    expect(bad.error?.code).toBe("22023");
     expect(await adapters.store.getActiveRevision(ana.id, w.documentId)).toBeNull();
+    // Control: con la operación del borrador vigente el mismo contenido sí se congela.
+    expect((await freezeWith(operation("Se entregan 12 cajas de ejemplo."), "z")).data).toMatchObject({ status: "created" });
   });
 });
 
 describe("MVP-071 · confirmación del autor", () => {
-  it("solo autor completa; con tercero queda parcial; repetir es idempotente; otra clave: ya respondió", async () => {
-    const solo = await world(ana);
-    const sb = await frozen(ana, solo, { selection: [] });
+  it("el autor solo no completa (el comprador siempre figura); queda parcial; repetir es idempotente; otra clave: ya respondió", async () => {
     const svc = services(ana);
-    expect(await svc.revisions.confirmAsAuthor(authorCmd(sb, solo.documentId))).toMatchObject({ ok: true, value: { confirmationStatus: "completa", actor: { role: "autor", declaredName: null } } });
-
     const w = await world(ana);
     const b = await frozen(ana, w);
     const cmd = authorCmd(b, w.documentId);
     const first = await svc.revisions.confirmAsAuthor(cmd);
     const again = await svc.revisions.confirmAsAuthor(cmd);
-    expect(first).toMatchObject({ ok: true, value: { confirmationStatus: "parcial", replayed: false } });
+    expect(first).toMatchObject({ ok: true, value: { confirmationStatus: "parcial", actor: { role: "autor", declaredName: null }, replayed: false } });
     expect(again).toMatchObject({ ok: true, replayed: true, value: { replayed: true } });
     if (first.ok && again.ok) expect(again.value.responseId).toBe(first.value.responseId);
     expect(await svc.revisions.confirmAsAuthor(authorCmd(b, w.documentId))).toMatchObject({ ok: false, error: { code: "ALREADY_RESPONDED" } });
@@ -348,7 +362,7 @@ describe("MVP-072/073 · invitaciones y lectura pública", () => {
 });
 
 describe("MVP-074 · respuesta atómica e idempotente", () => {
-  it("confirmar con nombre: parcial → completa con el autor; después ya respondida", async () => {
+  it("confirmar con nombre: el autor primero (parcial) y el comprador completa; después ya respondida", async () => {
     const w = await world(ana);
     const b = await frozen(ana, w);
     const own = services(ana);
@@ -356,15 +370,20 @@ describe("MVP-074 · respuesta atómica e idempotente", () => {
     if (!inv.ok) throw new Error("issue");
     const pub = publicService().invitations;
 
+    // El comprador no puede responder antes que el autor: no se registra ni se consume el enlace.
     const cmd = respondCmd(inv.value.token, b);
+    expect(await pub.respond(cmd)).toMatchObject({ ok: false, error: { code: "CONFIRMATION_ORDER" } });
+    expect((await sql(`select count(*) from public.corroboration_responses where revision_id = '${b.revision.revisionId}';`))[0][0]).toBe("0");
+    expect((await sql(`select consumed_at is null from public.corroboration_requests where revision_id = '${b.revision.revisionId}';`))[0][0]).toBe("t");
+    expect(await own.revisions.confirmAsAuthor(authorCmd(b, w.documentId))).toMatchObject({ ok: true, value: { confirmationStatus: "parcial" } });
+
     const done = await pub.respond(cmd);
-    expect(done).toMatchObject({ ok: true, value: { confirmationStatus: "parcial", actor: { role: "comprador", declaredName: "Juan Pérez" }, outcome: { decision: "confirmar" }, replayed: false, snapshotHash: b.revision.snapshotHash } });
+    expect(done).toMatchObject({ ok: true, value: { confirmationStatus: "completa", actor: { role: "comprador", declaredName: "Juan Pérez" }, outcome: { decision: "confirmar" }, replayed: false, snapshotHash: b.revision.snapshotHash } });
     expect(await pub.respond(cmd)).toMatchObject({ ok: true, replayed: true });
     expect(await pub.respond({ ...cmd, declaredName: "Otra Persona" })).toMatchObject({ ok: false, error: { code: "IDEMPOTENCY_CONFLICT" } });
     expect(await pub.respond(rejectCmd(inv.value.token, b))).toMatchObject({ ok: false, error: { code: "ALREADY_RESPONDED" } });
     expect(await pub.read(inv.value.token)).toMatchObject({ value: { availability: "ya_respondida" } });
 
-    expect(await own.revisions.confirmAsAuthor(authorCmd(b, w.documentId))).toMatchObject({ ok: true, value: { confirmationStatus: "completa" } });
     const aggregate = await own.aggregate.getForAuthor(b.revision.revisionId);
     expect(aggregate).toMatchObject({ ok: true, value: { confirmationStatus: "completa", canFinalize: true, confirmed: 2, required: 2, provenance: "declarado_y_corroborado_por_tercero" } });
     const row = await sql(`select declared_name, decision, checkbox_checked, ratified_rejection, request_id is not null from public.corroboration_responses where revision_id = '${b.revision.revisionId}' and role = 'comprador';`);
@@ -379,6 +398,7 @@ describe("MVP-074 · respuesta atómica e idempotente", () => {
     const inv = await own.invitations.issue({ revisionId: b.revision.revisionId, role: "comprador", idempotencyKey: key("issue") });
     if (!inv.ok) throw new Error("issue");
     const pub = publicService().invitations;
+    expect(await own.revisions.confirmAsAuthor(authorCmd(b, w.documentId))).toMatchObject({ ok: true, value: { confirmationStatus: "parcial" } });
     expect(await pub.respond(rejectCmd(inv.value.token, b, { declaredName: "  " }))).toMatchObject({ ok: false, error: { code: "INVALID_INPUT" } });
     expect(await pub.respond(rejectCmd(inv.value.token, b, { rejectionRatified: undefined }))).toMatchObject({ ok: false, error: { code: "INVALID_INPUT" } });
     expect(await pub.respond(rejectCmd(inv.value.token, b))).toMatchObject({ ok: true, value: { confirmationStatus: "rechazada", outcome: { decision: "rechazar", rejectionRatified: true }, actor: { declaredName: "Juan Pérez" } } });
@@ -407,8 +427,10 @@ describe("MVP-074 · respuesta atómica e idempotente", () => {
   it("confirmar y rechazar a la vez desde clientes independientes: una sola decisión ganadora", async () => {
     const w = await world(ana);
     const b = await frozen(ana, w);
-    const inv = await services(ana).invitations.issue({ revisionId: b.revision.revisionId, role: "comprador", idempotencyKey: key("issue") });
+    const own = services(ana);
+    const inv = await own.invitations.issue({ revisionId: b.revision.revisionId, role: "comprador", idempotencyKey: key("issue") });
     if (!inv.ok) throw new Error("issue");
+    expect((await own.revisions.confirmAsAuthor(authorCmd(b, w.documentId))).ok).toBe(true);
     const attempts = 8;
     const results = await runIndependent(attempts, (i) =>
       publicService().invitations.respond(i % 2 === 0 ? respondCmd(inv.value.token, b) : rejectCmd(inv.value.token, b)),
@@ -424,8 +446,10 @@ describe("MVP-074 · respuesta atómica e idempotente", () => {
   it("doble clic y reintentos con la misma clave desde conexiones independientes: una decisión y el resto la repiten", async () => {
     const w = await world(ana);
     const b = await frozen(ana, w);
-    const inv = await services(ana).invitations.issue({ revisionId: b.revision.revisionId, role: "comprador", idempotencyKey: key("issue") });
+    const own = services(ana);
+    const inv = await own.invitations.issue({ revisionId: b.revision.revisionId, role: "comprador", idempotencyKey: key("issue") });
     if (!inv.ok) throw new Error("issue");
+    expect((await own.revisions.confirmAsAuthor(authorCmd(b, w.documentId))).ok).toBe(true);
     const cmd = respondCmd(inv.value.token, b);
     const results = await runIndependent(6, () => publicService().invitations.respond(cmd));
     const ok = results.map((r) => (r.status === "fulfilled" ? r.value : null));
@@ -442,6 +466,7 @@ describe("MVP-074 · respuesta atómica e idempotente", () => {
     const own = services(ana);
     const inv = await own.invitations.issue({ revisionId: b.revision.revisionId, role: "comprador", idempotencyKey: key("issue") });
     if (!inv.ok) throw new Error("issue");
+    expect((await own.revisions.confirmAsAuthor(authorCmd(b, w.documentId))).ok).toBe(true);
     await changeDraft(w.documentId, 2, "Texto distinto para forzar otra revisión.");
     const [response, refreeze] = await Promise.all([
       publicService().invitations.respond(respondCmd(inv.value.token, b)),
@@ -453,16 +478,19 @@ describe("MVP-074 · respuesta atómica e idempotente", () => {
     expect(Number(live[0][0])).toBeGreaterThanOrEqual(0);
     const active = await sql(`select count(*) from public.document_revisions where document_id = '${w.documentId}' and lifecycle = 'activa';`);
     expect(active[0][0]).toBe("1");
-    if (response.ok) expect((await sql(`select count(*) from public.corroboration_responses where revision_id = '${b.revision.revisionId}';`))[0][0]).toBe("1");
-    else expect((await sql(`select count(*) from public.corroboration_responses where revision_id = '${b.revision.revisionId}';`))[0][0]).toBe("0");
+    // La confirmación del autor (previa) ya está; solo la del comprador depende de la carrera.
+    const buyer = async () => (await sql(`select count(*) from public.corroboration_responses where revision_id = '${b.revision.revisionId}' and role = 'comprador';`))[0][0];
+    expect(await buyer()).toBe(response.ok ? "1" : "0");
   });
 
   it("el token no queda en auditoría, idempotencia ni en ninguna tabla", async () => {
     const w = await world(ana);
     const b = await frozen(ana, w);
-    const inv = await services(ana).invitations.issue({ revisionId: b.revision.revisionId, role: "comprador", idempotencyKey: key("issue") });
+    const own = services(ana);
+    const inv = await own.invitations.issue({ revisionId: b.revision.revisionId, role: "comprador", idempotencyKey: key("issue") });
     if (!inv.ok) throw new Error("issue");
-    await publicService().invitations.respond(respondCmd(inv.value.token, b));
+    expect((await own.revisions.confirmAsAuthor(authorCmd(b, w.documentId))).ok).toBe(true);
+    expect(await publicService().invitations.respond(respondCmd(inv.value.token, b))).toMatchObject({ ok: true });
     const text = await sql(`select (select coalesce(string_agg(metadata::text || actor_scope, ' '), '') from public.audit_events where document_id = '${w.documentId}')
       || (select coalesce(string_agg(result::text || key, ' '), '') from public.idempotency_records where resource_id in ('${b.revision.revisionId}', '${w.documentId}'))
       || (select coalesce(string_agg(content::text, ' '), '') from public.revision_snapshots where document_id = '${w.documentId}');`);
@@ -489,9 +517,14 @@ describe("MVP-075 · estado agregado, paridad y límite de abuso", () => {
       return { service: persisted.value.confirmationStatus, column: rows[0][0] };
     };
     expect(await check()).toEqual({ service: "pendiente", column: "pendiente" });
-    await pub.respond(respondCmd(tokens.intermediario, b, { declaredName: "María López" }));
-    expect(await check()).toEqual({ service: "parcial", column: "parcial" });
+    // Orden autor → intermediario → comprador: ninguno responde antes que sus antecesores (los enlaces no se consumen).
+    expect(await pub.respond(respondCmd(tokens.intermediario, b, { declaredName: "María López" }))).toMatchObject({ ok: false, error: { code: "CONFIRMATION_ORDER" } });
+    expect(await pub.respond(respondCmd(tokens.comprador, b))).toMatchObject({ ok: false, error: { code: "CONFIRMATION_ORDER" } });
+    expect(await check()).toEqual({ service: "pendiente", column: "pendiente" });
     await own.revisions.confirmAsAuthor(authorCmd(b, w.documentId));
+    expect(await check()).toEqual({ service: "parcial", column: "parcial" });
+    expect(await pub.respond(respondCmd(tokens.comprador, b))).toMatchObject({ ok: false, error: { code: "CONFIRMATION_ORDER" } });
+    await pub.respond(respondCmd(tokens.intermediario, b, { declaredName: "María López" }));
     expect(await check()).toEqual({ service: "parcial", column: "parcial" });
     await pub.respond(respondCmd(tokens.comprador, b));
     expect(await check()).toEqual({ service: "completa", column: "completa" });

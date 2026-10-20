@@ -218,7 +218,7 @@ describe("permisos", () => {
     const rows = await psqlOk(`select p.proname, has_function_privilege('galcoa_executor', p.oid, 'EXECUTE'),
       has_function_privilege('authenticated', p.oid, 'EXECUTE') or has_function_privilege('anon', p.oid, 'EXECUTE') or has_function_privilege('service_role', p.oid, 'EXECUTE')
       from pg_proc p where p.pronamespace = 'public'::regnamespace and (p.proname like '%\\_seal\\_%' escape '\\') order by 1;`);
-    expect(rows.map((r) => r[0])).toEqual(["get_seal_state", "get_seal_version", "record_seal_intent", "record_seal_outcome", "record_seal_registration"]);
+    expect(rows.map((r) => r[0])).toEqual(["check_seal_eligibility", "get_seal_state", "get_seal_version", "record_seal_intent", "record_seal_outcome", "record_seal_registration"]);
     expect(rows.every((r) => r[1] === "t" && r[2] === "f")).toBe(true);
     const read = await psql("set role galcoa_executor; select count(*) from public.hedera_attempts;", "supabase_admin");
     expect(read.ok).toBe(false);

@@ -53,6 +53,20 @@ describe("DocumentTitleEditor", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  it("tras un 503 no refresca, conserva el título y permite reintentar con éxito", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("{}", { status: 503 }))
+      .mockResolvedValueOnce(Response.json({ outcome: "completed" }));
+    render(<DocumentTitleEditor documentId={id} title="Mi doc" fetchImpl={fetchImpl as never} />);
+    await edit("Nuevo");
+    expect((await screen.findByRole("alert")).textContent).toMatch(/no se guardó/);
+    expect(refresh).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   it.each([[409, /finalizado/], [500, /No se pudo guardar/]])("error %s: alerta accesible, sin refresh ni éxito falso", async (status, text) => {
     const fetchImpl = vi.fn(async () => new Response("{}", { status }));
     render(<DocumentTitleEditor documentId={id} title="Mi doc" fetchImpl={fetchImpl as never} />);

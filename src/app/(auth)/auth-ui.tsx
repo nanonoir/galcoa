@@ -13,7 +13,7 @@ export function AuthNotice({ aviso }: { aviso?: string | string[] }) {
   const key = typeof aviso === "string" && Object.hasOwn(NOTICES, aviso) ? (aviso as keyof typeof NOTICES) : null;
   if (!key) return null;
   return (
-    <Alert className="mx-auto w-full max-w-sm" data-testid="auth-notice">
+    <Alert className="w-full max-w-md" data-testid="auth-notice">
       <AlertDescription>{NOTICES[key]}</AlertDescription>
     </Alert>
   );
@@ -21,9 +21,13 @@ export function AuthNotice({ aviso }: { aviso?: string | string[] }) {
 
 export function AuthLinks({ links }: { links: { href: string; label: string }[] }) {
   return (
-    <nav aria-label="Otras opciones de acceso" className="mx-auto flex w-full max-w-sm flex-col gap-1 text-sm">
+    <nav aria-label="Otras opciones de acceso" className="flex w-full max-w-md flex-col text-base">
       {links.map(({ href, label }) => (
-        <Link key={href} href={href} className="underline underline-offset-4">
+        <Link
+          key={href}
+          href={href}
+          className="inline-flex min-h-11 items-center underline underline-offset-4 outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
+        >
           {label}
         </Link>
       ))}

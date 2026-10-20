@@ -5,6 +5,9 @@ import { z } from "zod";
 import { ConfirmationCommandSchema, ConfirmationResultSchema, type ConfirmationResult } from "@/lib/contracts/confirmation";
 import { confirmationStatus } from "@/lib/rules/dimensions";
 
+import type { TechnicalError } from "@/lib/contracts/technical";
+
+import type { AlcEvaluateInput, AlcEvaluation } from "../alc/service";
 import type { SessionPort } from "../ports";
 import { commandFingerprint, failure, IDEMPOTENCY_KEY_PATTERN, newId, type ServiceDeps, type ServiceResult } from "../result";
 
@@ -33,6 +36,11 @@ export const FreezeCommandSchema = z.strictObject({
   expectedDraftRevision: z.number().int().nonnegative(),
   /** Roles elegidos; el servidor agrega al autor y fija el orden canónico. */
   selection: z.array(z.string()),
+  /** Correcciones trazables (F-4): conservan el valor original y exigen una revisión nueva. */
+  rectifications: z
+    .array(z.strictObject({ claimId: z.string().min(1), previousValue: z.string().min(1), correctedValue: z.string().min(1), reason: z.string().min(1) }))
+    .max(50)
+    .optional(),
   idempotencyKey: z.string().regex(IDEMPOTENCY_KEY_PATTERN),
 });
 
@@ -40,8 +48,9 @@ export type RevisionDeps = ServiceDeps & {
   session: SessionPort;
   source: FreezeReader;
   revisions: RevisionStore;
+  /** Evalúa y persiste el semáforo ALC; el congelado enlaza la evaluación, no un color del llamador. */
+  alc: { evaluate(input: AlcEvaluateInput): Promise<{ ok: true; value: AlcEvaluation } | { ok: false; error: TechnicalError }> };
 };
-
 export function createRevisionService(deps: RevisionDeps) {
   const correlation = deps.newCorrelationId ?? newId;
 
@@ -54,18 +63,28 @@ export function createRevisionService(deps: RevisionDeps) {
       const parsed = FreezeCommandSchema.safeParse(command);
       const selection = parsed.success ? normalizeSelection(parsed.data.selection) : null;
       if (!parsed.success || !selection) return failure("INVALID_INPUT", "validacion", false, correlationId);
-      const { documentId, expectedDraftRevision, idempotencyKey } = parsed.data;
+      const { documentId, expectedDraftRevision, idempotencyKey, rectifications = [] } = parsed.data;
 
       try {
         const source = await deps.source.getFreezeSource(ownerId, documentId);
         if (!source) return failure("NOT_AVAILABLE", "persistencia", false, correlationId);
         if (source.draft.draftRevision !== expectedDraftRevision) return failure("STALE_DRAFT", "congelado", false, correlationId);
 
+        const evaluated = await deps.alc.evaluate({
+          ownerId,
+          documentId,
+          draft: { revision: source.draft.draftRevision, title: source.draft.content.title, body: source.draft.content.body },
+          selection,
+          rectifications,
+          correlationId,
+        });
+        if (!evaluated.ok) return { ok: false, error: evaluated.error };
+
         const frozen = buildFrozenSnapshot({
           content: source.draft.content,
           warnings: source.warnings,
           describeSource: (ref) => source.sourceDescriptions[ref] ?? "Fuente aportada",
-          selection,
+          evaluation: evaluated.value,
         });
         const result = await deps.revisions.freezeRevision({
           ownerId,
@@ -74,15 +93,18 @@ export function createRevisionService(deps: RevisionDeps) {
           content: frozen.content,
           snapshotHash: frozen.snapshotHash,
           canonicalHex: frozen.canonicalHex,
-          controlStatus: source.controlStatus,
-          sources: frozen.aliasTable.map(({ alias, ref }) => {
-            const found = source.sourceRefs[ref];
-            if (!found) throw new Error("Fuente sin referencia");
-            return { alias, ...found };
-          }),
+          evaluationId: evaluated.value.evaluationId,
+          sources: [
+            ...frozen.aliasTable.map(({ alias, ref }) => {
+              const found = source.sourceRefs[ref];
+              if (!found) throw new Error("Fuente sin referencia");
+              return { alias, ...found };
+            }),
+            ...evaluated.value.sourceAliases,
+          ],
           idempotency: {
             key: idempotencyKey,
-            fingerprint: commandFingerprint({ schemaVersion: 1, action: "revision.freeze", documentId, expectedDraftRevision, selection }),
+            fingerprint: commandFingerprint({ schemaVersion: 2, action: "revision.freeze", documentId, expectedDraftRevision, selection, rectifications }),
           },
           audit: { actorScope: ownerId, correlationId },
         });
@@ -95,6 +117,10 @@ export function createRevisionService(deps: RevisionDeps) {
             return { ok: true, value: { ...result.value, unchanged: true } };
           case "stale_draft":
             return failure("STALE_DRAFT", "congelado", false, correlationId);
+          case "evaluation_not_found":
+            return failure("ALC_EVALUATION_NOT_FOUND", "congelado", false, correlationId);
+          case "stale_evaluation":
+            return failure("ALC_STALE_EVALUATION", "congelado", true, correlationId);
           case "idempotency_conflict":
             return failure("IDEMPOTENCY_CONFLICT", "persistencia", false, correlationId);
           case "finalization_in_progress":

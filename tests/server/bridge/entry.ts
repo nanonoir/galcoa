@@ -37,7 +37,7 @@ export function createLocalAuthContext(input: LocalAuthContextInput) {
     },
   }, { readEnv: (name) => name === "NEXT_PUBLIC_SUPABASE_URL" ? url.origin :
     name === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ? input.publishableKey : undefined });
-  return { session: createSessionPort(client), cookieChanges, cookieHeaders };
+  return { session: createSessionPort(client), rpc: client, cookieChanges, cookieHeaders };
 }
 
 /**

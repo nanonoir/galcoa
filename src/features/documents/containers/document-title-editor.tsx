@@ -21,6 +21,7 @@ function messageFor(status: number): string {
   if (status === 401) return "Tu sesión expiró. Volvé a ingresar.";
   if (status === 400) return "El título debe tener entre 1 y 200 caracteres.";
   if (status === 404) return "No se encontró el documento.";
+  if (status === 503) return "El servicio no está disponible por ahora y el título no se guardó. Reintentá en unos minutos.";
   return "No se pudo guardar el título. Reintentá.";
 }
 

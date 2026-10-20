@@ -48,7 +48,7 @@ const resultCopy: Record<Exclude<FileState, "sin_archivo" | "verificando">, Resu
     title: "El archivo coincide con el registro",
     body: "Los bytes del PDF coinciden con la huella registrada.",
     icon: CheckCircle2,
-    tone: "text-emerald-700 dark:text-emerald-400",
+    tone: "text-success",
   },
   no_coincide: {
     title: "El archivo no coincide con el registro",
@@ -60,7 +60,7 @@ const resultCopy: Record<Exclude<FileState, "sin_archivo" | "verificando">, Resu
     title: "No se pudo verificar el archivo",
     body: "Falta algún eslabón para comparar (por ejemplo, el registro está pendiente o no se pudo consultar). Esto no indica que el archivo sea distinto.",
     icon: CircleHelp,
-    tone: "text-amber-700 dark:text-amber-400",
+    tone: "text-warning",
   },
 };
 
@@ -85,7 +85,7 @@ function ProofRow({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-3">
       <dt className="tech-label">{label}</dt>
-      <dd className="font-mono text-sm break-all">{value}</dd>
+      <dd className="tech-id">{value}</dd>
     </div>
   );
 }
@@ -126,13 +126,13 @@ export function PublicVerifier({ verification, isVerifying = false, errorMessage
       <Card>
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-2">
-            Verificación pública
+            <h1 className="page-title">Verificación pública</h1>
             <Badge variant={verification.registrationStatus === "registrado" ? "default" : "secondary"}>
               {registrationLabels[verification.registrationStatus]}
             </Badge>
           </CardTitle>
           <p className="text-muted-foreground text-sm">
-            Referencia: <span className="font-mono break-all">{verification.publicReference}</span>
+            Referencia: <span className="tech-id">{verification.publicReference}</span>
           </p>
         </CardHeader>
         <CardContent>
@@ -155,14 +155,16 @@ export function PublicVerifier({ verification, isVerifying = false, errorMessage
 
       <Card>
         <CardHeader>
-          <CardTitle>Comparar un PDF con el registro</CardTitle>
+          <CardTitle>
+            <h2>Comparar un PDF con el registro</h2>
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div
             {...getRootProps({
               className: cn(
-                "flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-6 text-center transition-colors",
-                isDragActive && "border-primary bg-muted",
+                "flex flex-col items-center gap-3 border-2 border-dashed p-6 text-center transition-colors motion-reduce:transition-none",
+                isDragActive && "border-ring bg-accent",
                 isVerifying && "opacity-60",
               ),
             })}
@@ -193,12 +195,12 @@ export function PublicVerifier({ verification, isVerifying = false, errorMessage
             ) : null}
             {state === "verificando" ? (
               <p className="flex items-center gap-2 text-sm">
-                <Loader2 aria-hidden className="size-4 animate-spin" />
+                <Loader2 aria-hidden className="size-4 animate-spin motion-reduce:animate-none" />
                 Verificando el archivo…
               </p>
             ) : null}
             {result ? (
-              <div className="flex gap-3">
+              <div className="flex gap-3 border p-3">
                 <result.icon aria-hidden className={cn("mt-0.5 size-5 shrink-0", result.tone)} />
                 <div>
                   <p className="font-medium">{result.title}</p>

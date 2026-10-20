@@ -61,6 +61,8 @@ export const MESSAGES = {
   invalidData: "Revisa los datos e intenta nuevamente.",
   rateLimited: "Se alcanzó el límite de envíos de correo. Espera un momento e intenta nuevamente.",
   unavailable: "El servicio de acceso no está disponible por ahora. Intenta nuevamente en unos minutos.",
+  registerNoSession:
+    "No se pudo iniciar tu sesión al registrarte: el servicio de acceso no la entregó. Avisa al equipo e intenta nuevamente más tarde.",
   registrationClosed: "El registro no está disponible por ahora.",
   noRecoverySession: "El enlace no es válido o venció. Solicita uno nuevo.",
   samePassword: "Elige una contraseña distinta de la anterior.",
@@ -166,7 +168,9 @@ export async function registerFlow(
     // Solo una sesión emitida por Auth habilita el ingreso. No se confirma por
     // API privilegiada ni se intenta iniciar sesión en una cuenta preexistente.
     if (!error) {
-      if (!data.session) return fail("unavailable", MESSAGES.unavailable);
+      // Contrato aprobado (docs/development.md): sin sesión es un error técnico, no un éxito pendiente.
+      // El mensaje no distingue cuentas nuevas de existentes, así que no filtra existencia.
+      if (!data.session) return fail("unavailable", MESSAGES.registerNoSession);
       return { ok: true, message: MESSAGES.registerOk, redirectTo: AUTH_PATHS.afterLogin };
     }
     switch (classifyProviderError(error)) {

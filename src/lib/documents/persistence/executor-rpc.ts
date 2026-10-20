@@ -3,6 +3,7 @@ import "server-only";
 import { Pool, type PoolConfig } from "pg";
 
 import type { DocumentRpc } from "./store";
+import { alcRpcCommands } from "../alc/rpc-commands";
 import { contrastRpcCommands } from "../contrast/rpc-commands";
 import { evidenceRpcCommands } from "../evidence/rpc-commands";
 import { finalizationRpcCommands } from "../finalization/rpc-commands";
@@ -10,6 +11,7 @@ import { sealingRpcCommands } from "../sealing/rpc-commands";
 import { turnRpcCommands } from "../turns/rpc-commands";
 
 const commands = {
+  ...alcRpcCommands,
   ...evidenceRpcCommands,
   ...turnRpcCommands,
   ...contrastRpcCommands,

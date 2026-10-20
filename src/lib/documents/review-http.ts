@@ -2,10 +2,14 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
+import { createAlcFactsReader } from "@/lib/ai/alc/facts";
+import { getGroqStructuredPort } from "@/lib/ai/groq/structured";
 import type { TechnicalError } from "@/lib/contracts/technical";
 import { PRIVATE_RESPONSE_HEADERS, type SessionCheck } from "@/lib/supabase/auth";
 import { trustedOrigin } from "@/lib/supabase/auth-http";
 
+import { createAlcEvaluator } from "./alc/service";
+import { createAlcStore } from "./alc/supabase";
 import { createAggregateService } from "./confirmations/service";
 import { createSupabaseAggregateStore } from "./confirmations/supabase";
 import { createInvitationService } from "./invitations/service";
@@ -16,6 +20,7 @@ import { createSupabaseRevisionAdapters } from "./revisions/supabase";
 import { createIssueInvitationHandler, createRevokeInvitationHandler } from "./invitations/http";
 import { createExecutorRpc } from "./persistence/executor-rpc";
 import type { DocumentRpc } from "./persistence/store";
+import { failure } from "./result";
 
 /**
  * Rutas del propietario para revisiones, confirmación del autor, estado
@@ -69,8 +74,17 @@ export function createReviewOwnerHandler(deps: ReviewHttpDeps, action: ReviewAct
       const session = { currentUserId: async () => userId };
 
       if (action === "freeze" || action === "confirm") {
-        const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: userId, session: context.rpc, executor: createExecutorRpc(userId) });
-        const service = createRevisionService({ session, source: reader, revisions: store });
+        const executor = createExecutorRpc(userId);
+        const { store, reader, alcSources } = createSupabaseRevisionAdapters({ verifiedUserId: userId, session: context.rpc, executor });
+        // Sin ejecutor no hay evaluación posible: el congelado falla cerrado, nunca sin semáforo.
+        const alc = executor
+          ? createAlcEvaluator({
+              reader: alcSources,
+              facts: { readFacts: (input) => createAlcFactsReader({ groq: getGroqStructuredPort() }).readFacts(input) },
+              store: createAlcStore({ verifiedUserId: userId, executor }),
+            })
+          : { evaluate: async () => failure("NOT_AVAILABLE", "persistencia", false, randomUUID()) };
+        const service = createRevisionService({ session, source: reader, revisions: store, alc });
         return (action === "freeze" ? createFreezeHandler : createAuthorConfirmationHandler)(async () => service)(request, id);
       }
       if (action === "aggregate") {

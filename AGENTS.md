@@ -7,6 +7,7 @@ Estas instrucciones se aplican con cualquier herramienta de desarrollo. No requi
 ## Fuente de verdad y precedencia
 
 1. Instrucciones explícitas del usuario o del ticket asignado.
+1b. [`docs/GALCOA-REGLAS-PRODUCTO.md`](docs/GALCOA-REGLAS-PRODUCTO.md): reglas posteriores fijadas por el usuario (2026-10-20), que prevalecen sobre el PRD donde lo contradicen. F-1 a F-5 están integrados en `develop`; migración ALC aplicada en `galcoa-dev` por autorización expresa, con evidencia y límites en el [plan de alineación](docs/exec-plans/active/alineacion-distribuidoras.md). El despliegue de código compatible es independiente de la migración y no está acreditado. No repetir ni editar SQL ya aplicado. No autoriza por sí mismo otras migraciones, secretos, servicios reales con credenciales, Mainnet o Git delivery.
 2. [`docs/exec-plans/GALCOA-PRD-v1.4.md`](docs/exec-plans/GALCOA-PRD-v1.4.md): PRD de producto (v1.5 internamente; el nombre del archivo se conserva a propósito, no lo renombres ni lo muevas).
 3. Este archivo y las guías de [`docs/`](docs/README.md).
 4. El código existente. Si código y PRD discrepan, investiga la intención antes de cambiar uno u otro y repórtalo.
@@ -54,7 +55,7 @@ Equipo de la hackathon (nadie necesita un harness, MCP ni skills concretos; pued
 
 Estas reglas son obligatorias; detalle y justificación en PRD §3, §5 y §6. Referencia sus IDs en lugar de mantener especificaciones paralelas; el código y los tests deben implementarlas y verificarlas.
 
-- Autonomía máxima: dudas, omisiones y contradicciones son **advertencias no bloqueantes**, incluso las críticas (INV-02, INV-10). Solo bloquean impedimentos técnicos, de seguridad, permisos o confirmaciones faltantes.
+- Política ALC para revisiones nuevas: rojo bloquea finalizar/sellar; evaluación ausente, inválida o desactualizada falla cerrada. Proveedor y comprador obligatorios, transportista opcional, con respuestas ordenadas. La confirmación por capacidad no asegura identidad ni personas distintas. La autonomía con advertencias no bloqueantes del PRD es histórica: no conservarla como requisito de los tests nuevos ni permitir un override humano del rojo. Contrato y validación en el [plan de alineación](docs/exec-plans/active/alineacion-distribuidoras.md).
 - Todos los participantes seleccionados confirman la **misma revisión y snapshot** congelados antes de generar PDF/anexo/HCS (INV-11, INV-14, INV-17). Un cambio material o de selección crea otra revisión sin heredar confirmaciones.
 - Rechazo: casilla desmarcada + modal de ratificación; impide finalizar esa revisión (INV-13). GET nunca consume el token; respuesta y consumo son atómicos e idempotentes (INV-12, INV-13).
 - Versiones finalizadas, PDFs, hashes y reportes son **inmutables** (INV-05, INV-18).

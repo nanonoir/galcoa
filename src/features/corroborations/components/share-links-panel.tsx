@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { useTransientState } from "@/components/ui/use-transient-state";
 import type { ThirdPartyRole } from "@/lib/contracts/review";
 
 /**
@@ -29,10 +30,10 @@ export interface ShareLinksPanelProps {
   renderQr?: (url: string, label: string) => ReactNode;
 }
 
-const roleLabels: Record<ThirdPartyRole, string> = { intermediario: "Intermediario", comprador: "Comprador" };
+const roleLabels: Record<ThirdPartyRole, string> = { intermediario: "Transportista", comprador: "Comprador" };
 
 function ShareLinkCard({ item, onCopy, onReissue, renderQr }: { item: ShareLinkItem } & Omit<ShareLinksPanelProps, "links">) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useTransientState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const label = roleLabels[item.role];
 
@@ -48,23 +49,32 @@ function ShareLinkCard({ item, onCopy, onReissue, renderQr }: { item: ShareLinkI
   }
 
   return (
-    <li className="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-3">
+    <li className="flex min-w-0 flex-col gap-3 border bg-card p-4">
       <h3 className="text-base font-semibold">{label}</h3>
       {item.url === null ? (
         <>
           <p className="text-sm text-muted-foreground">El enlace de este participante ya no se puede mostrar. Si lo perdiste, generá uno nuevo; el anterior deja de funcionar.</p>
-          <Button type="button" variant="outline" onClick={() => onReissue(item.role)} className="self-start">
+          <Button type="button" variant="outline" onClick={() => onReissue(item.role)} className="h-auto min-h-11 self-start whitespace-normal text-left">
             Generar enlace nuevo para {label.toLowerCase()}
           </Button>
         </>
       ) : (
         <>
-          <p className="text-xs break-all text-muted-foreground">{item.url}</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="tech-id border bg-background/60 p-2 text-muted-foreground select-all">
+            {item.url}
+          </p>
+          <div className="flex flex-col gap-2 min-[480px]:flex-row min-[480px]:flex-wrap">
             <Button type="button" variant="outline" onClick={() => void copy(item.url!)} aria-label={`Copiar enlace de ${label.toLowerCase()}`}>
-              {copied ? <Check aria-hidden="true" data-icon="inline-start" /> : <Copy aria-hidden="true" data-icon="inline-start" />}
+              {copied ? (
+                <Check key="copied" aria-hidden="true" data-icon="inline-start" className="motion-fade" />
+              ) : (
+                <Copy key="idle" aria-hidden="true" data-icon="inline-start" />
+              )}
               {copied ? "Copiado" : "Copiar enlace"}
             </Button>
+            <span role="status" className="sr-only">
+              {copied ? "Enlace copiado al portapapeles" : ""}
+            </span>
             <a href={item.whatsappUrl ?? undefined} target="_blank" rel="noopener noreferrer" aria-label={`Abrir WhatsApp para ${label.toLowerCase()}`} className={buttonVariants({ variant: "outline" })}>
               <MessageCircle aria-hidden="true" data-icon="inline-start" />
               WhatsApp
@@ -95,9 +105,11 @@ export function ShareLinksPanel({ links, onCopy, onReissue, renderQr }: ShareLin
         </h2>
         <p className="text-sm text-muted-foreground">Cada enlace es personal. Lo enviás vos: la aplicación no manda correos ni mensajes.</p>
       </header>
-      <Alert>
+      <Alert className="border-ring">
         <AlertTitle>Guardá los enlaces ahora</AlertTitle>
-        <AlertDescription>Solo se muestran al generarlos. Si se pierde uno, hay que generar otro y el anterior deja de funcionar.</AlertDescription>
+        <AlertDescription>
+          Solo se muestran al generarlos: si recargás esta página, desaparecen. Si se pierde uno, hay que generar otro y el anterior deja de funcionar.
+        </AlertDescription>
       </Alert>
       {links.length === 0 ? (
         <p className="text-sm text-muted-foreground">No hay otros participantes seleccionados: no hay enlaces para compartir.</p>

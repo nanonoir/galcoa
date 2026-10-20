@@ -43,6 +43,16 @@ const StateResult = z.union([
 const IntentResult = z.union([
   z.strictObject({ status: z.literal("recorded"), attemptId: Uuid, claimFencing: z.number().int().positive() }),
   z.strictObject({ status: z.enum(["active_attempt", "registered", "payload_mismatch", "not_available"]) }),
+  // Carrera entre `check_seal_eligibility` y el intento: el servicio ya filtró; aquí se falla cerrado (lanza).
+  z.strictObject({ status: z.literal("blocked"), code: z.string() }),
+]);
+const EligibilityResult = z.union([
+  z.strictObject({ status: z.literal("allowed") }),
+  z.strictObject({ status: z.literal("not_available") }),
+  z.strictObject({
+    status: z.literal("blocked"),
+    code: z.enum(["evaluation_required", "stale_evaluation", "red", "selection_invalid", "confirmation_order", "confirmations_missing", "legacy_without_alc"]),
+  }),
 ]);
 const Status = (...values: [string, ...string[]]) => z.strictObject({ status: z.enum(values) });
 
@@ -64,6 +74,12 @@ export function createSupabaseSealingStore(context: {
   const bytes = (value: Uint8Array) => Buffer.from(value);
 
   return {
+    async checkEligibility(versionId) {
+      const r = await call(EligibilityResult, "check_seal_eligibility", { p_version_id: versionId, p_correlation_id: correlation() });
+      // `not_available` (versión ajena o inexistente) es un fallo técnico: el sello falla cerrado, no se permite.
+      if (r.status === "not_available") throw new Error("Versión no disponible para el sello");
+      return r.status === "allowed" ? { allowed: true } : { allowed: false, code: r.code };
+    },
     async loadVersion(versionId) {
       const r = await call(VersionResult, "get_seal_version", { p_version_id: versionId });
       return r.status === "ready" ? { versionId: r.versionId, reference: r.reference, manifestHash: r.manifestHash } : null;

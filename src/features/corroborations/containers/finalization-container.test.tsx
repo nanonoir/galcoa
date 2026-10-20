@@ -65,6 +65,8 @@ describe("FinalizationContainer", () => {
     await tick();
     await tick();
     expect(screen.getByRole("status")).toHaveTextContent("Registrando la huella en Hedera…");
+    // La descarga del PDF ya está disponible con la huella todavía pendiente.
+    expect(screen.getByRole("link", { name: /descargar pdf final \(versión 2\)/i })).toHaveAttribute("href", "/api/documents/doc-1/versions/2/pdf");
     expect(onPublished).not.toHaveBeenCalled();
 
     await tick(SEAL_RETRY_MS);
@@ -76,6 +78,9 @@ describe("FinalizationContainer", () => {
     expect(hashscan).toHaveAttribute("target", "_blank");
     expect(hashscan).toHaveAttribute("rel", "noopener noreferrer");
     expect(screen.getByText(/0\.0\.1234/)).toBeInTheDocument();
+    const pdfLinks = screen.getAllByRole("link", { name: /descargar pdf final/i });
+    expect(pdfLinks).toHaveLength(1);
+    expect(pdfLinks[0]).toHaveAttribute("href", "/api/documents/doc-1/versions/2/pdf");
     expect(onPublished).toHaveBeenCalledWith(2);
     expect(router.refresh).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("button", { name: /subir contrato/i })).not.toBeInTheDocument();

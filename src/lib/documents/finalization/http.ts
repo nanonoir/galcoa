@@ -128,6 +128,10 @@ export function createClaimFinalizationHandler(deps: FinalizationHttpDeps) {
         }
         return Response.json(dto, { status, headers: PRIVATE_RESPONSE_HEADERS });
       }
+      if (result.status === "blocked") {
+        const error: TechnicalError = { code: "ALC_BLOCKED", stage: "validacion", retryable: false, correlationId: randomUUID() };
+        return Response.json({ error, reason: result.code }, { status: 409, headers: PRIVATE_RESPONSE_HEADERS });
+      }
       return problem(CODES[result.status], result.status === "not_available" ? 404 : 409);
     } catch {
       return problem("TECHNICAL_FAILURE", 503, true);

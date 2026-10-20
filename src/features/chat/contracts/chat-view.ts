@@ -111,9 +111,14 @@ export type ChatContrastStatus = z.infer<typeof ChatContrastStatusSchema>;
 export type ChatDraftNotice = z.infer<typeof ChatDraftNoticeSchema>;
 export type ChatViewState = z.infer<typeof ChatViewStateSchema>;
 
+/** Lectura del historial: «sin mensajes» solo se afirma tras `ready`; en `error` no se sabe. */
+export type ChatHistoryStatus = "loading" | "ready" | "error";
+
 /** Props de la presentación: datos serializables y callbacks originados en cliente. */
 export interface ChatViewProps {
   state: ChatViewState;
+  /** Por defecto `ready`. Con `loading` el composer no envía y no se afirma estado vacío. */
+  historyStatus?: ChatHistoryStatus;
   /** Límite de caracteres por mensaje (F1); la presentación lo muestra, el servidor lo impone. */
   maxMessageChars: number;
   onSend: (content: string) => void;

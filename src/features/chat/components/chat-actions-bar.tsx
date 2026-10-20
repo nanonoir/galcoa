@@ -24,6 +24,8 @@ import {
 export interface ChatActionsBarProps {
   /** Ruta de la vista previa; el iframe y el enlace «Abrir en pestaña nueva» apuntan a ella. */
   previewUrl: string;
+  /** Entrada al flujo completo con proveedor y comprador, sin confirmar desde el chat. */
+  reviewUrl?: string;
   onShare: () => void;
   /** Resuelve `true` solo si el servidor confirmó; entonces el diálogo se cierra. */
   onConfirm: () => Promise<boolean>;
@@ -35,7 +37,7 @@ export interface ChatActionsBarProps {
   children?: ReactNode;
 }
 
-export function ChatActionsBar({ previewUrl, onShare, onConfirm, confirmed, error, children }: ChatActionsBarProps) {
+export function ChatActionsBar({ previewUrl, reviewUrl, onShare, onConfirm, confirmed, error, children }: ChatActionsBarProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -58,7 +60,12 @@ export function ChatActionsBar({ previewUrl, onShare, onConfirm, confirmed, erro
           Revisar
           <Eye aria-hidden="true" />
         </Button>
-        <Button
+        {reviewUrl ? (
+          <a href={reviewUrl} className="inline-flex min-h-11 items-center gap-2 bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            <CheckCheck aria-hidden="true" className="size-4" />
+            Revisar y confirmar
+          </a>
+        ) : <Button
           type="button"
           onClick={() => {
             setAgreed(false);
@@ -68,7 +75,7 @@ export function ChatActionsBar({ previewUrl, onShare, onConfirm, confirmed, erro
         >
           <CheckCheck aria-hidden="true" />
           {confirmed ? "Confirmado" : "Confirmar"}
-        </Button>
+        </Button>}
         <Button type="button" variant="outline" onClick={onShare}>
           <Share2 aria-hidden="true" />
           Compartir con terceros
@@ -101,7 +108,7 @@ export function ChatActionsBar({ previewUrl, onShare, onConfirm, confirmed, erro
         </DialogContent>
       </Dialog>
 
-      <Dialog open={confirmOpen} onOpenChange={(next) => (working ? undefined : setConfirmOpen(next))}>
+      <Dialog open={!reviewUrl && confirmOpen} onOpenChange={(next) => (working ? undefined : setConfirmOpen(next))}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar esta versión</DialogTitle>

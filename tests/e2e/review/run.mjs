@@ -3,7 +3,7 @@
 // ficticios, pasa credenciales efímeras por un archivo temporal y lo borra al terminar.
 // Nunca imprime URL, claves, contraseñas ni tokens ni lee `.env`. Falla si falta un prerrequisito.
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -73,6 +73,16 @@ function run() {
     const pw = spawnSync(process.execPath, [bin("@playwright", "test", "cli.js"), "test", "-c", "tests/e2e/review/review.config.ts", ...process.argv.slice(2)], { cwd: ROOT, stdio: "inherit", env, timeout: 900_000 });
     return pw.status ?? 1;
   } finally {
+    // Solo el bundle de esta siembra, dentro del caché del puente; nunca una ruta arbitraria del seed.
+    const seedFile = path.join(dir, "seed.json");
+    if (existsSync(seedFile)) {
+      const { bridgeDir } = JSON.parse(readFileSync(seedFile, "utf8"));
+      const cacheRoot = path.join(ROOT, "node_modules", ".cache", "galcoa-tests");
+      if (typeof bridgeDir === "string" && path.dirname(bridgeDir) === cacheRoot
+        && /^\d+-\d+-[a-f0-9]{8}$/.test(path.basename(bridgeDir))) {
+        rmSync(bridgeDir, { recursive: true, force: true });
+      }
+    }
     rmSync(dir, { recursive: true, force: true });
     // Playwright vuelca una instantánea del DOM al fallar: contendría enlaces con token.
     rmSync(path.join(ROOT, "test-results", "review"), { recursive: true, force: true });

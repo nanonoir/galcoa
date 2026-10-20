@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import { FrozenOperationSchema } from "@/lib/contracts/review";
+import { FrozenContentSchema } from "@/lib/contracts/review";
 import type { TechnicalError } from "@/lib/contracts/technical";
 
 import { failure, newId } from "../result";
@@ -27,7 +27,7 @@ const RenderInputSchema = z.discriminatedUnion("status", [
   z.strictObject({
     status: z.literal("ready"),
     operationId: Uuid, revisionId: Uuid, phase: z.string(), renderer: z.string().min(1), publicReference: z.string().min(1),
-    snapshotHash: Sha256, claimedAt: z.string().min(1), content: FrozenOperationSchema,
+    snapshotHash: Sha256, claimedAt: z.string().min(1), content: FrozenContentSchema,
     receipts: z.array(z.strictObject({
       responseId: Uuid, role: z.enum(["autor", "intermediario", "comprador"]), decision: z.literal("confirmar"),
       declaredName: z.string().nullable(), respondedAt: z.string().min(1),

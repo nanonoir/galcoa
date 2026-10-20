@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { uploadReservedEvidence } from "@/features/auth/containers/supabase-browser";
 import { ChatReference } from "@/features/chat/components/chat-reference";
-import type { ChatAttachmentView, ChatErrorView, ChatMessageView, ChatViewState } from "@/features/chat/contracts/chat-view";
+import type { ChatAttachmentView, ChatErrorView, ChatHistoryStatus, ChatMessageView, ChatViewState } from "@/features/chat/contracts/chat-view";
 import type { Message } from "@/lib/contracts/core";
 import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 import type { TechnicalError } from "@/lib/contracts/technical";
@@ -66,6 +66,8 @@ export function ChatContainer({ documentId, finalized = false }: { documentId: s
   const draftPublished = useRef(false);
   const titleChecked = useRef(false);
   const [hasDraft, setHasDraft] = useState(false);
+  // Primera lectura del historial: sin ella, «sin mensajes» sería indistinguible de «todavía cargando».
+  const [historyStatus, setHistoryStatus] = useState<ChatHistoryStatus>("loading");
   const records = useRef(new Map<string, AttachmentRecord>());
   const lifecycle = useRef(new AbortController());
 
@@ -73,9 +75,14 @@ export function ChatContainer({ documentId, finalized = false }: { documentId: s
 
   const sync = useCallback(async () => {
     const result = await loadMessages(documentId);
-    if (result.ok) patch({ messages: result.value.map(toView) });
-    else if (result.status === 401) router.replace(LOGIN_PATH);
-    else patch({ turnError: toErrorView(result.error, result.status) });
+    if (result.ok) {
+      patch({ messages: result.value.map(toView) });
+      setHistoryStatus("ready");
+    } else if (result.status === 401) router.replace(LOGIN_PATH);
+    else {
+      patch({ turnError: toErrorView(result.error, result.status) });
+      setHistoryStatus((current) => (current === "ready" ? current : "error"));
+    }
   }, [documentId, patch, router]);
 
   /** Pone al documento el título del borrador, una sola vez y solo si sigue con el predeterminado. Falla en silencio. */
@@ -117,9 +124,14 @@ export function ChatContainer({ documentId, finalized = false }: { documentId: s
       .catch(() => undefined);
     void loadMessages(documentId, initial.signal).then((result) => {
       if (initial.signal.aborted) return;
-      if (result.ok) setState((current) => ({ ...current, messages: result.value.map(toView) }));
-      else if (result.status === 401) router.replace(LOGIN_PATH);
-      else setState((current) => ({ ...current, turnError: toErrorView(result.error, result.status) }));
+      if (result.ok) {
+        setState((current) => ({ ...current, messages: result.value.map(toView) }));
+        setHistoryStatus("ready");
+      } else if (result.status === 401) router.replace(LOGIN_PATH);
+      else {
+        setState((current) => ({ ...current, turnError: toErrorView(result.error, result.status) }));
+        setHistoryStatus("error");
+      }
     });
     return () => {
       initial.abort();
@@ -290,8 +302,15 @@ export function ChatContainer({ documentId, finalized = false }: { documentId: s
   );
 
   return (
-    <ChatReference
+    <>
+      {historyStatus === "loading" && (
+        <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+          Cargando la conversación…
+        </p>
+      )}
+      <ChatReference
       state={state}
+      historyStatus={historyStatus}
       maxMessageChars={MAX_MESSAGE_CHARS}
       onSend={(content) => void execute({ clientMessageId: crypto.randomUUID(), content })}
       actions={!finalized && (state.draft || hasDraft) ? <ChatActionsContainer documentId={documentId} /> : undefined}
@@ -305,6 +324,7 @@ export function ChatContainer({ documentId, finalized = false }: { documentId: s
           void sync();
         }
       }}
-    />
+      />
+    </>
   );
 }

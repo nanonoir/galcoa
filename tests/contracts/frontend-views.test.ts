@@ -100,7 +100,8 @@ describe("landing", () => {
   });
 
   it("no promete pagos, Mainnet ni envío automático", () => {
-    expect(JSON.stringify(landingScenarios)).not.toMatch(/mainnet|pago|stripe|mercado/i);
+    // «ni pagos automáticos» es la negación aprobada de la sección «Próximamente»; cualquier otra mención sigue prohibida.
+    expect(JSON.stringify(landingScenarios)).not.toMatch(/mainnet|(?<!ni )pago|stripe|mercado/i);
   });
 });
 

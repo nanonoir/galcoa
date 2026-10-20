@@ -2,7 +2,7 @@ import { ArrowUp, Loader2 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { SealRegisteredAlert } from "@/features/documents/components/sealed-version-card";
+import { FinalPdfDownloadLink, SealRegisteredAlert } from "@/features/documents/components/sealed-version-card";
 
 /**
  * Finalización de la revisión (REQ-12, INV-13/14): presentación pura. Recibe el estado ya
@@ -26,10 +26,10 @@ export type FinalizationPanelState =
   | { status: "starting" }
   | { status: "in_progress"; phase: FinalizationPhase }
   /** Versión publicada; la huella todavía no quedó registrada en Hedera. */
-  | { status: "sealing"; versionNumber: number }
+  | { status: "sealing"; versionNumber: number; documentId?: string }
   /** El sondeo agotó su tope: la operación puede seguir avanzando en el servidor. */
-  | { status: "stalled"; phase: FinalizationPhase | null }
-  | { status: "published"; versionNumber: number; seal: FinalizationSealInfo }
+  | { status: "stalled"; phase: FinalizationPhase | null; versionNumber?: number; documentId?: string }
+  | { status: "published"; versionNumber: number; seal: FinalizationSealInfo; documentId?: string }
   | { status: "failed"; code: string };
 
 export interface FinalizationPanelProps {
@@ -71,23 +71,27 @@ export function FinalizationPanel({ state, onFinalize, onRefresh }: Finalization
   const label = workingLabel(state);
   return (
     <section aria-labelledby="finalization-title" className="panel flex flex-col gap-3 p-4">
-      <h2 id="finalization-title" className="tech-label">
+      <h2 id="finalization-title" className="text-lg font-semibold">
         Finalización
       </h2>
 
       {state.status === "idle" && <p className="text-sm text-muted-foreground">Todos los participantes confirmaron esta revisión. Al subir el contrato se genera la versión con su PDF y se registra su huella en Hedera Testnet.</p>}
 
-      {state.status === "published" && <SealRegisteredAlert versionNumber={state.versionNumber} seal={state.seal} />}
+      {state.status === "published" && (
+        <div className="motion-enter">
+          <SealRegisteredAlert versionNumber={state.versionNumber} seal={state.seal} />
+        </div>
+      )}
 
       {state.status === "failed" && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="motion-enter">
           <AlertTitle>No se pudo finalizar</AlertTitle>
           <AlertDescription>{errorTexts[state.code] ?? FALLBACK_ERROR}</AlertDescription>
         </Alert>
       )}
 
       {state.status === "stalled" && (
-        <Alert>
+        <Alert className="motion-enter">
           <AlertTitle>La finalización sigue en curso</AlertTitle>
           <AlertDescription>
             {state.phase ? `Última fase informada: ${phaseLabels[state.phase]}. ` : ""}Dejamos de consultar automáticamente; podés actualizar el estado o reintentar la subida.
@@ -95,9 +99,14 @@ export function FinalizationPanel({ state, onFinalize, onRefresh }: Finalization
         </Alert>
       )}
 
+      {/* El PDF final existe desde la publicación, aunque la huella todavía esté pendiente. */}
+      {(state.status === "sealing" || state.status === "published" || state.status === "stalled") && state.documentId && state.versionNumber !== undefined && (
+        <FinalPdfDownloadLink documentId={state.documentId} versionNumber={state.versionNumber} />
+      )}
+
       {label && (
-        <p role="status" aria-live="polite" className="flex items-center gap-2 text-sm">
-          <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+        <p role="status" aria-live="polite" className="motion-fade flex items-center gap-2 text-sm">
+          <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
           {label}
         </p>
       )}
