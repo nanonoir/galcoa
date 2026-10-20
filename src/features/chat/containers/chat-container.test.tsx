@@ -47,6 +47,57 @@ async function send(text = "Entregué 3 cajas") {
 }
 
 describe("ChatContainer (MVP-054; red simulada, no es integración real)", () => {
+  it("reabrir: muestra «cargando», luego los mensajes persistidos, sin pasar por un estado de error", async () => {
+    history = [message("m1", "autor", "Entregué 3 cajas")];
+    render(<ChatContainer documentId={DOC} />);
+    expect(screen.getByText("Cargando la conversación…")).toBeInTheDocument();
+    expect(await screen.findByText("Entregué 3 cajas")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("Cargando la conversación…")).not.toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("reabrir con la lectura caída: error visible (no «sin mensajes» silencioso) y reintento que recupera", async () => {
+    const fetchMock = vi.mocked(fetch);
+    let down = true;
+    fetchMock.mockImplementation((async (url: string) =>
+      url.endsWith("/messages") ? (down ? Response.json({ error }, { status: 503 }) : Response.json({ result: [message("m1", "autor", "Hola")] })) : new Response("{}", { status: 404 })) as never);
+    render(<ChatContainer documentId={DOC} />);
+    const retry = await screen.findByRole("button", { name: "Reintentar respuesta" });
+    down = false;
+    await userEvent.click(retry);
+    expect(await screen.findByText("Hola")).toBeInTheDocument();
+  });
+
+  it("hidratando: «cargando» sin «Todavía no hay mensajes» y composer sin enviar; vacío solo tras lectura exitosa", async () => {
+    let release!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => { release = resolve; });
+    vi.mocked(fetch).mockImplementation((async (url: string) =>
+      url.endsWith("/messages") ? pending : new Response("{}", { status: 404 })) as never);
+    render(<ChatContainer documentId={DOC} />);
+    expect(screen.getByText("Cargando la conversación…")).toBeInTheDocument();
+    expect(screen.queryByText(/Todavía no hay mensajes/)).not.toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText("Mensaje"), "Hola");
+    expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
+    await act(async () => release(Response.json({ result: [] })));
+    expect(await screen.findByText(/Todavía no hay mensajes/)).toBeInTheDocument();
+    expect(screen.queryByText("Cargando la conversación…")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Enviar" })).toBeEnabled();
+  });
+
+  it("lectura fallida: sin «Todavía no hay mensajes»; al recuperar aparecen los mensajes", async () => {
+    let down = true;
+    vi.mocked(fetch).mockImplementation((async (url: string) =>
+      url.endsWith("/messages") ? (down ? Response.json({ error }, { status: 503 }) : Response.json({ result: [message("m1", "autor", "Hola")] })) : new Response("{}", { status: 404 })) as never);
+    render(<ChatContainer documentId={DOC} />);
+    const retry = await screen.findByRole("button", { name: "Reintentar respuesta" });
+    expect(screen.queryByText(/Todavía no hay mensajes/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Cargando la conversación…")).not.toBeInTheDocument();
+    down = false;
+    await userEvent.click(retry);
+    expect(await screen.findByText("Hola")).toBeInTheDocument();
+    expect(screen.queryByText(/Todavía no hay mensajes/)).not.toBeInTheDocument();
+  });
+
   it("muestra el draft, el mensaje del agente y avisos no bloqueantes; sin ceros inventados en replay", async () => {
     chat = () => {
       history = [message("m1", "autor", "Entregué 3 cajas"), message("m2", "agente", "Preparé el borrador «Entrega».")];

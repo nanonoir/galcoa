@@ -1,4 +1,5 @@
 import { AlertTriangle, FileText, Info, Plus, RotateCcw } from "lucide-react";
+import type { CSSProperties } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +88,7 @@ function countLabel(count: number, singular: string, plural: string) {
 
 function Dimension({ name, value, tone = "neutral" }: { name: string; value: string; tone?: Tone }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-lg bg-muted/40 p-2">
+    <div className="flex min-w-0 flex-col gap-1 bg-muted/40 p-2">
       <dt className="tech-label">{name}</dt>
       <dd className="min-w-0">
         <Badge
@@ -107,8 +108,8 @@ function WarningItem({ warning }: { warning: DocumentWarning }) {
     <li
       className={
         critical
-          ? "flex gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-2"
-          : "flex gap-2 rounded-lg border border-border bg-muted/40 p-2"
+          ? "flex gap-2 border border-destructive/40 bg-destructive/5 p-2"
+          : "flex gap-2 border border-border bg-muted/40 p-2"
       }
     >
       {critical ? (
@@ -130,38 +131,39 @@ function WarningItem({ warning }: { warning: DocumentWarning }) {
 
 function DocumentItem({
   document,
+  index,
   onOpen,
 }: {
   document: DocumentSummary;
+  index: number;
   onOpen: (documentId: string) => void;
 }) {
   return (
-    <li>
+    // La tarjeta no es un enlace: solo «Abrir» es accionable, así que la fila no recibe hover ni press.
+    <li className="motion-enter" style={{ "--enter-delay": `${Math.min(index, 5) * 30}ms` } as CSSProperties}>
       <Card size="sm">
-        <CardHeader className="gap-2">
-          <CardTitle>
-            <h3 className="flex items-start gap-2 text-base font-semibold break-words">
-              <FileText aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0">{document.title}</span>
-            </h3>
-          </CardTitle>
-          <p className="tech-label">
-            Actualizado <time dateTime={document.updatedAt}>{formatDate(document.updatedAt)}</time>
-          </p>
-          <p className="text-xs break-all text-muted-foreground">
-            {document.revisionId ? (
-              <>
-                Revisión <span className="font-mono">{document.revisionId}</span>
-                {document.snapshotId && (
-                  <>
-                    {" · "}snapshot <span className="font-mono">{document.snapshotId}</span>
-                  </>
-                )}
-              </>
-            ) : (
-              NO_FROZEN_REVISION
-            )}
-          </p>
+        <CardHeader className="gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 flex-col gap-1">
+              <CardTitle>
+                <h3 className="flex items-start gap-2 text-base font-semibold break-words">
+                  <FileText aria-hidden="true" className="mt-1 size-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0">{document.title}</span>
+                </h3>
+              </CardTitle>
+              <p className="tech-label">
+                Actualizado <time dateTime={document.updatedAt}>{formatDate(document.updatedAt)}</time>
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full shrink-0 sm:w-auto"
+              onClick={() => onOpen(document.id)}
+              aria-label={`Abrir ${document.title}`}
+            >
+              Abrir
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {/* Cuatro dimensiones independientes (PRD §5): ninguna se deriva de otra. */}
@@ -192,16 +194,21 @@ function DocumentItem({
               </ul>
             </section>
           )}
-          <div>
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={() => onOpen(document.id)}
-              aria-label={`Abrir ${document.title}`}
-            >
-              Abrir
-            </Button>
-          </div>
+          {/* Identificadores técnicos al final: son de consulta, no de lectura. */}
+          <p className="tech-label break-all">
+            {document.revisionId ? (
+              <>
+                Revisión <span className="tech-id">{document.revisionId}</span>
+                {document.snapshotId && (
+                  <>
+                    {" · "}snapshot <span className="tech-id">{document.snapshotId}</span>
+                  </>
+                )}
+              </>
+            ) : (
+              NO_FROZEN_REVISION
+            )}
+          </p>
         </CardContent>
       </Card>
     </li>
@@ -211,16 +218,14 @@ function DocumentItem({
 export function DashboardReference({ state, onCreate, onOpen, onRetry }: DashboardViewProps) {
   return (
     <section aria-labelledby="dashboard-reference-title" className="flex min-w-0 flex-col gap-4">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-col gap-1">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-baseline gap-3">
           <h2 id="dashboard-reference-title" className="text-lg font-semibold">
             Documentos
           </h2>
-          <p className="tech-label">
-            {state.status === "ready" && state.documents.length > 0
-              ? `Historial de documentos · ${countLabel(state.documents.length, "documento", "documentos")}`
-              : "Historial de documentos"}
-          </p>
+          {state.status === "ready" && state.documents.length > 0 && (
+            <p className="tech-label">{countLabel(state.documents.length, "documento", "documentos")}</p>
+          )}
         </div>
         <Button onClick={() => onCreate()} className="w-full sm:w-auto">
           <Plus aria-hidden="true" data-icon="inline-start" />
@@ -251,17 +256,19 @@ export function DashboardReference({ state, onCreate, onOpen, onRetry }: Dashboa
       )}
 
       {state.status === "ready" && state.documents.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-6 text-center">
+        <div className="flex flex-col items-center gap-2 border border-dashed p-8 text-center">
           <FileText aria-hidden="true" className="size-6 text-muted-foreground" />
           <p className="font-medium">Todavía no hay documentos.</p>
-          <p className="text-sm text-muted-foreground">Crea el primero con «Crear documento».</p>
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Creá el primero con «Crear documento» y contá la operación por chat; después se revisa y se confirma.
+          </p>
         </div>
       )}
 
       {state.status === "ready" && state.documents.length > 0 && (
         <ul aria-labelledby="dashboard-reference-title" className="flex flex-col gap-3">
-          {state.documents.map((document) => (
-            <DocumentItem key={document.id} document={document} onOpen={onOpen} />
+          {state.documents.map((document, index) => (
+            <DocumentItem key={document.id} document={document} index={index} onOpen={onOpen} />
           ))}
         </ul>
       )}

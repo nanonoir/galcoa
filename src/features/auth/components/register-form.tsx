@@ -45,7 +45,7 @@ function Field({ form, name, label, type, autoComplete, state, locked }: FieldPr
         aria-describedby={error ? `${id}-error` : undefined}
       />
       {error && (
-        <p id={`${id}-error`} className="text-sm text-destructive">
+        <p id={`${id}-error`} className="text-sm font-medium text-destructive">
           {error}
         </p>
       )}
@@ -74,14 +74,14 @@ export function RegisterForm({ state, onSubmit }: RegisterFormProps) {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-sm">
+    <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>
-          <h1 id={`${ID}-title`} className="text-lg font-medium">
+          <h1 id={`${ID}-title`} className="page-title">
             Crear cuenta
           </h1>
         </CardTitle>
-        <CardDescription>Ingresa un correo y elige una contraseña.</CardDescription>
+        <CardDescription className="text-base">Ingresa un correo y elige una contraseña.</CardDescription>
       </CardHeader>
       <CardContent>
         <form

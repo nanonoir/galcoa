@@ -23,7 +23,7 @@ export default async function NuevaContrasenaPage() {
   if (session.status === "unavailable") {
     return (
       <>
-        <Alert variant="destructive" className="mx-auto w-full max-w-sm" data-testid="auth-unavailable">
+        <Alert variant="destructive" className="w-full max-w-md" data-testid="auth-unavailable">
           <AlertDescription>{MESSAGES.unavailable}</AlertDescription>
         </Alert>
         <AuthLinks links={[{ href: "/acceso", label: "Volver al acceso" }]} />

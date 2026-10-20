@@ -14,8 +14,7 @@ export default async function DashboardPage() {
   const result = await documents.listDocuments();
   if (!result.ok && failureKind(result.error) === "unauthenticated") redirect(LOGIN_PATH);
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8">
-      <p className="eyebrow self-start">Mis documentos</p>
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <h1 className="page-title">Mis documentos</h1>
       <DashboardContainer initialState={toDashboardState(result)} />
     </main>
