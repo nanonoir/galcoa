@@ -108,7 +108,7 @@ export function createAlcFactsReader(deps: { groq: GroqStructuredPort }) {
         }
         // El valor del hecho tiene que salir del borrador, no del modelo.
         if (!numeric && !body.includes(value)) continue;
-        for (const token of draftValue.match(NUMBER_TOKEN) ?? []) claimTokens.add(token);
+        for (const token of `${subject} ${field} ${draftValue}`.match(NUMBER_TOKEN) ?? []) claimTokens.add(token);
         const assertions: AlcClaim["assertions"] = [];
         for (const a of raw.assertions) {
           const source = byId.get(a.sourceId);
@@ -131,9 +131,10 @@ export function createAlcFactsReader(deps: { groq: GroqStructuredPort }) {
         }
         claims.set(id, { id, subject, field, value, unit, numeric, ambiguous: raw.ambiguous, assertions });
       }
-      // Cobertura determinista: todo número del borrador debe figurar en el valor de alguna afirmación.
+      // Cobertura determinista: todo número del borrador debe figurar en alguna afirmación (sujeto, campo o valor).
+      // La autoevaluación de cobertura del modelo no se usa: es ruidosa y dejaba en rojo documentos coincidentes.
       const covered = bodyTokens.every((token) => claimTokens.has(token));
-      return { ok: true, facts: { claims: [...claims.values()], contentCoverageComplete: generated.output.contentCoverageComplete && covered } };
+      return { ok: true, facts: { claims: [...claims.values()], contentCoverageComplete: covered } };
     },
   };
 }
