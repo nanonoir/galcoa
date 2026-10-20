@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SnapshotViewProps } from "@/features/documents/contracts/snapshot-view";
+import { AlcTrafficLight } from "@/features/documents/components/alc-traffic-light";
 import type { ConfirmationStatus, ControlStatus, DocumentStatus, HcsStatus } from "@/lib/contracts/document";
 import { DEMO_HIDE_WARNINGS } from "@/lib/contracts/demo-mode";
 import type { ParticipantRole, SharedWarning } from "@/lib/contracts/review";
@@ -60,6 +61,13 @@ const roleLabels: Record<ParticipantRole, string> = {
   comprador: "Comprador",
 };
 
+/** Snapshots v2: los roles internos se muestran como proveedor / transportista / comprador. */
+const roleLabelsV2: Record<ParticipantRole, string> = {
+  autor: "Proveedor",
+  intermediario: "Transportista",
+  comprador: "Comprador",
+};
+
 /** Sin estado de confirmaciones no se informa ninguno (`null` ≠ completa). */
 const NO_CONFIRMATION_STATUS = "Sin revisión congelada";
 
@@ -75,7 +83,7 @@ function countLabel(count: number, singular: string, plural: string) {
 
 function Dimension({ name, value, tone = "neutral" }: { name: string; value: string; tone?: Tone }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-lg bg-muted/40 p-2">
+    <div className="flex min-w-0 flex-col gap-1 border bg-muted/40 p-2">
       <dt className="tech-label">{name}</dt>
       <dd className="min-w-0">
         <Badge
@@ -95,8 +103,8 @@ function WarningCard({ warning }: { warning: SharedWarning }) {
     <li
       className={
         critical
-          ? "flex gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3"
-          : "flex gap-2 rounded-lg border border-border bg-muted/40 p-3"
+          ? "flex gap-2 border border-destructive/40 bg-destructive/5 p-3"
+          : "flex gap-2 border border-border bg-muted/40 p-3"
       }
     >
       {critical ? (
@@ -161,7 +169,7 @@ export function SnapshotView({ state, onRetry }: SnapshotViewProps) {
       )}
 
       {state.status === "empty" && (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-6 text-center">
+        <div className="flex flex-col items-center gap-2 border border-dashed p-6 text-center">
           <FileText aria-hidden="true" className="size-6 text-muted-foreground" />
           <p className="font-medium">Todavía no hay una revisión congelada.</p>
           <p className="text-sm text-muted-foreground">El snapshot aparece cuando se congela una revisión.</p>
@@ -175,6 +183,8 @@ export function SnapshotView({ state, onRetry }: SnapshotViewProps) {
 
 function ReadySnapshot({ state }: { state: Extract<SnapshotViewProps["state"], { status: "ready" }> }) {
   const { operation, warnings, selection } = state.content;
+  const alc = "alc" in state.content ? state.content : null;
+  const roleNames = alc ? roleLabelsV2 : roleLabels;
   // Defensa: un estado de confirmaciones ausente nunca se lee como «Completa».
   const confirmationStatus: ConfirmationStatus | null = state.confirmationStatus ?? null;
 
@@ -190,7 +200,11 @@ function ReadySnapshot({ state }: { state: Extract<SnapshotViewProps["state"], {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          {/* Cuatro dimensiones independientes (PRD §5): ninguna se deriva de otra. */}
+          {/* Cuatro dimensiones independientes (PRD §5): ninguna se deriva de otra. Son el avance actual, no una foto. */}
+          <p className="tech-label">Avance actual</p>
+          <p className="text-xs text-muted-foreground">
+            El contenido de abajo está congelado y no cambia. Estos estados muestran el avance actual y pueden cambiar después de congelar.
+          </p>
           <dl aria-label="Estado del snapshot" className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 md:grid-cols-4">
             <Dimension name="Documento" value={documentStatusLabels[state.documentStatus]} />
             {!DEMO_HIDE_WARNINGS && (
@@ -215,8 +229,8 @@ function ReadySnapshot({ state }: { state: Extract<SnapshotViewProps["state"], {
         <h3 id="snapshot-content-title" className="text-base font-semibold">
           Contenido
         </h3>
-        {/* Texto completo como contenido (React escapa: nunca HTML arbitrario). */}
-        <p className="rounded-lg border p-3 text-sm break-words whitespace-pre-line">{operation.body}</p>
+        {/* Texto completo como contenido (React escapa: nunca HTML arbitrario). Borde amarillo = contenido congelado. */}
+        <p className="border border-border p-3 text-base break-words whitespace-pre-line">{operation.body}</p>
         <div className="flex flex-col gap-1 text-sm">
           <p className="font-medium">Correcciones aplicadas</p>
           {operation.corrections.length > 0 ? (
@@ -233,9 +247,11 @@ function ReadySnapshot({ state }: { state: Extract<SnapshotViewProps["state"], {
         </div>
         <p className="text-sm break-words">
           <span className="font-medium">Participantes seleccionados:</span>{" "}
-          {selection.map((role) => roleLabels[role]).join(", ")}
+          {selection.map((role) => roleNames[role]).join(", ")}
         </p>
       </section>
+
+      {alc && <AlcTrafficLight alc={alc.alc} rectifications={alc.rectifications} />}
 
       {!DEMO_HIDE_WARNINGS && (
         <section aria-labelledby="snapshot-warnings-title" className="flex min-w-0 flex-col gap-2">

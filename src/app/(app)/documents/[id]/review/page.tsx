@@ -73,7 +73,7 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <p className="eyebrow self-start">Revisión y confirmaciones</p>
-      <h1 className="page-title">Revisión de «{result.value.title}»</h1>
+      <h1 className="page-title break-words">Revisión de «{result.value.title}»</h1>
       {sealed && <SealedVersionContainer version={sealed} />}
       {bundle || source ? (
         <ReviewContainer documentId={id} draftRevision={source ? source.draft.draftRevision : bundle!.revision.frozenFromDraftRevision} hcsStatus={hcsStatus} active={active} documentFinalized={finalized} />

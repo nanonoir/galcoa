@@ -4,25 +4,34 @@ import { readFileSync } from "node:fs";
 import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 import { count, value } from "./db";
+import type { AlcEvaluation } from "@/lib/documents/alc/service";
+import type { freezeLocally } from "./bridge-entry";
 
 /**
  * Flujo del autor (#21; MVP-077/078) contra Supabase local real y el producto sin mocks:
  * ruta de revisión, congelado SQL, enlaces por tercero, QR/copiar/WhatsApp/correo sin envío,
- * recarga sin reemisión, nueva revisión sin herencia y `unchanged`. Cuenta y datos ficticios
+ * recarga sin reemisión, nueva revisión sin herencia y `unchanged`. La evaluación del congelado
+ * usa hechos ficticios persistidos en el seed mediante un puente de test Node, sin Groq real.
+ * No acredita el runtime de extracción IA de Next. Cuenta y datos ficticios
  * (sin IA ni Hedera). Los enlaces son capacidades: las aserciones comparan booleanos para que
  * un fallo nunca imprima un token, y no hay trazas ni capturas.
  */
 
-type Seed = { email: string; password: string; documents: Record<string, string> };
+type Seed = { email: string; password: string; documents: Record<string, string>; evaluations: Record<string, AlcEvaluation>; bridgeUrl: string };
 const seed = (): Seed => JSON.parse(readFileSync(process.env.REVIEW_E2E_SEED_FILE ?? "", "utf8"));
 
 test.skip(process.env.REVIEW_E2E !== "1", "Usá `npm run test:e2e:review`");
 test.describe.configure({ mode: "serial" });
 
-type Role = "Intermediario" | "Comprador";
+type Role = "Transportista" | "Comprador";
 const LOOPBACK = new Set(["127.0.0.1", "localhost"]);
 const LINK_SHAPE = /^http:\/\/127\.0\.0\.1:\d+\/confirm\/[A-Za-z0-9_-]{20,}$/;
 const FORBIDDEN_WORDS = /certificad|validad[oa]|garantizad|firma digital|identidad verificada/i;
+let freezeBridge: typeof freezeLocally;
+
+test.beforeAll(async () => {
+  freezeBridge = (await import(seed().bridgeUrl)).freezeLocally;
+});
 
 /** Bloquea y registra (solo el host) todo lo que no sea loopback; registra mutaciones de la API. */
 function watch(context: BrowserContext, page?: Page) {
@@ -35,6 +44,23 @@ function watch(context: BrowserContext, page?: Page) {
       return route.abort();
     },
   );
+  // Solo el POST de congelado usa la composición de prueba; invitaciones,
+  // confirmaciones, páginas y lecturas siguen pasando por Next y Supabase locales.
+  void context.route(/\/api\/documents\/[0-9a-f-]{36}\/revisions$/, async (route) => {
+    const incoming = route.request();
+    const url = new URL(incoming.url());
+    if (!LOOPBACK.has(url.hostname) || incoming.method() !== "POST" || incoming.headers().origin !== url.origin) {
+      return route.fulfill({ status: 403, json: { error: { code: "FORBIDDEN" } } });
+    }
+    const response = await freezeBridge({
+      url: process.env.REVIEW_E2E_SUPABASE_URL ?? "",
+      publishableKey: process.env.REVIEW_E2E_PUBLISHABLE_KEY ?? "",
+      cookies: await context.cookies(),
+    }, seed().evaluations, new Request(url, {
+      method: "POST", headers: incoming.headers(), body: incoming.postData(),
+    }), url.pathname.split("/")[3]);
+    await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() });
+  });
   page?.on("request", (request) => {
     const { pathname } = new URL(request.url());
     if (request.method() !== "GET" && pathname.startsWith("/api/")) mutations.push(`${request.method()} ${pathname.replace(/[0-9a-f-]{36}/g, ":id")}`);
@@ -52,11 +78,11 @@ async function login(page: Page) {
 }
 
 const card = (page: Page, role: Role) => page.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: role }) });
-const linkOf = async (item: Locator) => ((await item.locator("p.break-all").first().textContent()) ?? "").trim();
-const checkbox = (page: Page, role: Role) => page.getByRole("checkbox", { name: role, exact: true });
+const linkOf = async (item: Locator) => ((await item.locator("p.tech-id").first().textContent()) ?? "").trim();
+const checkbox = (page: Page, role: Role) => page.getByRole("checkbox", { name: role === "Comprador" ? "Comprador: siempre incluido" : role, exact: true });
 const freezeButton = (page: Page) => page.getByRole("button", { name: "Congelar y generar enlaces" });
 const newRevisionButton = (page: Page) => page.getByRole("button", { name: "Crear nueva revisión y generar enlaces" });
-const authorBox = (page: Page) => page.getByLabel("Revisé la operación y las advertencias, y confirmo esta versión.");
+const authorBox = (page: Page) => page.getByLabel("Revisé la operación y confirmo esta versión.");
 
 const sqlRevisions = (documentId: string) => count(`select count(*) from public.document_revisions where document_id = '${documentId}'`);
 const sqlRequests = (documentId: string) => count(`select count(*) from public.corroboration_requests where document_id = '${documentId}'`);
@@ -68,16 +94,18 @@ async function openReview(page: Page, documentId: string) {
 }
 
 async function freeze(page: Page, roles: Role[]) {
-  for (const role of roles) await checkbox(page, role).check();
+  for (const role of roles) {
+    if (role === "Comprador") await expect(checkbox(page, role)).toBeChecked();
+    else await checkbox(page, role).check();
+  }
   await freezeButton(page).click();
-  if (roles.length === 0) await expect(page.getByText("No hay otros participantes seleccionados")).toBeVisible();
   for (const role of roles) await expect(card(page, role).getByRole("button", { name: /Copiar enlace/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Confirmar como autor" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Confirmar como proveedor" })).toBeVisible();
 }
 
 async function confirmAsAuthor(page: Page) {
   await authorBox(page).check();
-  await page.getByRole("button", { name: "Confirmar como autor" }).click();
+  await page.getByRole("button", { name: "Confirmar como proveedor" }).click();
   await expect(page.getByRole("button", { name: "Ya confirmaste" })).toBeVisible();
 }
 
@@ -116,10 +144,8 @@ async function checkSharing(page: Page, role: Role, url: string, otherUrls: stri
 }
 
 const SELECTIONS: { key: string; roles: Role[]; stored: string }[] = [
-  { key: "solo", roles: [], stored: "autor" },
-  { key: "intermediario", roles: ["Intermediario"], stored: "autor,intermediario" },
   { key: "comprador", roles: ["Comprador"], stored: "autor,comprador" },
-  { key: "ambos", roles: ["Intermediario", "Comprador"], stored: "autor,intermediario,comprador" },
+  { key: "ambos", roles: ["Transportista", "Comprador"], stored: "autor,intermediario,comprador" },
 ];
 
 test.describe("revisión del autor (E2E real local)", () => {
@@ -136,8 +162,10 @@ test.describe("revisión del autor (E2E real local)", () => {
       await expect(page).toHaveURL(new RegExp(`/documents/${documentId}/review$`));
       await expect(page.getByRole("heading", { level: 1 })).toContainText("Revisión de");
 
-      // El autor siempre está incluido y las advertencias críticas no bloquean.
-      await expect(page.getByRole("checkbox", { name: "Autor (vos): siempre incluido" })).toBeDisabled();
+      // Proveedor y comprador son obligatorios; solo el transportista es opcional.
+      await expect(page.getByRole("checkbox", { name: /Proveedor.*siempre incluido/ })).toBeDisabled();
+      await expect(checkbox(page, "Comprador")).toBeChecked();
+      await expect(checkbox(page, "Comprador")).toBeDisabled();
       await expect(freezeButton(page)).toBeEnabled();
       await freeze(page, roles);
 
@@ -157,8 +185,8 @@ test.describe("revisión del autor (E2E real local)", () => {
       // Tres indicadores separados.
       const progress = page.getByRole("region", { name: /Avance de la revisión/ });
       await expect(progress.getByText(/Confirmaciones · Revisión actual/)).toBeVisible();
-      await expect(progress.getByText("Finalización", { exact: true })).toBeVisible();
-      await expect(progress.getByText("Sello HCS", { exact: true })).toBeVisible();
+      await expect(progress.getByText("Finalización de la versión", { exact: true })).toBeVisible();
+      await expect(progress.getByText("Sello HCS (independiente de la finalización)", { exact: true })).toBeVisible();
 
       // Confirmación del autor persistida.
       await confirmAsAuthor(page);
@@ -191,44 +219,44 @@ test.describe("revisión del autor (E2E real local)", () => {
     const guard = watch(page.context(), page);
     await login(page);
     await openReview(page, documentId);
-    await freeze(page, ["Intermediario", "Comprador"]);
-    const oldInter = await linkOf(card(page, "Intermediario"));
+    await freeze(page, ["Transportista", "Comprador"]);
+    const oldInter = await linkOf(card(page, "Transportista"));
     const oldBuyer = await linkOf(card(page, "Comprador"));
     await confirmAsAuthor(page);
 
-    // El comprador responde desde su enlace real, en otro contexto.
+    // El transportista responde primero; el comprador sigue pendiente.
     const other = await browser.newContext();
     try {
       const guest = watch(other);
       const buyerPage = await other.newPage();
-      await buyerPage.goto(oldBuyer);
+      await buyerPage.goto(oldInter);
       await buyerPage.getByLabel("Nombre completo").fill("Juan Pérez");
       await buyerPage.getByRole("checkbox").check();
       await buyerPage.getByRole("button", { name: "Confirmar" }).click();
       await expect(buyerPage.getByRole("status")).toContainText("Registramos tu confirmación");
 
       const rev1 = revisionId(documentId, 1);
-      expect(count(`select count(*) from public.corroboration_responses where revision_id = '${rev1}'`), "autor y comprador respondieron la revisión 1").toBe(2);
+      expect(count(`select count(*) from public.corroboration_responses where revision_id = '${rev1}'`), "proveedor y transportista respondieron la revisión 1").toBe(2);
 
       // Cancelar la edición no envía nada.
       guard.mutations.length = 0;
       await page.getByRole("button", { name: "Actualizar avance" }).click();
       await page.getByRole("button", { name: "Modificar participantes" }).click();
-      await expect(checkbox(page, "Intermediario")).toBeEnabled();
-      await checkbox(page, "Intermediario").uncheck();
+      await expect(checkbox(page, "Transportista")).toBeEnabled();
+      await checkbox(page, "Transportista").uncheck();
       await page.getByRole("button", { name: "Cancelar y conservar la revisión actual" }).click();
-      await expect(checkbox(page, "Intermediario")).toBeChecked();
-      await expect(checkbox(page, "Intermediario")).toBeDisabled();
+      await expect(checkbox(page, "Transportista")).toBeChecked();
+      await expect(checkbox(page, "Transportista")).toBeDisabled();
       expect(guard.mutations.filter((m) => m.startsWith("POST")), "cancelar no hace POST").toEqual([]);
       expect(await sqlRevisions(documentId)).toBe(1);
 
       // Selección nueva (sin intermediario) ⇒ otra revisión; mientras se edita, la vigente no cambia.
       await page.getByRole("button", { name: "Modificar participantes" }).click();
-      await checkbox(page, "Intermediario").uncheck();
+      await checkbox(page, "Transportista").uncheck();
       expect(await sqlRevisions(documentId), "editar no crea revisión").toBe(1);
       await newRevisionButton(page).click();
       await expect(card(page, "Comprador").getByRole("button", { name: /Copiar enlace/ })).toBeVisible();
-      await expect(card(page, "Intermediario")).toHaveCount(0);
+      await expect(card(page, "Transportista")).toHaveCount(0);
 
       const newBuyer = await linkOf(card(page, "Comprador"));
       expect(newBuyer !== oldBuyer, "enlace nuevo distinto del anterior").toBe(true);
@@ -241,7 +269,7 @@ test.describe("revisión del autor (E2E real local)", () => {
       // Sin herencia: nada respondido en la revisión 2 y la historia de la 1 se conserva.
       expect(count(`select count(*) from public.corroboration_responses where revision_id = '${rev2}'`), "la revisión 2 no hereda respuestas").toBe(0);
       expect(count(`select count(*) from public.corroboration_responses where revision_id = '${rev1}'`)).toBe(2);
-      await expect(page.getByRole("button", { name: "Confirmar como autor" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Confirmar como proveedor" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Ya confirmaste" })).toHaveCount(0);
       await expect(page.getByText(/Faltan confirmaciones/)).toBeVisible();
 
@@ -249,13 +277,13 @@ test.describe("revisión del autor (E2E real local)", () => {
       expect(count(`select count(*) from public.corroboration_requests where revision_id = '${rev1}' and consumed_at is null and revoked_at is null`), "sin enlaces vivos en la revisión 1").toBe(0);
       expect(count(`select count(*) from public.corroboration_requests where revision_id = '${rev1}' and revoked_at is not null`)).toBe(1);
 
-      // El enlace viejo del intermediario ya no permite responder.
+      // El enlace viejo del comprador (sin consumir) ya no permite responder.
       const stale = await other.newPage();
-      await stale.goto(oldInter);
+      await stale.goto(oldBuyer);
       await expect(stale.getByText(/Esta revisión fue reemplazada|Enlace no disponible/)).toBeVisible();
       await expect(stale.getByRole("checkbox")).toHaveCount(0);
       await expect(stale.getByRole("button", { name: "Confirmar" })).toHaveCount(0);
-      expect(count(`select count(*) from public.corroboration_responses where revision_id = '${rev1}' and role = 'intermediario'`), "el enlace viejo no registró respuesta").toBe(0);
+      expect(count(`select count(*) from public.corroboration_responses where revision_id = '${rev1}' and role = 'comprador'`), "el enlace viejo no registró respuesta").toBe(0);
 
       // El enlace nuevo sí funciona y es de la revisión nueva.
       const fresh = await other.newPage();
@@ -276,12 +304,13 @@ test.describe("revisión del autor (E2E real local)", () => {
     await freeze(page, ["Comprador"]);
     const rev1 = revisionId(documentId, 1);
 
-    const response = await page.request.post(`/api/documents/${documentId}/revisions`, {
-      headers: { origin: new URL(baseURL!).origin },
-      data: { expectedDraftRevision: 1, selection: ["comprador"], idempotencyKey: randomUUID() },
-    });
-    expect(response.status()).toBe(200);
-    const body = (await response.json()) as { unchanged?: boolean; revision?: { revisionId?: string } };
+    const result = await page.evaluate(async ({ url, key }) => {
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expectedDraftRevision: 1, selection: ["comprador"], idempotencyKey: key }) });
+      return { status: response.status, body: await response.json() };
+    }, { url: new URL(`/api/documents/${documentId}/revisions`, baseURL).href, key: randomUUID() });
+    expect(result.status).toBe(200);
+    const body = result.body as { unchanged?: boolean; revision?: { revisionId?: string } };
     expect(body.unchanged, "el servidor informa unchanged").toBe(true);
     expect(body.revision?.revisionId === rev1, "misma revisión").toBe(true);
     expect(await sqlRevisions(documentId)).toBe(1);

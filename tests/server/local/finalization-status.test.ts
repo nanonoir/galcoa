@@ -5,7 +5,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createRevisionService } from "@/lib/documents/revisions/service";
 import { createSupabaseRevisionAdapters } from "@/lib/documents/revisions/supabase";
 
-import { createTestUser, psqlOk, readLocalStack, type TestUser } from "../rls/harness";
+import { buyerConfirms, localAlc } from "./alc-support";
+
+import { createTestUser, psqlOk, readLocalStack, type LocalStack, type TestUser } from "../rls/harness";
 
 /**
  * MVP-080 · `get_finalization_status` (migración 02505) contra Postgres/PostgREST locales:
@@ -13,11 +15,12 @@ import { createTestUser, psqlOk, readLocalStack, type TestUser } from "../rls/ha
  * Datos ficticios.
  */
 
+let stack: LocalStack;
 let ana: TestUser;
 let luis: TestUser;
 
 beforeAll(async () => {
-  const stack = readLocalStack();
+  stack = readLocalStack();
   ana = await createTestUser(stack, "fst-a");
   luis = await createTestUser(stack, "fst-b");
 });
@@ -33,14 +36,15 @@ async function confirmedRevision(user: TestUser) {
   const content = JSON.stringify({ title: "Acuerdo ficticio", body: "Se entregan 12 cajas.", corrections: [] });
   await psqlOk(`insert into public.drafts (document_id, draft_revision, content) values ('${documentId}', 1, '${content}'::jsonb);`);
   const { store, reader } = createSupabaseRevisionAdapters({ verifiedUserId: user.id, session: user.client });
-  const service = createRevisionService({ session: { currentUserId: async () => user.id }, source: reader, revisions: store });
-  const f = await service.freeze({ documentId, expectedDraftRevision: 1, selection: ["autor"], idempotencyKey: key("freeze") });
+  const service = createRevisionService({ session: { currentUserId: async () => user.id }, source: reader, revisions: store, alc: localAlc(user.id) });
+  const f = await service.freeze({ documentId, expectedDraftRevision: 1, selection: ["autor", "comprador"], idempotencyKey: key("freeze") });
   if (!f.ok) throw new Error(`freeze: ${f.error.code}`);
   const { revisionId, snapshotId, snapshotHash } = f.value.revision;
   const c = await service.confirmAsAuthor({
     schemaVersion: 1, actor: "autor", documentId, revisionId, snapshotId, snapshotHash, idempotencyKey: key("author"), decision: "confirmar", checkboxChecked: true,
   });
   if (!c.ok) throw new Error(`confirm: ${c.error.code}`);
+  await buyerConfirms(user, stack, f.value.revision);
   return { documentId, revisionId };
 }
 

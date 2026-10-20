@@ -46,17 +46,74 @@ export const FrozenOperationSchema = z.strictObject({
   selection: ParticipantSelectionSchema,
 });
 
-export const SnapshotSchema = z.strictObject({
-  schemaVersion: SchemaVersionSchema,
+/**
+ * Selección de escritura nueva (F-2): proveedor (`autor`) y comprador obligatorios; transportista
+ * (`intermediario`) opcional. Los IDs internos no cambian; solo las etiquetas de presentación.
+ */
+export const AlcSelectionSchema = z.union([
+  z.tuple([z.literal("autor"), z.literal("comprador")]),
+  z.tuple([z.literal("autor"), z.literal("intermediario"), z.literal("comprador")]),
+]);
+
+const AlcRuleIdSchema = z.enum([
+  "ALC-CONTRADICCION", "ALC-NO-LECTURA", "ALC-AMBIGUEDAD", "ALC-DATO-DECLARADO", "ALC-FUENTES-COINCIDENTES",
+  "ALC-PARTICIPANTES", "ALC-CONFIRMACIONES",
+]);
+
+/**
+ * Estado de cada dato material: `declarado` = solo lo afirma el chat o una fuente no probatoria;
+ * `confirmado` = respaldado por un original conservado; `contradicho`/`ambiguo` = rojo.
+ */
+export const AlcClaimStatusSchema = z.enum(["declarado", "confirmado", "contradicho", "ambiguo"]);
+
+/** Resumen compartible del veredicto ALC: alias locales, sin ids ni rutas privadas. */
+export const AlcSharedSchema = z.strictObject({
+  rulesVersion: z.string().min(1),
+  color: z.enum(["verde", "amarillo", "rojo"]),
+  /** Compromiso al insumo exacto evaluado (SHA-256 JCS); no revela el contenido. */
+  inputHash: Sha256HexSchema,
+  findings: z.array(z.strictObject({ ruleId: AlcRuleIdSchema, claimId: z.string().nullable(), sources: z.array(z.string()) })),
+  claims: z.array(z.strictObject({
+    id: z.string().min(1), subject: z.string().min(1), field: z.string().min(1), value: z.string().min(1),
+    unit: z.string().nullable(), status: AlcClaimStatusSchema,
+  })),
+});
+
+/** Rectificación trazable: conserva el valor y las fuentes originales y exige una revisión nueva. */
+export const RectificationSchema = z.strictObject({
+  claimId: z.string().min(1),
+  previousValue: z.string().min(1),
+  correctedValue: z.string().min(1),
+  reason: z.string().min(1),
+  originalSources: z.array(z.string()),
+  correctedSources: z.array(z.string()),
+});
+
+/** Contenido congelado v2: el v1 más la evaluación ALC y las rectificaciones. */
+export const FrozenOperationV2Schema = z.strictObject({
+  operation: OperationContentSchema,
+  warnings: z.array(SharedWarningSchema),
+  selection: AlcSelectionSchema,
+  alc: AlcSharedSchema,
+  rectifications: z.array(RectificationSchema),
+});
+
+/** Lector explícito v1/v2: los snapshots históricos siguen siendo válidos y no se reinterpretan. */
+export const FrozenContentSchema = z.union([FrozenOperationSchema, FrozenOperationV2Schema]);
+
+const SnapshotBase = {
   snapshotId: IdSchema,
   revisionId: IdSchema,
   documentId: IdSchema,
-  content: FrozenOperationSchema,
   /** SHA-256 de la serialización canónica de `content` (la calcula el consumidor, MVP-012/070). */
   snapshotHash: Sha256HexSchema,
   frozenAt: InstantSchema,
-});
+};
 
+export const SnapshotSchema = z.discriminatedUnion("schemaVersion", [
+  z.strictObject({ ...SnapshotBase, schemaVersion: SchemaVersionSchema, content: FrozenOperationSchema }),
+  z.strictObject({ ...SnapshotBase, schemaVersion: z.literal(2), content: FrozenOperationV2Schema }),
+]);
 export const RevisionSchema = z.strictObject({
   schemaVersion: SchemaVersionSchema,
   revisionId: IdSchema,
@@ -80,5 +137,10 @@ export type ParticipantSelection = z.infer<typeof ParticipantSelectionSchema>;
 export type SourceAlias = z.infer<typeof SourceAliasSchema>;
 export type SharedWarning = z.infer<typeof SharedWarningSchema>;
 export type FrozenOperation = z.infer<typeof FrozenOperationSchema>;
+export type FrozenOperationV2 = z.infer<typeof FrozenOperationV2Schema>;
+export type FrozenContent = z.infer<typeof FrozenContentSchema>;
+export type AlcShared = z.infer<typeof AlcSharedSchema>;
+export type Rectification = z.infer<typeof RectificationSchema>;
+export type AlcSelection = z.infer<typeof AlcSelectionSchema>;
 export type Snapshot = z.infer<typeof SnapshotSchema>;
 export type Revision = z.infer<typeof RevisionSchema>;

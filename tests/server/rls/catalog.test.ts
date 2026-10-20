@@ -4,6 +4,7 @@ import { psql, psqlOk, TABLES_WITHOUT_RLS_SQL } from "./harness";
 
 /** Tablas solo del ejecutor de servidor: ni siquiera el propietario las lee por API. */
 const SERVER_ONLY_TABLES = [
+  "alc_evaluations",
   "artifact_reservations",
   "artifact_staging",
   "chat_turns",
@@ -43,6 +44,8 @@ describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
       "20261016002509",
       "20261016002510",
       "20261016002511",
+      "20261017000100",
+      "20261020000100",
     ]);
   });
 
@@ -50,7 +53,7 @@ describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
     const tables = await column("select tablename from pg_tables where schemaname = 'public' order by 1;");
     expect(tables).toEqual(
       [
-        "artifact_reservations", "artifact_staging", "audit_events", "chat_turns", "corroboration_requests",
+        "alc_evaluations", "artifact_reservations", "artifact_staging", "audit_events", "chat_turns", "corroboration_requests",
         "corroboration_responses", "document_revisions", "document_versions", "documents", "drafts",
         "evidence_extractions", "evidences", "finalization_operations", "hedera_attempts",
         "hedera_registrations", "idempotency_records", "message_events", "messages", "rate_limit_counters", "report_sources",
@@ -110,7 +113,7 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
       await column(
         `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' order by p.proname;`,
       ),
-    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "attach_chat_turn_message", "claim_chat_turn", "claim_evidence_discard", "claim_finalization", "close_chat_turn", "complete_chat_turn", "confirm_as_author", "create_document", "discard_evidence_reservation", "freeze_revision", "get_active_revision", "get_document", "get_evidence", "get_finalization_manifest_input", "get_finalization_render_input", "get_finalization_staged_content", "get_finalization_status", "get_freeze_source", "get_public_verification", "get_revision_state", "get_seal_state", "get_seal_version", "hit_rate_limit", "issue_invitation", "list_documents", "list_evidence_discards", "list_evidence_extractions", "list_evidences", "list_messages", "persist_contrast_report", "prepare_finalization_manifest", "publish_version", "read_invitation", "record_seal_intent", "record_seal_outcome", "record_seal_registration", "rename_document", "reserve_evidence", "reserve_finalization_objects", "respond_invitation", "revoke_invitation", "stage_chat_turn_proposal", "stage_finalization_pdf"]);
+    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "attach_chat_turn_message", "check_seal_eligibility", "claim_chat_turn", "claim_evidence_discard", "claim_finalization", "close_chat_turn", "complete_chat_turn", "confirm_as_author", "create_document", "discard_evidence_reservation", "freeze_revision", "get_active_revision", "get_alc_evaluation", "get_document", "get_evidence", "get_finalization_manifest_input", "get_finalization_render_input", "get_finalization_staged_content", "get_finalization_status", "get_freeze_source", "get_public_verification", "get_revision_state", "get_seal_state", "get_seal_version", "hit_rate_limit", "issue_invitation", "list_documents", "list_evidence_discards", "list_evidence_extractions", "list_evidences", "list_messages", "persist_contrast_report", "prepare_finalization_manifest", "publish_version", "read_invitation", "record_seal_intent", "record_seal_outcome", "record_seal_registration", "rename_document", "reserve_evidence", "reserve_finalization_objects", "respond_invitation", "revoke_invitation", "save_alc_evaluation", "stage_chat_turn_proposal", "stage_finalization_pdf"]);
   });
 
   it("toda función propia fija `search_path` y ninguna es ejecutable por PUBLIC ni anon", async () => {

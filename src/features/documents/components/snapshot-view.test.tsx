@@ -133,6 +133,13 @@ describe("SnapshotView", () => {
     expect(screen.getByText(/no significa que los datos estén corroborados/)).toBeInTheDocument();
   });
 
+  it("aclara que el contenido está congelado y que los estados son el avance actual, sin llamarlos históricos", () => {
+    renderScenario("no-warnings");
+    expect(screen.getByText(/contenido de abajo está congelado y no cambia/i)).toBeInTheDocument();
+    expect(screen.getByText(/muestran el avance actual y pueden cambiar después de congelar/i)).toBeInTheDocument();
+    expect(screen.queryByText(/histór/i)).not.toBeInTheDocument();
+  });
+
   it("contenido extenso: muestra el texto completo, sin truncar ninguna cláusula", () => {
     const state = readyState("long-content");
     renderState(state);

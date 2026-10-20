@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { FrozenOperation, ParticipantRole, ParticipantSelection, ThirdPartyRole } from "@/lib/contracts/review";
+import type { FrozenContent, ParticipantRole, ParticipantSelection, ThirdPartyRole } from "@/lib/contracts/review";
 
 import type { AuditContext, IdempotencyInput } from "../ports";
 
@@ -49,7 +49,7 @@ export type InvitationReadRecord = {
   snapshotHash: string;
   role: ThirdPartyRole;
   selection: ParticipantSelection;
-  content: FrozenOperation;
+  content: FrozenContent;
   state: InvitationState;
   expiresAt: string;
 };
@@ -94,6 +94,8 @@ export type RespondResult =
   | { status: "unavailable"; state: Exclude<InvitationState, "vigente"> }
   /** Revisión, snapshot o hash distintos de los de la invitación. */
   | { status: "snapshot_mismatch" }
+  /** Falta que respondan antes los participantes anteriores (proveedor -> transportista -> comprador). */
+  | { status: "confirmation_order" }
   | { status: "idempotency_conflict" }
   | { status: "not_available" };
 

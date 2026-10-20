@@ -5,6 +5,9 @@ import { HcsStatusSchema } from "./document";
 import { HcsConsensusSchema } from "./version";
 import {
   FrozenOperationSchema,
+  AlcSelectionSchema,
+  AlcSharedSchema,
+  RectificationSchema,
   ParticipantSelectionSchema,
   SharedWarningSchema,
   ThirdPartyRoleSchema,
@@ -25,7 +28,7 @@ export const InvitationAvailabilitySchema = z.enum([
 ]);
 
 /** Invitación que ve el tercero: operación completa idéntica a la del autor (REQ-13). */
-export const PublicInvitationSchema = z.strictObject({
+const PublicInvitationV1Schema = z.strictObject({
   schemaVersion: SchemaVersionSchema,
   /** Identificadores opacos; no son capacidades de acceso. */
   revisionId: IdSchema,
@@ -41,6 +44,15 @@ export const PublicInvitationSchema = z.strictObject({
   availability: InvitationAvailabilitySchema,
   expiresAt: InstantSchema,
 });
+
+/** El tercero recibe también los motivos y rectificaciones que confirma en el snapshot v2. */
+const PublicInvitationV2Schema = PublicInvitationV1Schema.extend({
+  schemaVersion: z.literal(2),
+  selection: AlcSelectionSchema,
+  alc: AlcSharedSchema,
+  rectifications: z.array(RectificationSchema),
+});
+export const PublicInvitationSchema = z.discriminatedUnion("schemaVersion", [PublicInvitationV1Schema, PublicInvitationV2Schema]);
 
 /** Envelope público del manifiesto: compromiso al PDF y al detalle privado, sin revelarlo (SH-06). */
 export const PublicManifestEnvelopeSchema = z.strictObject({

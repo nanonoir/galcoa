@@ -7,7 +7,7 @@ import {
   HcsStatusSchema,
 } from "./document";
 import { IdSchema } from "./common";
-import { FrozenOperationSchema } from "./review";
+import { FrozenContentSchema } from "./review";
 
 /**
  * Estado de vista del snapshot congelado (MVP-112; PRD REQ-08, INV-11, INV-14).
@@ -24,7 +24,7 @@ export const SnapshotViewStateSchema = z.discriminatedUnion("status", [
     status: z.literal("ready"),
     revisionId: IdSchema,
     snapshotId: IdSchema,
-    content: FrozenOperationSchema,
+    content: FrozenContentSchema,
     documentStatus: DocumentStatusSchema,
     controlStatus: ControlStatusSchema,
     confirmationStatus: ConfirmationStatusSchema,

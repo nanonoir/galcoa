@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { TechnicalError } from "@/lib/contracts/technical";
 
 import { canonicalHash } from "../manifest/jcs";
-import { buildEnvelope, NonceSchema, PrivateDetailSchema, privateDetailHash, type Envelope, type PrivateDetail } from "../manifest/manifest";
+import { buildEnvelope, NonceSchema, PRIVATE_DETAIL_SCHEMA_VERSION_V2, PrivateDetailSchema, privateDetailHash, type Envelope, type PrivateDetail } from "../manifest/manifest";
 import type { DocumentRpc } from "../persistence/store";
 import { failure, newId } from "../result";
 
@@ -42,6 +42,8 @@ const ManifestInputSchema = z.discriminatedUnion("status", [
       declaredName: z.string().nullable(), ratifiedRejection: z.boolean(), respondedAt: Instant,
     })),
     previousVersion: z.strictObject({ versionId: Uuid, manifestHash: Sha256 }).nullable(),
+    /** Evaluación ALC de la revisión; `null`/ausente para revisiones históricas (detalle v1). */
+    alc: z.strictObject({ evaluationId: Uuid, rulesVersion: z.string().min(1), color: z.enum(["verde", "amarillo", "rojo"]), inputHash: Sha256 }).nullish(),
     staged: Staged.nullable(),
   }),
   z.strictObject({ status: z.enum(["not_available", "abandoned", "stale_fencing", "pdf_missing"]) }),
@@ -87,7 +89,7 @@ const byUtf16 = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 /** Detalle privado desde lo persistido; el esquema estricto rechaza cualquier campo de más o de menos. */
 function buildDetail(input: Extract<ManifestInputResult, { status: "ready" }>): PrivateDetail {
   return PrivateDetailSchema.parse({
-    schemaVersion: "galcoa.private-detail.v1",
+    schemaVersion: input.alc ? PRIVATE_DETAIL_SCHEMA_VERSION_V2 : "galcoa.private-detail.v1",
     versionId: input.versionId, revisionId: input.revisionId, snapshotId: input.snapshotId, snapshotHash: input.snapshotHash,
     evidences: [...input.evidences].sort((a, b) => byUtf16(a.evidenceId, b.evidenceId)),
     reports: [...input.reports].sort((a, b) => byUtf16(a.reportId, b.reportId)).map((r) => ({
@@ -101,6 +103,7 @@ function buildDetail(input: Extract<ManifestInputResult, { status: "ready" }>): 
     confirmations: input.confirmations,
     previousVersion: input.previousVersion,
     nonce: input.nonce,
+    ...(input.alc ? { alc: input.alc } : {}),
   });
 }
 

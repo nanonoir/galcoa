@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import { FrozenOperationSchema, ParticipantSelectionSchema, ThirdPartyRoleSchema } from "@/lib/contracts/review";
+import { FrozenContentSchema, ParticipantSelectionSchema, ThirdPartyRoleSchema } from "@/lib/contracts/review";
 import { DeclaredNameSchema } from "@/lib/contracts/confirmation";
 
 import type { DocumentRpc } from "../persistence/store";
@@ -35,7 +35,7 @@ const IssueSchema = z.discriminatedUnion("status", [
 
 const ReadSchema = z.strictObject({
   invitationId: z.string(), revisionId: z.string(), snapshotId: z.string(), snapshotHash: z.string(), role: Role,
-  selection: ParticipantSelectionSchema, content: FrozenOperationSchema,
+  selection: ParticipantSelectionSchema, content: FrozenContentSchema,
   state: z.enum(["vigente", "consumida", "revocada", "vencida", "sustituida"]), expiresAt: z.string(),
 });
 
@@ -63,7 +63,8 @@ export function createSupabaseInvitationStore(context: {
 }): InvitationStore {
   async function call(name: string, args: Record<string, unknown>): Promise<unknown> {
     const { data, error } = await context.rpc.rpc(name, args);
-    if (error) throw new Error("Persistencia no disponible");
+    // El orden proveedor -> transportista -> comprador lo impone la base (trigger); se informa sin filtrar texto de SQL.
+    if (error) throw new Error(String((error as { message?: string }).message ?? "").includes("confirmation_order") ? "confirmation_order" : "Persistencia no disponible");
     return data;
   }
   function requireOwner(ownerId: string) {
@@ -100,8 +101,9 @@ export function createSupabaseInvitationStore(context: {
     },
     async respondAtomically(input) {
       const { command } = input;
-      const result = RespondSchema.parse(
-        await call("respond_invitation", {
+      let raw: unknown;
+      try {
+        raw = await call("respond_invitation", {
           p_token_hash: input.tokenHash,
           p_revision_id: command.revisionId,
           p_snapshot_id: command.snapshotId,
@@ -111,8 +113,12 @@ export function createSupabaseInvitationStore(context: {
           p_key: input.idempotency.key,
           p_fingerprint: input.idempotency.fingerprint,
           p_correlation_id: input.audit.correlationId,
-        }),
-      );
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === "confirmation_order") return { status: "confirmation_order" };
+        throw error;
+      }
+      const result = RespondSchema.parse(raw);
       if (result.status !== "created" && result.status !== "replayed") return result as RespondResult;
       return {
         status: result.status,

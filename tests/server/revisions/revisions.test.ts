@@ -8,6 +8,7 @@ import type { FreezeSource } from "@/lib/documents/revisions/ports";
 import { createRevisionService } from "@/lib/documents/revisions/service";
 import type { ConsolidatedWarning } from "@/lib/rules/consolidate";
 
+import { fakeAlc, fakeEvaluation } from "./alc-double";
 import { createMemoryRevisions } from "./memory-revisions";
 
 // Datos ficticios; ni base ni IA reales.
@@ -42,7 +43,7 @@ const source = (over: Partial<FreezeSource> = {}): FreezeSource => ({
   ...over,
 });
 
-function setup(user: string | null = ANA) {
+function setup(user: string | null = ANA, alc = fakeAlc()) {
   const mem = createMemoryRevisions();
   mem.seed(ANA, DOC, source());
   let n = 0;
@@ -50,9 +51,10 @@ function setup(user: string | null = ANA) {
     session: { currentUserId: async () => user },
     source: mem.reader,
     revisions: mem.store,
+    alc,
     newCorrelationId: () => `corr-${++n}`,
   });
-  return { mem, service };
+  return { mem, service, alc };
 }
 
 const freeze = (over: Record<string, unknown> = {}) => ({
@@ -65,8 +67,6 @@ const freeze = (over: Record<string, unknown> = {}) => ({
 
 describe("MVP-070 · selección y congelado puro", () => {
   it.each([
-    [[], ["autor"]],
-    [["intermediario"], ["autor", "intermediario"]],
     [["comprador"], ["autor", "comprador"]],
     [["comprador", "intermediario"], ["autor", "intermediario", "comprador"]],
     [["autor", "comprador", "comprador"], ["autor", "comprador"]],
@@ -74,16 +74,20 @@ describe("MVP-070 · selección y congelado puro", () => {
     expect(normalizeSelection(input)).toEqual(expected);
   });
 
+  it.each([[[]], [["intermediario"]], [["autor"]]])("sin comprador %j no es una selección válida", (input) => {
+    expect(normalizeSelection(input)).toBeNull();
+  });
+
   it("un rol desconocido no es una selección", () => {
     expect(normalizeSelection(["comprador", "escribano"])).toBeNull();
   });
 
-  it("el hash es el JCS del contenido y el DTO usa alias, sin refs privadas", () => {
+  it("el hash es el JCS del contenido y el DTO usa alias, sin refs privadas", async () => {
     const frozen = buildFrozenSnapshot({
       content: draft().content,
       warnings: [critical],
       describeSource: (ref) => ({ m1: "chat: 10 cajas", e1: "remito aportado: 12 cajas" })[ref] ?? "",
-      selection: ["autor", "comprador"],
+      evaluation: fakeEvaluation(),
     });
     expect(frozen.snapshotHash).toBe(snapshotHash(frozen.content).hash);
     expect(JSON.stringify(frozen.content)).not.toMatch(/\b[me]\d+\b/);
@@ -92,7 +96,7 @@ describe("MVP-070 · selección y congelado puro", () => {
       { alias: "Fuente A", ref: "e1" },
       { alias: "Fuente B", ref: "m1" },
     ]);
-    expect(Object.keys(frozen.content).sort()).toEqual(["operation", "selection", "warnings"]);
+    expect(Object.keys(frozen.content).sort()).toEqual(["alc", "operation", "rectifications", "selection", "warnings"]);
   });
 });
 
@@ -113,7 +117,7 @@ describe("MVP-070 · congelar la revisión", () => {
     if (!r.ok) throw new Error("freeze");
     const text = JSON.stringify(r.value.snapshot.content);
     expect(text).not.toMatch(/mensaje|evidencia|"m1"|"e1"|ownerId/i);
-    expect(Object.keys(r.value.snapshot.content).sort()).toEqual(["operation", "selection", "warnings"]);
+    expect(Object.keys(r.value.snapshot.content).sort()).toEqual(["alc", "operation", "rectifications", "selection", "warnings"]);
   });
 
   it("revisión del borrador distinta: STALE_DRAFT, sin crear nada", async () => {
@@ -130,7 +134,7 @@ describe("MVP-070 · congelar la revisión", () => {
     expect(a.ok && b.ok && b.replayed).toBe(true);
     if (a.ok && b.ok) expect(b.value.revision.revisionId).toBe(a.value.revision.revisionId);
     expect(mem.activeCount(DOC)).toBe(1);
-    expect(await service.freeze(freeze({ selection: ["intermediario"] }))).toMatchObject({ ok: false, error: { code: "IDEMPOTENCY_CONFLICT" } });
+    expect(await service.freeze(freeze({ selection: ["intermediario", "comprador"] }))).toMatchObject({ ok: false, error: { code: "IDEMPOTENCY_CONFLICT" } });
   });
 
   it("mismo contenido y selección con otra clave: no crea otra revisión", async () => {
@@ -191,17 +195,17 @@ const confirmCommand = (b: Bundle, over: Record<string, unknown> = {}) => ({
 });
 
 describe("MVP-071 · confirmación del autor", () => {
-  it("el autor solo: su confirmación completa la revisión", async () => {
+  it("el autor confirma pero el comprador es obligatorio: queda parcial", async () => {
     const { service } = setup();
-    const f = await service.freeze(freeze({ selection: [] }));
+    const f = await service.freeze(freeze({ selection: ["comprador"] }));
     if (!f.ok) throw new Error("freeze");
     const r = await service.confirmAsAuthor(confirmCommand(f.value));
-    expect(r).toMatchObject({ ok: true, value: { confirmationStatus: "completa", actor: { role: "autor", declaredName: null }, outcome: { decision: "confirmar" }, replayed: false } });
+    expect(r).toMatchObject({ ok: true, value: { confirmationStatus: "parcial", actor: { role: "autor", declaredName: null }, outcome: { decision: "confirmar" }, replayed: false } });
   });
 
   it("una revisión de otro documento no se confirma con la ruta equivocada", async () => {
     const { service } = setup();
-    const f = await service.freeze(freeze({ selection: [] }));
+    const f = await service.freeze(freeze({ selection: ["comprador"] }));
     if (!f.ok) throw new Error("freeze");
     expect(await service.confirmAsAuthor(confirmCommand(f.value, { documentId: "otro-documento" }))).toMatchObject({ ok: false, error: { code: "NOT_AVAILABLE" } });
     expect(await service.confirmAsAuthor(confirmCommand(f.value))).toMatchObject({ ok: true });
@@ -286,5 +290,48 @@ describe("MVP-070/071 · handlers HTTP", () => {
     const { service } = setup();
     const res = await createFreezeHandler(async () => service)(new Request("http://localhost/api", { method: "POST", body: "no json" }), DOC);
     expect(res.status).toBe(400);
+  });
+});
+
+describe("F-1/F-2 · congelado con evaluación ALC", () => {
+  it("el evaluador recibe el borrador y la selección v2; el color lo fija la evaluación, no el llamador", async () => {
+    const alc = fakeAlc({ color: "rojo" });
+    const { service } = setup(ANA, alc);
+    const r = await service.freeze(freeze({ selection: ["intermediario", "comprador"] }));
+    if (!r.ok) throw new Error("freeze");
+    expect(alc.calls[0]).toMatchObject({ ownerId: ANA, documentId: DOC, draft: { revision: 3 }, selection: ["autor", "intermediario", "comprador"] });
+    expect(r.value.snapshot.schemaVersion).toBe(2);
+    expect(r.value.revision.controlStatus).toBe("contradiccion_critica");
+    expect(r.value.snapshot.content).toMatchObject({ alc: { color: "rojo" }, rectifications: [] });
+  });
+
+  it("un campo controlStatus del llamador es entrada inválida", async () => {
+    const { service, alc } = setup();
+    expect(await service.freeze({ ...freeze(), controlStatus: "sin_evaluar" })).toMatchObject({ ok: false, error: { code: "INVALID_INPUT" } });
+    expect(alc.calls).toHaveLength(0);
+  });
+
+  it("sin comprador no se evalúa ni se congela", async () => {
+    const { service, mem, alc } = setup();
+    expect(await service.freeze(freeze({ selection: [] }))).toMatchObject({ ok: false, error: { code: "INVALID_INPUT" } });
+    expect(alc.calls).toHaveLength(0);
+    expect(mem.activeCount(DOC)).toBe(0);
+  });
+
+  it("un fallo técnico de la evaluación no congela y no es un rojo", async () => {
+    const alc = fakeAlc({ fail: { code: "ALC_READING_INCOMPLETE", stage: "congelado", retryable: true, correlationId: "c" } });
+    const { service, mem } = setup(ANA, alc);
+    expect(await service.freeze(freeze())).toMatchObject({ ok: false, error: { code: "ALC_READING_INCOMPLETE", retryable: true } });
+    expect(mem.activeCount(DOC)).toBe(0);
+  });
+
+  it("las rectificaciones viajan al evaluador y cambian la huella del comando", async () => {
+    const alc = fakeAlc();
+    const { service } = setup(ANA, alc);
+    const rect = { claimId: "c_1", previousValue: "10", correctedValue: "12", reason: "El remito corrige la cantidad" };
+    const a = await service.freeze(freeze({ rectifications: [rect] }));
+    expect(a.ok).toBe(true);
+    expect(alc.calls[0].rectifications).toEqual([rect]);
+    expect(await service.freeze(freeze())).toMatchObject({ ok: false, error: { code: "IDEMPOTENCY_CONFLICT" } });
   });
 });

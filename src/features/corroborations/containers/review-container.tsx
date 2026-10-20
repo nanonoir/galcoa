@@ -63,12 +63,17 @@ export interface ReviewContainerProps {
   documentFinalized?: boolean;
 }
 
-const roleNames: Record<ThirdPartyRole, string> = { intermediario: "Intermediario", comprador: "Comprador" };
+const roleNames: Record<ThirdPartyRole, string> = { intermediario: "Transportista", comprador: "Comprador" };
 
 const ERRORS: Record<string, string> = {
   STALE_DRAFT: "El borrador cambió mientras elegías. Volvé a cargar la página y reintentá.",
   NO_SESSION: "Tu sesión venció. Volvé a ingresar.",
-  REVISION_NOT_ACTIVE: "Esta revisión ya no está vigente. Abrí una nueva revisión.",
+  ALC_READING_INCOMPLETE: "Falta leer algún original adjunto. Esperá unos instantes y reintentá: no es un rojo.",
+  ALC_CITATION_INVALID: "No se pudo contrastar con las fuentes. Reintentá: no es un rojo.",
+  ALC_CLAIM_INVALID: "No se pudo contrastar con las fuentes. Reintentá: no es un rojo.",
+  ALC_INVENTORY_INCOMPLETE: "Cambiaron las fuentes del documento mientras se evaluaba. Reintentá.",
+  ALC_STALE_EVALUATION: "Cambiaron el borrador o las fuentes después de evaluar. Reintentá.",
+  NOT_AVAILABLE: "La evaluación de fuentes no está disponible ahora. No se puede congelar sin semáforo.",  REVISION_NOT_ACTIVE: "Esta revisión ya no está vigente. Abrí una nueva revisión.",
 };
 
 async function call(url: string, init?: RequestInit) {
@@ -87,21 +92,38 @@ function toLink(role: ThirdPartyRole, token: string | null): ShareLinkItem {
   return { role, url, whatsappUrl: url && buildWhatsAppUrl(url), mailtoUrl: url && buildMailtoUrl(url) };
 }
 
+type ReadySnapshotState = Extract<SnapshotViewState, { status: "ready" }>;
+
+/** Vista con el avance y el sello actuales; `snapshot.content` queda intacto y el persistido no se muta. */
+function liveSnapshotState(snapshot: ReadySnapshotState, confirmation: ConfirmationStatus | undefined, hcs: HcsStatus, finalized: boolean): ReadySnapshotState {
+  const confirmationStatus = confirmation ?? snapshot.confirmationStatus;
+  const documentStatus = finalized
+    ? "finalizado"
+    : confirmationStatus === "rechazada"
+      ? "revision_rechazada"
+      : confirmationStatus === "sustituida"
+        ? "revision_sustituida"
+        : snapshot.documentStatus;
+  return { ...snapshot, confirmationStatus, documentStatus, hcsStatus: hcs };
+}
+
 function thirdParties(selection: readonly ParticipantRole[]): ThirdPartyRole[] {
   return selection.filter((r): r is ThirdPartyRole => r !== "autor");
 }
 
 export function ReviewContainer({ documentId, draftRevision, hcsStatus, active = null, documentFinalized = false }: ReviewContainerProps) {
-  const [selection, setSelection] = useState<ParticipantSelection>(active?.selection ?? ["autor"]);
+  const [selection, setSelection] = useState<ParticipantSelection>(active?.selection ?? ["autor", "comprador"]);
   const [frozen, setFrozen] = useState<Frozen | null>(active);
   const [links, setLinks] = useState<ShareLinkItem[]>(() => (active ? thirdParties(active.selection).map((role) => toLink(role, null)) : []));
-  const [progress, setProgress] = useState<Progress | null>(null);
+  const [progressState, setProgress] = useState<(Progress & { revisionId: string }) | null>(null);
+  const [published, setPublished] = useState<{ revisionId: string; versionNumber: number } | null>(null);
+  /** Revisión mostrada ahora: descarta respuestas tardías de una revisión anterior. */
+  const currentRevision = useRef<string | null>(active?.revisionId ?? null);
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [publishedVersion, setPublishedVersion] = useState<number | null>(null);
   /** Edición explícita de una revisión nueva: la vigente sigue intacta hasta que el servidor cree otra. */
   const [editing, setEditing] = useState(false);
   const keys = useRef<Record<string, string>>({});
@@ -130,8 +152,10 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
       const result = await call(`/api/revisions/${encodeURIComponent(revisionId)}/confirmations`);
       const agg = result.body as { confirmationStatus?: ConfirmationStatus; missingRoles?: string[]; confirmed?: number; rejected?: number } | null;
       if (!result.ok || !agg?.confirmationStatus) throw new Error("No se pudo actualizar el avance.");
+      // Respuesta tardía de una revisión que ya no es la mostrada: no contamina la vigente.
+      if (currentRevision.current !== revisionId) return;
       const missingRoles = agg.missingRoles ?? [];
-      setProgress({ confirmationStatus: agg.confirmationStatus, missingRoles, confirmed: agg.confirmed ?? 0, rejected: agg.rejected ?? 0, authorConfirmed: !missingRoles.includes("autor") });
+      setProgress({ revisionId, confirmationStatus: agg.confirmationStatus, missingRoles, confirmed: agg.confirmed ?? 0, rejected: agg.rejected ?? 0, authorConfirmed: !missingRoles.includes("autor") });
     } catch (e) {
       if (mode === "manual") setError(e instanceof Error ? e.message : "No se pudo actualizar el avance.");
     } finally {
@@ -176,6 +200,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
           hcsStatus,
         },
       };
+      currentRevision.current = next.revisionId;
       setFrozen(next);
       setEditing(false);
       setAgreed(false);
@@ -188,7 +213,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
       }
       // Todos los espacios existen desde el congelado: un fallo de un rol conserva los demás enlaces.
       setLinks(thirds.map((role) => toLink(role, null)));
-      setProgress({ confirmationStatus: "pendiente", missingRoles: selection, confirmed: 0, rejected: 0, authorConfirmed: false });
+      setProgress({ revisionId: next.revisionId, confirmationStatus: "pendiente", missingRoles: selection, confirmed: 0, rejected: 0, authorConfirmed: false });
       const failed: string[] = [];
       for (const role of thirds) {
         try {
@@ -244,6 +269,13 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
       setBusy(false);
     }
   }
+
+  // Solo el avance de la revisión mostrada; el de otra revisión nunca se aplica.
+  const progress = frozen && progressState?.revisionId === frozen.revisionId ? progressState : null;
+  const publishedVersion = frozen && published?.revisionId === frozen.revisionId ? published.versionNumber : null;
+
+  // Estados de la vista derivados en cada render del avance y del sello actuales; el contenido congelado no se toca.
+  const liveSnapshot = frozen ? liveSnapshotState(frozen.snapshot, progress?.confirmationStatus, hcsStatus, documentFinalized || publishedVersion !== null) : null;
 
   // El agregado no dice quién respondió qué: el detalle por rol solo se muestra si no es ambiguo.
   const participants = frozen
@@ -362,7 +394,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
               </Button>
             </div>
           )}
-          <SnapshotView state={frozen.snapshot} onRetry={() => void refresh(frozen.revisionId)} />
+          <SnapshotView state={liveSnapshot ?? frozen.snapshot} onRetry={() => void refresh(frozen.revisionId)} />
 
           <section aria-labelledby="author-confirm-title" className="flex flex-col gap-3">
             <h2 id="author-confirm-title" className="text-lg font-semibold">
@@ -373,7 +405,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
               Revisé la operación y confirmo esta versión.
             </label>
             <Button type="button" onClick={() => void confirmAsAuthor()} disabled={!agreed || busy || superseded || progress?.authorConfirmed} className="self-start">
-              {progress?.authorConfirmed ? "Ya confirmaste" : "Confirmar como autor"}
+              {progress?.authorConfirmed ? "Ya confirmaste" : "Confirmar como proveedor"}
             </Button>
           </section>
 
@@ -383,7 +415,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
             </Button>
           )}
           {progress?.confirmationStatus === "completa" && !superseded && !documentFinalized && (
-            <FinalizationContainer key={frozen.revisionId} documentId={documentId} revisionId={frozen.revisionId} onPublished={setPublishedVersion} />
+            <FinalizationContainer key={frozen.revisionId} documentId={documentId} revisionId={frozen.revisionId} onPublished={(versionNumber) => setPublished({ revisionId: frozen.revisionId, versionNumber })} />
           )}
           {progress && (
             <ReviewProgress
@@ -391,7 +423,7 @@ export function ReviewContainer({ documentId, draftRevision, hcsStatus, active =
               confirmationStatus={progress.confirmationStatus}
               participants={participants}
               finalizedVersionNumber={publishedVersion ?? "no_disponible"}
-              hcsStatus={hcsStatus}
+              hcsStatus={publishedVersion !== null ? "registrado" : hcsStatus}
               refreshing={refreshing}
               onRefresh={() => void refresh(frozen.revisionId)}
             />

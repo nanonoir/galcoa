@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Draft } from "@/lib/contracts/core";
 import type { ControlStatus } from "@/lib/contracts/document";
-import type { ParticipantRole, ParticipantSelection, Revision, Snapshot, FrozenOperation } from "@/lib/contracts/review";
+import type { ParticipantRole, ParticipantSelection, Revision, Snapshot, FrozenOperationV2 } from "@/lib/contracts/review";
 import type { ConsolidatedWarning } from "@/lib/rules/consolidate";
 
 import type { AuditContext, IdempotencyInput } from "../ports";
@@ -38,11 +38,12 @@ export type FreezeInput = {
   documentId: string;
   /** Concurrencia optimista (SH-01): si la base tiene otra revisión del borrador, `stale_draft`. */
   expectedDraftRevision: number;
-  content: FrozenOperation;
+  content: FrozenOperationV2;
   snapshotHash: string;
   /** Bytes JCS del contenido (hex): la base recalcula el hash y exige que concuerde. */
   canonicalHex: string;
-  controlStatus: ControlStatus;
+  /** Evaluación ALC ya persistida: la base deriva de ella el control documental; el llamador no envía color. */
+  evaluationId: string;
   /** Mapeo privado alias → fuente real, para `snapshot_sources`. */
   sources: { alias: string; kind: "mensaje" | "evidencia"; id: string }[];
   idempotency: IdempotencyInput;
@@ -59,6 +60,8 @@ export type FreezeResult =
   /** Mismo contenido y selección que la revisión activa: no se crea otra. */
   | { status: "unchanged"; value: RevisionBundle }
   | { status: "stale_draft" }
+  /** La evaluación no existe para este documento, o ya no corresponde al borrador o al inventario vigentes. */
+  | { status: "evaluation_not_found" | "stale_evaluation" }
   /** Hay una finalización activa sin publicar para la revisión vigente: no se sustituye (MVP-080). */
   | { status: "finalization_in_progress" }
   | { status: "idempotency_conflict" }

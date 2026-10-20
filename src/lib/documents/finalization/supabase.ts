@@ -25,6 +25,8 @@ const ClaimResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.enum(["claimed", "resumed"]), operation: Owned }),
   z.strictObject({ status: z.enum(["in_progress", "published"]), operation: Operation }),
   z.strictObject({ status: z.enum(["rejected", "confirmations_missing", "revision_not_active", "draft_changed", "not_available"]) }),
+  // Guarda ALC de SQL (claim y reanudación): denegación estructurada y auditada; no hay "aprobar igual".
+  z.strictObject({ status: z.literal("blocked"), code: z.enum(["evaluation_required", "stale_evaluation", "selection_invalid", "red"]) }),
 ]);
 
 export type ClaimResult = z.infer<typeof ClaimResultSchema>;

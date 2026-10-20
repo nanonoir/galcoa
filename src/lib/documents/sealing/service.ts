@@ -7,6 +7,7 @@ import type {
   AttemptRecord,
   HcsClientPort,
   MirrorReaderPort,
+  SealEligibility,
   SealRegistration,
   SealableVersion,
   SealingStore,
@@ -29,6 +30,8 @@ import type {
 /** Ventana de validez persistida (manifest-hcs §8.2). */
 export const VALID_DURATION_SECONDS = 120;
 
+type SealEligibilityCode = Extract<SealEligibility, { allowed: false }>["code"];
+
 export type SealStatus = "no_iniciado" | "pendiente" | "registrado" | "fallido";
 
 export type PendingReason =
@@ -45,7 +48,9 @@ export type SealResult =
   | { status: "pendiente"; reason: PendingReason; attemptId?: string }
   /** `sent: false` = fallo técnico previo a cualquier envío; `true` = rechazo terminal de ese ID. */
   | { status: "fallido"; retryable: true; sent: boolean; code: string; attemptId?: string }
-  | { status: "no_disponible" };
+  | { status: "no_disponible" }
+  /** La guarda ALC denegó un envío nuevo; no se preparó ni persistió ningún intento. */
+  | { status: "bloqueado"; code: SealEligibilityCode };
 
 export type SealingDeps = {
   store: SealingStore;
@@ -138,6 +143,15 @@ export function createSealingService(deps: SealingDeps) {
   }
 
   async function send(version: SealableVersion, previous: AttemptRecord | null): Promise<SealResult> {
+    // Guarda ALC antes de preparar o firmar nada; sin respuesta no se envía.
+    let eligibility;
+    try {
+      eligibility = await store.checkEligibility(version.versionId);
+    } catch {
+      return { status: "fallido", retryable: true, sent: false, code: "ELEGIBILIDAD_NO_VERIFICADA" };
+    }
+    if (!eligibility.allowed) return { status: "bloqueado", code: eligibility.code };
+
     let payload;
     try {
       payload = buildHcsPayload({ reference: version.reference, manifestHash: version.manifestHash });

@@ -61,6 +61,7 @@ export function FinalizationContainer({ documentId, revisionId, onPublished }: F
   const [polling, setPolling] = useState(0);
   const [sealing, setSealing] = useState(0);
   const phase = useRef<FinalizationPhase | null>(null);
+  const publishedVersion = useRef<number | null>(null);
   const onPublishedRef = useRef(onPublished);
   const routerRef = useRef(router);
   useEffect(() => {
@@ -73,11 +74,12 @@ export function FinalizationContainer({ documentId, revisionId, onPublished }: F
   function apply(operation: Operation, seal: FinalizationSealInfo | null): Outcome {
     phase.current = operation.phase;
     if (operation.phase === "published" && operation.versionNumber !== null) {
+      publishedVersion.current = operation.versionNumber;
       if (!seal) {
-        setState({ status: "sealing", versionNumber: operation.versionNumber });
+        setState({ status: "sealing", versionNumber: operation.versionNumber, documentId });
         return "sealing";
       }
-      setState({ status: "published", versionNumber: operation.versionNumber, seal });
+      setState({ status: "published", versionNumber: operation.versionNumber, seal, documentId });
       onPublishedRef.current?.(operation.versionNumber);
       // El estado HCS de ReviewProgress viene del render del servidor.
       routerRef.current.refresh();
@@ -130,7 +132,8 @@ export function FinalizationContainer({ documentId, revisionId, onPublished }: F
     let attempts = 0;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
-    const stall = () => setState({ status: "stalled", phase: phase.current });
+    const stall = () =>
+      setState({ status: "stalled", phase: phase.current, ...(publishedVersion.current !== null && { versionNumber: publishedVersion.current, documentId }) });
     const tick = async () => {
       if (cancelled) return;
       attempts += 1;
@@ -181,7 +184,9 @@ export function FinalizationContainer({ documentId, revisionId, onPublished }: F
         }
       }
       if (cancelled) return;
-      if (attempts >= SEAL_RETRY_MAX_ATTEMPTS) setState({ status: "stalled", phase: "published" });
+      if (attempts >= SEAL_RETRY_MAX_ATTEMPTS) {
+        setState({ status: "stalled", phase: "published", ...(publishedVersion.current !== null && { versionNumber: publishedVersion.current, documentId }) });
+      }
       else timer = setTimeout(() => void tick(), SEAL_RETRY_MS);
     };
     timer = setTimeout(() => void tick(), SEAL_RETRY_MS);
