@@ -12,27 +12,35 @@ const base: LandingContent = {
   brand: "GALCOA+",
   navigation: [
     { label: "Cómo funciona", href: "#como-funciona" },
-    { label: "Alcance", href: "#alcance" },
     { label: "Ingresar", href: "/login" },
   ],
   primaryAction: { label: "Crear cuenta", href: "/registro" },
-  heading: "Documenta operaciones conversando",
+  heading: "Cada entrega cuenta. Hacé que también te respalde.",
   summary:
-    "Cuenta la operación por chat, revisa el documento, pide la confirmación de las partes mediante enlaces y guarda la huella del resultado en Hedera Testnet.",
+    "Registrá tus entregas por chat, reuní los comprobantes y pedile al comercio que confirme por enlace o QR. GALCOA+ te ayuda a respaldar cada operación y construir la reputación de tu distribuidora.",
   features: [
     {
       title: "Conversación y evidencias",
-      description: "Aportas mensajes y archivos; el sistema redacta un borrador y señala dudas sin bloquearte.",
+      description: "Aportás mensajes y archivos; el sistema redacta un borrador de la entrega.",
     },
     {
-      title: "Confirmación de las partes",
-      description: "Cada persona seleccionada revisa el mismo contenido y confirma mediante un enlace.",
+      title: "Confirmación del comercio",
+      description: "El comercio revisa el mismo contenido y confirma mediante un enlace o QR.",
     },
     {
       title: "Sello de huella",
       description: "Al finalizar se registra solo la huella del documento en Testnet; el contenido no se publica.",
     },
   ],
+  upcoming: {
+    label: "Próximamente · Contratos inteligentes",
+    title: "Cada meta cumplida, un beneficio acordado.",
+    description:
+      "Definí metas comerciales y pactá bonificaciones con tus clientes. Los contratos inteligentes vinculan las condiciones del acuerdo con operaciones confirmadas: qué se reconoce, cuándo corresponde y cómo se comprueba.",
+    example: "100.000 unidades vendidas → USD 10.000 de bonificación acordada.",
+    disclaimer:
+      "Ejemplo ilustrativo sujeto a las condiciones entre las partes. No implica ganancias garantizadas ni pagos automáticos. Primera etapa sin custodia ni transferencia de fondos.",
+  },
   limits: [
     "Es una demostración sobre Hedera Testnet.",
     "El registro no garantiza que los datos sean verdaderos.",
@@ -49,7 +57,6 @@ const scenarios: LandingScenario[] = [
       ...base,
       navigation: [
         { label: "Cómo funciona", href: "#como-funciona" },
-        { label: "Alcance", href: "#alcance" },
         { label: "Mis documentos", href: "/dashboard" },
       ],
       primaryAction: { label: "Ir a mis documentos", href: "/dashboard" },

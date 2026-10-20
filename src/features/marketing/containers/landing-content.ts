@@ -7,23 +7,33 @@ import { LandingContentSchema, type LandingContent } from "@/lib/contracts/landi
  */
 const base = {
   brand: "GALCOA+",
-  heading: "Registros con respaldo, rastro y control de calidad",
+  heading: "Cada entrega cuenta. Hacé que también te respalde.",
   summary:
-    "Cuenta la operación por chat. La inteligencia artificial controla que esté completa y coincida con tus pruebas, las partes la confirman con un enlace y queda registrada de forma que cualquier cambio se nota.",
+    "Registrá tus entregas por chat, reuní los comprobantes y pedile al comercio que confirme por enlace o QR. GALCOA+ te ayuda a respaldar cada operación y construir la reputación de tu distribuidora.",
   features: [
     {
       title: "Control de calidad",
-      description: "Compara lo pedido con lo recibido y te avisa lo que no coincide, sin frenarte el trabajo.",
+      description: "Ordena los datos de la entrega y los contrasta con tus comprobantes.",
     },
     {
       title: "Respaldo",
-      description: "Una persona responsable confirma con su nombre y la otra parte revisa exactamente lo mismo mediante un enlace.",
+      description: "El comercio revisa y confirma la misma versión que revisaste, desde un enlace o QR y sin crear una cuenta.",
     },
     {
       title: "Trazabilidad",
-      description: "Al finalizar se guarda una huella del documento en un libro público; el contenido no se publica.",
+      description:
+        "Al finalizar, la huella del documento queda en Hedera Testnet y el contenido no se publica. Una copia modificada deja de coincidir con la huella: eso detecta cambios, no prueba que lo declarado sea verdadero.",
     },
   ],
+  upcoming: {
+    label: "Próximamente · Contratos inteligentes",
+    title: "Cada meta cumplida, un beneficio acordado.",
+    description:
+      "Definí metas comerciales y pactá bonificaciones con tus clientes. Los contratos inteligentes vinculan las condiciones del acuerdo con operaciones confirmadas: qué se reconoce, cuándo corresponde y cómo se comprueba.",
+    example: "100.000 unidades vendidas → USD 10.000 de bonificación acordada.",
+    disclaimer:
+      "Ejemplo ilustrativo sujeto a las condiciones entre las partes. No implica ganancias garantizadas ni pagos automáticos. Primera etapa sin custodia ni transferencia de fondos.",
+  },
   limits: [
     "Es una demostración: usa una red de práctica (Hedera Testnet) y datos de ejemplo.",
     "El registro no garantiza que los datos sean verdaderos: deja constancia de quién los confirmó y de que no se cambiaron.",
@@ -34,7 +44,6 @@ const base = {
 export function buildLandingContent(signedIn: boolean): LandingContent {
   const common = [
     { label: "Cómo funciona", href: "#como-funciona" },
-    { label: "Alcance", href: "#alcance" },
   ];
   return LandingContentSchema.parse(
     signedIn
