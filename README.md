@@ -1,13 +1,13 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="public/galcoa-on-dark.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="public/galcoa-on-navy.svg">
   <img src="public/galcoa.svg" alt="GALCOA+" width="280">
 </picture>
 
-### Registros con respaldo, rastro y control de calidad
+### Cada entrega cuenta. Hacé que también te respalde.
 
-Contá la operación por chat. La IA la redacta y la contrasta con tus pruebas, las partes la confirman con un enlace y su **huella queda registrada en Hedera**.
+GALCOA+ es para distribuidoras de alimentos y bebidas que ya trabajan bien y quieren poder demostrarlo. Registrás la entrega por chat, el comercio la confirma con un enlace o QR y la **huella del documento queda registrada en Hedera**.
 
 [![Checks](https://github.com/nanonoir/galcoa/actions/workflows/ci.yml/badge.svg)](https://github.com/nanonoir/galcoa/actions/workflows/ci.yml)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs)
@@ -16,47 +16,115 @@ Contá la operación por chat. La IA la redacta y la contrasta con tus pruebas, 
 ![Hedera](https://img.shields.io/badge/Hedera-HCS%20Testnet-174235)
 ![Node](https://img.shields.io/badge/Node-24.18-339933?logo=nodedotjs&logoColor=white)
 
-**[Demo en vivo](https://galcoa.noirnahuel.com)** · [Cómo funciona](#-cómo-funciona) · [Instalación](#-instalación-local) · [Despliegue](#-despliegue) · [Testing](#-testing) · [Documentación](#-documentación)
+**[Demo en vivo](https://galcoa.noirnahuel.com)** · [Evidencia](#-demo-y-evidencia) · [Cómo funciona](#-cómo-funciona) · [Estado real](#-estado-real) · [Hoja de ruta](#️-hoja-de-ruta) · [Instalación](#-instalación-local) · [Despliegue](#-despliegue) · [Testing](#-testing) · [Documentación](#-documentación)
 
 </div>
 
 ---
 
-## ✨ Qué es
+## 🎯 El problema
 
-GALCOA+ documenta operaciones comerciales (ventas, entregas, acuerdos de campo) **conversando**:
+Una distribuidora puede trabajar bien durante años y no poder demostrarlo:
+
+- Remitos, planillas y mensajes de WhatsApp desparramados.
+- Reclamos sin respaldo: cuando hay un problema con una entrega, nadie puede probar qué pasó.
+- Todo es «palabra de la distribuidora», sin un tercero que lo confirme.
+- Cuesta convertir un buen desempeño en argumentos para conseguir marcas nuevas.
+
+GALCOA+ convierte cada entrega en un registro con respaldo. Con el tiempo, esos registros son la base de la **reputación** de la distribuidora.
+
+## 👥 Para quién es
+
+| Rol | Quién es | Qué hace en GALCOA+ |
+| --- | --- | --- |
+| **Cliente** | Distribuidoras pequeñas y medianas de alimentos y bebidas; el comienzo es Corrientes y el NEA | Registra sus entregas y arma su historial |
+| **Comercio** | El almacén o negocio que recibe la mercadería | Confirma la entrega con un enlace o QR, sin crearse una cuenta |
+| **Marca** | La empresa que evalúa a la distribuidora | Verá lo que la distribuidora decida compartir (**futuro**) |
+
+No competimos con un ERP, con sistemas de GPS ni con plataformas de cumplimiento: GALCOA+ es simple y específico.
+
+## 🎬 Demo y evidencia
+
+- **[Demo en vivo](https://galcoa.noirnahuel.com)** (Hedera Testnet).
+- Registro real en Testnet, comprobable en el mirror node público (solo lectura):
+
+| Dato | Valor |
+| --- | --- |
+| Topic HCS | [`0.0.11047482`](https://hashscan.io/testnet/topic/0.0.11047482) |
+| Secuencia | `10` |
+| Marca de tiempo de consenso | `1792475461.380470070` |
+| Hash del manifiesto | `4d79777dc1f40b4d32ad540c11bd99ce36964f27e06018d9126dea5c12c5f311` |
+| Referencia opaca | `b3357344164340c5b1c72712adaa97a3` |
+
+El mensaje publicado contiene solo `manifestHash`, `reference` y `schemaVersion`. Se puede leer con:
+
+```bash
+curl https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.11047482/messages/10
+```
+
+> El hash del manifiesto **no** es el hash del PDF: es la huella del manifiesto canónico que referencia al PDF final. Es un registro de **Testnet**, una red de práctica que puede reiniciarse.
+
+## 🧭 Cómo funciona
+
+```mermaid
+flowchart LR
+    A[💬 Registrás la entrega por chat] --> B[🤖 Borrador con IA]
+    B --> C[👀 Revisás el documento]
+    C --> D[🔗 El comercio confirma por enlace o QR]
+    D --> E[⬆️ Subir Contrato: PDF final inmutable]
+    E --> F[🔐 Huella en Hedera HCS]
+    F --> G[🔎 Verificación pública]
+```
+
+1. **Registrá la entrega.** Contás la operación por chat y adjuntás el remito o el comprobante (fotos o PDFs). Ejemplo: «Entregué 200 cajas en el almacén». Audio: **futuro**.
+2. **Revisá y obtené la confirmación.** Un borrador asistido por IA (Gemini redacta; un segundo modelo en Groq contrasta) queda congelado como una revisión. Todos los participantes elegidos confirman **esa misma revisión** por enlace; un cambio material crea otra.
+3. **Respaldá tu trabajo.** *Subir Contrato* genera el PDF final inmutable y publica su huella en **Hedera Consensus Service (Testnet)**. Cualquiera puede comprobarla en `/verify/<referencia>` sin ver el contenido.
+
+### Por qué Hedera
+
+| Sí prueba | No prueba |
+| --- | --- |
+| Cuándo se registró la huella del documento | Que la entrega haya pasado de verdad |
+| Que una copia con contenido distinto **ya no coincide** con esa huella | Que todo lo declarado sea cierto |
+
+La huella **detecta** si una copia fue modificada; **no impide** que alguien edite una copia ni prueba que lo declarado sea verdadero. Por eso se suman la confirmación del comercio, el rastro auditable y la separación entre lo declarado y lo confirmado. A Hedera solo viajan **hashes e identificadores opacos**.
+
+## ✅ Estado real
+
+Esta tabla describe el código integrado en `develop`, no acredita que la demo remota ya esté desplegada con esa versión. La migración ALC se aplicó en `galcoa-dev`; el despliegue del runtime compatible sigue pendiente del merge y la publicación de esta entrega.
+
+| Implementado en el código | No incluido |
+| --- | --- |
+| Registro e ingreso con Supabase Auth; chat con evidencias | Audio y transcripción |
+| Semáforo determinista ALC: verde / amarillo / rojo; rojo bloquea finalizar y sellar también en SQL | Identidad verificada o garantía de personas distintas detrás de los enlaces |
+| Borrador con Gemini, contraste con Groq y evaluación versionada enlazada al snapshot | Indicadores de desempeño y perfil para compartir con marcas |
+| Revisión congelada y confirmación por enlace o QR, sin cuenta para el tercero | Indicadores de desempeño y perfil para compartir con marcas |
+| PDF final inmutable y huella SHA-256 en Hedera Testnet | Audio y transcripción |
+| Verificador público por referencia | Contratos inteligentes, Mainnet, cobros |
+
+El interruptor `DEMO_HIDE_WARNINGS` puede ocultar advertencias informativas heredadas, **nunca el semáforo ALC ni sus motivos**. La separación es por rol: proveedor y comprador obligatorios, transportista opcional; el token no prueba identidad ni personas distintas. No hay datos reales de validación con clientes: las cifras y precios de [reglas de producto](docs/GALCOA-REGLAS-PRODUCTO.md) son ilustrativos.
+
+## 🗺️ Hoja de ruta
+
+| Fase | Qué incluye |
+| --- | --- |
+| **1 · Hoy** | MVP en Hedera Testnet: chat, borrador con IA, confirmación por enlace o QR, PDF final y huella |
+| **2 · Piloto en el NEA** | Validación operativa con distribuidoras, indicadores y perfil compartible, Mainnet, reportes |
+| **3 · Acuerdos con contratos inteligentes** | Metas y bonificaciones acordadas vinculadas a operaciones confirmadas, **sin custodia ni transferencia de fondos** |
+| **4 · Otros mercados** | Integraciones y nuevos mercados |
+
+## 💻 Qué incluye el producto hoy
+
+GALCOA+ documenta operaciones comerciales conversando:
 
 | | |
 | --- | --- |
 | 💬 **Chat + evidencias** | Contás la operación con tus palabras y adjuntás fotos o PDFs (facturas, remitos). |
 | 🤖 **Redacción asistida** | Gemini extrae el texto de las pruebas y redacta un borrador estructurado. |
 | 👀 **Vista previa** | Revisás el PDF antes de cerrar nada. |
-| ✅ **Confirmación** | Confirmás vos solo, o compartís un enlace con intermediario y/o comprador: todos confirman **la misma versión congelada**. |
-| ⬆️ **Subir Contrato** | Se genera el PDF final (inmutable) y su **huella SHA-256** se publica en **Hedera Consensus Service (Testnet)**. |
+| ✅ **Confirmación** | Declara el proveedor, responde el transportista si participa y confirma el comprador: todos sobre **la misma versión congelada**. |
+| ⬆️ **Subir Contrato** | Se genera el PDF final (inmutable) y su huella se publica en **Hedera Consensus Service (Testnet)**. |
 | 🔎 **Verificación pública** | Cualquiera puede comprobar la huella en `/verify/<referencia>` o en HashScan, sin acceder al contenido. |
-
-> A Hedera solo viajan **hashes e identificadores opacos**: el contenido del documento nunca se publica.
-
-## 🧭 Cómo funciona
-
-```mermaid
-flowchart LR
-    A[💬 Chat y evidencias] --> B[🤖 Borrador con IA]
-    B --> C{¿Quién confirma?}
-    C -->|Solo el autor| D[✅ Confirmar]
-    C -->|Con terceros| E[🔗 Enlaces de confirmación]
-    E --> D
-    D --> F[⬆️ Subir Contrato]
-    F --> G[📄 PDF final inmutable]
-    G --> H[🔐 Huella en Hedera HCS]
-    H --> I[🔎 Verificación pública]
-```
-
-1. **Creá un documento** desde *Mis documentos* y renombralo cuando quieras (se autotitula con el primer borrador).
-2. **Conversá**: describí la operación y adjuntá pruebas; el agente redacta el borrador.
-3. **Revisar 👁**: abrí la vista previa del PDF.
-4. **Confirmar** (si sos el único participante) o **Compartir con terceros** para que confirmen por enlace.
-5. **Subir Contrato ⬆️**: espera con un indicador hasta que la huella quede registrada y deja fija la constancia con los enlaces de verificación.
 
 ## 🧱 Stack
 
@@ -66,7 +134,7 @@ flowchart LR
 | Datos | Supabase: Auth, Postgres con RLS y funciones `SECURITY DEFINER`, Storage privado |
 | IA | Gemini (extracción y redacción) · GPT-OSS 120B en Groq (contraste) · Zod para salidas estructuradas |
 | Documento | `@react-pdf/renderer` · SHA-256 · manifiesto canónico (JCS) |
-| Blockchain | Hedera Consensus Service con `@hiero-ledger/sdk` · Mirror Node para reconciliar · **solo Testnet** |
+| Blockchain | Hedera Consensus Service con `@hiero-ledger/sdk` · Mirror Node para reconciliar · **Testnet** |
 | Calidad | Vitest · Playwright · ESLint · barreras de arquitectura · GitHub Actions |
 | Despliegue | Docker (Next.js `standalone`) en VPS detrás de Cloudflare Tunnel · compatible con Vercel |
 
@@ -184,7 +252,12 @@ npm run lint && npm run typecheck && npm test && npm run test:boundaries && npm 
 
 GitHub Actions ([`ci.yml`](.github/workflows/ci.yml)) corre esos checks, Playwright y las suites seriales contra un Supabase efímero en Linux.
 
-## 🛡️ Reglas que el código garantiza
+## 🛡️ Reglas que el código cumple hoy
+
+Las reglas posteriores de [distribuidoras](docs/GALCOA-REGLAS-PRODUCTO.md) prevalecen sobre la autonomía del PRD histórico. La evaluación ALC y las guardas de revisiones nuevas están implementadas y probadas en Postgres local; eso no acredita el despliegue ni el recorrido completo con proveedores reales.
+
+- **Bloqueo determinista:** pedido 200 / remito 198 es rojo y no se sella. Corregir requiere una nueva revisión y nuevas confirmaciones; no borra las fuentes originales.
+- **Participantes obligatorios:** proveedor y comprador; transportista opcional. El servidor y SQL exigen el orden de respuesta, no solo la interfaz.
 
 - **Inmutabilidad:** las versiones finalizadas, sus PDFs y hashes no se modifican ni se borran.
 - **Misma versión para todos:** cada participante confirma el mismo snapshot congelado; un cambio crea otra revisión.
@@ -195,15 +268,17 @@ GitHub Actions ([`ci.yml`](.github/workflows/ci.yml)) corre esos checks, Playwri
 ## ⚠️ Limitaciones del MVP
 
 - Es una **demostración**: Hedera **Testnet** puede reiniciarse; usá datos ficticios.
-- Para la demo, las **advertencias de la IA están ocultas** (`DEMO_HIDE_WARNINGS`); ver [deuda técnica §9](docs/exec-plans/tech-debt-tracker.md).
+- La demo puede ocultar advertencias heredadas (`DEMO_HIDE_WARNINGS`), no el semáforo ALC de snapshots v2; ver [deuda técnica §9](docs/exec-plans/tech-debt-tracker.md).
 - Los enlaces de confirmación se comparten manualmente (WhatsApp, correo o QR).
-- Fuera de alcance: Mainnet, pagos, audio e invitaciones automáticas.
+- Fuera de alcance hoy: Mainnet, cobros, contratos inteligentes, audio, indicadores, perfil compartible e invitaciones automáticas.
+- Evidencia de navegador: confirmación 4/4 y solo escenario comprador de revisión 1/1, con evaluación ficticia persistida por el puente Node. Otros tres escenarios de revisión no se ejecutaron en la validación focalizada. No es evidencia de IA/Hedera reales ni del despliegue remoto nuevo.
 
 ## 📚 Documentación
 
 | Necesitás… | Leé |
 | --- | --- |
-| Qué construir y por qué | [PRD](docs/exec-plans/GALCOA-PRD-v1.4.md) |
+| Reglas de producto vigentes (objetivo) | [`docs/GALCOA-REGLAS-PRODUCTO.md`](docs/GALCOA-REGLAS-PRODUCTO.md) · [plan de alineación](docs/exec-plans/active/alineacion-distribuidoras.md) |
+| Antecedente e invariantes conservados | [PRD histórico](docs/exec-plans/GALCOA-PRD-v1.4.md) |
 | Arquitectura y límites | [`docs/architecture.md`](docs/architecture.md) |
 | Desarrollo, validación y seguridad | [`docs/development.md`](docs/development.md) |
 | Despliegue en VPS | [`docs/DEPLOY-VPS.md`](docs/DEPLOY-VPS.md) |
@@ -213,6 +288,6 @@ GitHub Actions ([`ci.yml`](.github/workflows/ci.yml)) corre esos checks, Playwri
 
 ## 👥 Equipo
 
-Proyecto final para la **Ideathon Hedera · NEA Tech 2026**.
+Proyecto para la **Ideathon Hedera · NEA Tech 2026** (3.er puesto).
 
 Gastón Persoglia · Nahuel Noir · Facundo Ayala · Federico Fontana · Thomas Skarp

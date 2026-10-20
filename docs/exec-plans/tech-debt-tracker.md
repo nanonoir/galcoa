@@ -82,6 +82,42 @@
 - **Current State**: Activo para la demo.
 - **Remediation**: Poner `DEMO_HIDE_WARNINGS = false` tras la demo, rediseñar la presentación de advertencias para que sea clara y menos ruidosa, y revisar los documentos finalizados durante la demo.
 
+### 11. Límites de validación de infraestructura: Docker ausente para RLS local y ciclo autenticado cloud de nueva UI pendiente de despliegue
+
+- **Discovered/Recorded**: 2026-10-20
+- **Originating Plan**: `docs/exec-plans/completed/ui-ux-profesional.md`
+- **Severity**: Low / Verificación y despliegue
+- **Description**: La evolución profesional de UI/UX y la estabilización funcional quedaron completadas al 100% en local (101 archivos, 1444 tests, 69 barreras, lint, build con rutas dinámicas y 142/142 pruebas Playwright E2E pasando, con 7 revisiones independientes PASS). Sin embargo, persisten límites reales de entorno:
+  1. **Docker ausente en la estación local:** impidió ejecutar las suites reales de migraciones SQL y aislamiento RLS contra PostgreSQL local (`npm run test:rls`), apoyándose la validación en dobles y pruebas de servidor.
+  2. **Discrepancia de credenciales en Auth local:** la base de datos local no sincronizada/investigada no acepta las credenciales de la cuenta beta remota.
+  3. **Nueva UI local pendiente de despliegue:** los componentes y mejoras de UI residen estrictamente en el entorno local (sin push a GitHub ni despliegue a Vercel, por quedar fuera del alcance autorizado); la validación del ciclo autenticado completo de la nueva UI contra la base de datos alojada en la nube se realizará al momento del despliegue autorizado.
+- **Impact**: Cero impacto en el código y pruebas locales integradas. La verificación en nube de la nueva UI y la prueba de migraciones RLS con Docker se ejecutarán cuando se habilite el despliegue y un entorno con Docker activo.
+- **Current State**: Abierto como seguimiento post-implementación / pre-despliegue.
+- **Remediation**: 1) Levantar Docker en local para ejecutar `npm run test:rls` y el harness completo con base real. 2) Al autorizarse la entrega Git y el despliegue a Vercel, realizar la verificación funcional del recorrido autenticado de la nueva interfaz contra el entorno remoto.
+
+### 12. Adaptación visual en Hero móvil: ilustración fuera de viewport al seleccionar etapas inferiores
+
+- **Discovered/Recorded**: 2026-10-20
+- **Originating Plan**: `docs/exec-plans/completed/movimiento-profesional.md`
+- **Severity**: Low / UX Follow-up (no bloqueante)
+- **Description**: En el hero interactivo de la landing (`src/features/marketing/components/hero-journey.tsx`), en viewports móviles estrechos (≤390px), la ilustración esquemática queda posicionada por encima de la lista de etapas. Al seleccionar etapas inferiores mediante toque, el feedback local (marcador y texto activo) responde inmediatamente, pero la ilustración queda fuera de la porción visible superior de la pantalla, requiriendo scroll manual del usuario para apreciar el diagrama esquemático actualizado. Adicionalmente, el plan cerró con videos y trazas en `%TEMP%/galcoa-motion` grabados pero no inspeccionados formalmente por video, sin métricas instrumentadas de CLS/LCP y con validación de áreas privadas limitada a componentes sin integración backend de red.
+- **Impact**: Cero errores en consola, sin desborde horizontal y con accesibilidad plena por teclado y táctil. Experiencia visual perfectible en pantallas pequeñas.
+- **Current State**: Comportamiento aceptado como seguimiento UX no bloqueante para el cierre de movimiento profesional.
+- **Remediation**: En una iteración posterior de diseño responsive de marketing, evaluar reposicionar la ilustración debajo de cada etapa activa en pantallas estrechas o añadir anclaje suave accesible; e instrumentar métricas de CLS/LCP en la preparación de despliegue.
+
+### 13. Clases `dark:` inertes de shadcn y límites de validación en paleta institucional
+
+- **Discovered/Recorded**: 2026-10-20
+- **Originating Plan**: `docs/exec-plans/completed/paleta-institucional.md`
+- **Severity**: Low / Mantenimiento y verificación
+- **Description**: Tras la consolidación de la paleta institucional azul noche (`:root` en `#0C1A2E`, sin selector de tema ni clase `.dark` activa):
+  1. **Utilidades `dark:` inertes:** Diversos componentes derivados de shadcn conservan variantes `dark:*` que nunca se activan en runtime. No generan efectos colaterales ni regresiones visuales, pero representan código inerte fuera del alcance actual. No debe forzarse su limpieza inmediata.
+  2. **Verificación visual de áreas privadas con sesión:** La inspección visual real se ejecutó sobre rutas públicas (landing, auth, verify, confirm) y mediante fixtures/pruebas unitarias para áreas privadas, sin recorrer el layout autenticado `(app)` con sesión real en navegador para no usar credenciales ni realizar operaciones remotas.
+  3. **Medición en navegador de movimiento reducido y CWV:** La preferencia `prefers-reduced-motion` se validó a nivel CSS global y clases en tests unitarios, sin medición automatizada de renderizado en navegador, y sin métricas instrumentadas de Core Web Vitals en este lote.
+- **Impact**: Cero fallas en runtime, suites de tests (1452 pruebas) y build exitoso.
+- **Current State**: Comportamiento funcional y estético aceptado para el cierre de la paleta institucional.
+- **Remediation**: 1) En un pase posterior de refactorización o mantenimiento de componentes UI, limpiar selectores `dark:` inertes si se decide simplificar el marcado. 2) Completar la inspección visual autenticada de rutas privadas en el ciclo de pruebas pre-despliegue. 3) Instrumentar métricas CWV y validación de movimiento reducido en el harness de despliegue.
+
 ---
 
 ## Resolved Technical Debt
@@ -94,3 +130,12 @@
 - **Severity**: Low
 - **Description**: El patrón `.env*` ignoraba también `.env.example`, que el README usa como referencia de nombres de variables; no se versionaba.
 - **Resolution**: Resuelto en P1 de `team-workspace-readiness.md`. Se añadió la excepción `!.env.example` en `.gitignore`. Se generó y versionó una plantilla `.env.example` limpia con los nombres de variables de PRD §13, vacía salvo `HEDERA_NETWORK=testnet`. La plantilla local previa se preservó en `.env.example.local` (ignorado por Git) sin leer ni exponer ningún valor secreto.
+
+### 10. Falla de persistencia 503 en renombrado remoto de documentos y migración faltante en Supabase alojado
+
+- **Discovered/Recorded**: 2026-10-20
+- **Originating Plan**: `docs/exec-plans/completed/ui-ux-profesional.md`
+- **Resolution Plan**: `docs/exec-plans/completed/ui-ux-profesional.md`
+- **Severity**: Medium / Operativo
+- **Description**: Durante la auditoría en la beta remota, el cambio de título de documentos devolvió HTTP 503 `TECHNICAL_FAILURE` en etapa de persistencia (correlationId `924977c8-9f60-4a8f-9f7a-57f4fb0d4536`).
+- **Resolution**: Resuelto el 2026-10-20. Con autorización previa y sesión CLI confirmada (`galcoa-dev` `yyvwuihzbdglidbxdknd`), el preflight de catálogo comprobó que la función `rename_document` y la migración `20261017000100` estaban ausentes en la base alojada. Tras revisión independiente PASS (sesión `ses_ea7cbf51cffepMkmrpLZ0fuKxc`), se aplicó exclusivamente `supabase/migrations/20261017000100_rename_document.sql` mediante consulta transaccional (advisory lock, guardas, historial exacto y recarga PostgREST; SHA256 coincidente `efe68d74fc1535ca4a67f1a8a51ccf4b11415aba9ef26d3dbb6ae538bf016afe`). Verificado en la beta productiva con cuenta existente: documento mutable renombrado y persistente tras recarga (1 evento de auditoría); renombrado idéntico 200 sin auditoría extra; intento sobre documento finalizado rechazado con 409 `DOCUMENT_FINALIZED`; sin cookies rechazado con 401 `NO_SESSION`; títulos, eventos y hash de manifiesto finalizado intactos.

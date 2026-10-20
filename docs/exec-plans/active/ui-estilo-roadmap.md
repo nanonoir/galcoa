@@ -114,3 +114,13 @@ Ejecutado el 2026-10-17 (puntos 1–5, 7 y parte del 6; sin commit).
 
 **Pendiente**
 - Actualizar los tests del menú de la landing (unitarios y e2e) a la nueva `site-navigation`, o revertirla: decisión de quien la reescribió.
+
+### Superposición y evolución en ui-ux-profesional.md (2026-10-20)
+
+El trabajo exploratorio inicial de este plan sobre tokens, encabezados, utilidades de retícula y componentes (puntos 1–7) queda superpuesto y absorbido en sus fundamentos y pantallas por el plan completado [`docs/exec-plans/completed/ui-ux-profesional.md`](../completed/ui-ux-profesional.md).
+
+**Evidencia de superposición y estado:**
+- **Tipografía y fuentes:** la propuesta inicial de Space Grotesk vía Google Fonts fue sustituida formalmente por la pareja aprobada **Manrope (variable local) + IBM Plex Mono (local)** con licencias locales en `public/fonts/`, idénticas entre Next y Vite preview, eliminando dependencias externas de red.
+- **Jerarquía de color:** el enfoque de títulos completamente amarillos fue superado a favor de **titulares neutros (`#F5F4EC`)**, reservando el amarillo (`#FCD34D`) para llamadas a la acción (CTA), foco y acentos puntuales de marca, resolviendo el diseño canónico en `design.md` §3 y §13.
+- **Componentes y utilidades compartidas:** las clases `.tech-label`, `.tech-id`, `.panel`, así como la normalización de geometría recta (`--radius: 0px`), alturas mínimas táctiles de 44 px, variantes de botón y navegación de cabecera privada/pública fueron consolidadas y validadas integralmente en `ui-ux-profesional.md` (con 101 archivos, 1444 tests Vitest, 69 comprobaciones de barreras y 142 tests E2E pasando en verde).
+- **Estado del plan:** este plan permanece en estado **ACTIVO** en `docs/exec-plans/active/` para preservar el registro histórico compartido sin cierre unilateral; su alcance funcional y estético queda continuado y completado en `ui-ux-profesional.md`.
