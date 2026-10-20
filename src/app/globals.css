@@ -7,8 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-space-grotesk, ui-sans-serif), system-ui, sans-serif;
-  --font-mono: var(--font-ibm-plex-mono, ui-monospace), monospace;
+  --font-sans: var(--font-manrope, ui-sans-serif), system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono, ui-monospace), ui-monospace, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -23,6 +23,12 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-green: var(--brand-green);
+  --color-brand-white: var(--brand-white);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -48,121 +54,134 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Paleta institucional (design.md §2). Lienzo AZUL NOCHE muy oscuro derivado del
+   azul de marca `#1E3A5F`; texto blanco `#F7F8F6`, verde `#176A57` en superficies
+   de marca/secundario, amarillo `#FFDA47` como CTA y foco. Paneles sin sombra:
+   se elevan con un tono más claro del mismo azul. No hay selector de tema: la
+   app nunca recibe la clase `.dark`, así que las variantes `dark:` de shadcn no
+   se activan. Los exportables y el lienzo blanco del QR conservan sus estilos. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0px;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
-/* Identidad MVP: ambos contextos comparten la misma paleta operacional.
-   Los exportables y el lienzo blanco del QR conservan sus estilos propios. */
-:root,
-.dark {
   color-scheme: dark;
-  --brand-green: #174235;
-  --brand-yellow: #fcd34d;
-  --background: #101411;
-  --foreground: #f5f4ec;
-  --card: #18221c;
-  --card-foreground: #f5f4ec;
-  --popover: #18221c;
-  --popover-foreground: #f5f4ec;
+  --brand-blue: #1e3a5f;
+  --brand-green: #176a57;
+  --brand-white: #f7f8f6;
+  --brand-yellow: #ffda47;
+  --background: #0c1a2e;
+  --foreground: var(--brand-white);
+  --card: #13263f;
+  --card-foreground: var(--brand-white);
+  --popover: var(--brand-blue);
+  --popover-foreground: var(--brand-white);
   --primary: var(--brand-yellow);
-  --primary-foreground: #174235;
+  --primary-foreground: var(--brand-blue);
   --secondary: var(--brand-green);
-  --secondary-foreground: #f5f4ec;
-  --muted: #18221c;
-  --muted-foreground: #b9c6bd;
-  --accent: var(--brand-green);
-  --accent-foreground: #f5f4ec;
-  --destructive: #ff9595;
-  --border: #35443c;
-  --input: #63776a;
+  --secondary-foreground: #ffffff;
+  --muted: var(--brand-blue);
+  --muted-foreground: #b5c3d6;
+  --accent: #27476f;
+  --accent-foreground: var(--brand-white);
+  --destructive: #ffb3ad;
+  /* `border` es divisor decorativo; `input` es el límite de controles (≥3:1). */
+  --border: #2b4566;
+  --input: #8fa3bd;
   --ring: var(--brand-yellow);
-  --sidebar: #0d110f;
-  --sidebar-foreground: #f5f4ec;
+  /* Cifras y estados positivos: teal claro legible; el verde de marca queda para superficies. */
+  --success: #6fd0b2;
+  --warning: var(--brand-yellow);
+  --chart-1: var(--brand-yellow);
+  --chart-2: #6fd0b2;
+  --chart-3: #8fa3bd;
+  --chart-4: #36557c;
+  --chart-5: #1e3a5f;
+  /* Geometría recta: todos los radios Tailwind derivan de este valor. */
+  --radius: 0px;
+  --sidebar: #081423;
+  --sidebar-foreground: var(--brand-white);
   --sidebar-primary: var(--brand-yellow);
-  --sidebar-primary-foreground: #174235;
-  --sidebar-accent: var(--brand-green);
-  --sidebar-accent-foreground: #f5f4ec;
-  --sidebar-border: #35443c;
+  --sidebar-primary-foreground: var(--brand-blue);
+  --sidebar-accent: var(--brand-blue);
+  --sidebar-accent-foreground: var(--brand-white);
+  --sidebar-border: var(--brand-blue);
   --sidebar-ring: var(--brand-yellow);
+}
+
+/* Panel protagonista en azul de marca `#1E3A5F` (hero, cabecera, bloque
+   destacado) sobre el lienzo navy. Re-mapea los tokens para que los hijos
+   sigan usando `text-foreground`, `bg-card`, `border-input`, `bg-primary`… */
+.surface-inverse {
+  color-scheme: dark;
+  --background: var(--brand-blue);
+  --foreground: var(--brand-white);
+  --card: #27476f;
+  --card-foreground: var(--brand-white);
+  --popover: #27476f;
+  --popover-foreground: var(--brand-white);
+  --secondary-foreground: #ffffff;
+  --muted: #27476f;
+  --muted-foreground: #c9d4e2;
+  --accent: #35608f;
+  --accent-foreground: var(--brand-white);
+  --destructive: #ffb3ad;
+  --border: #4b6a93;
+  --input: #9aadc6;
+  --ring: var(--brand-yellow);
+  --success: #8fdcc4;
+  --warning: var(--brand-yellow);
+  background-color: var(--background);
+  color: var(--foreground);
+}
+/* EXCEPCIÓN FUNCIONAL, no default: isla clara (p. ej. lienzo de QR o vista previa
+   de documento). Todo el resto de la interfaz es azul. */
+.surface-light {
+  color-scheme: light;
+  --background: var(--brand-white);
+  --foreground: var(--brand-blue);
+  --card: #ffffff;
+  --card-foreground: var(--brand-blue);
+  --popover: #ffffff;
+  --popover-foreground: var(--brand-blue);
+  --secondary-foreground: var(--brand-white);
+  --muted: #e8edea;
+  --muted-foreground: #4a5d75;
+  --accent: #dcebe5;
+  --accent-foreground: var(--brand-blue);
+  --destructive: #b42318;
+  --border: #c9d2cd;
+  --input: #718093;
+  --ring: var(--brand-blue);
+  --success: var(--brand-green);
+  --warning: #8a5a00;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans;
+    /* Texto base web: 16px / 1.6. */
+    font-size: 100%;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
-    /* Retícula editorial (design.md §4): líneas de 1px cada 96px, fijas y sin imágenes. */
+    font-size: 1rem;
+    line-height: 1.6;
+    /* Retícula editorial (design.md §4): líneas azul/teal de 1px cada 96px,
+       visibles pero sin competir con la lectura; fija y sin imágenes. Nodos
+       estáticos en las intersecciones: teal pequeño en todas y amarillo en
+       unas pocas (patrón de 6×5 celdas). Sin animación. */
     background-image:
-      linear-gradient(to right, rgb(53 68 60 / 0.35) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(53 68 60 / 0.35) 1px, transparent 1px);
-    background-size: 96px 96px;
+      linear-gradient(to right, rgb(111 170 190 / 0.14) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(111 170 190 / 0.14) 1px, transparent 1px),
+      radial-gradient(circle at 2.5px 2.5px, rgb(111 208 178 / 0.4) 1.5px, transparent 2px),
+      radial-gradient(circle at 2.5px 2.5px, rgb(255 218 71 / 0.75) 2px, transparent 2.5px),
+      radial-gradient(circle at 2.5px 2.5px, rgb(255 218 71 / 0.75) 2px, transparent 2.5px);
+    background-size: 96px 96px, 96px 96px, 96px 96px, 576px 480px, 576px 480px;
+    background-position: 0 0, 0 0, -2.5px -2.5px, 189.5px 93.5px, 381.5px 285.5px;
     background-attachment: fixed;
   }
   @media print {
@@ -170,36 +189,138 @@
       background-image: none;
     }
   }
-  html {
-    @apply font-sans;
-  }
 }
 
 @layer components {
-  /* Logo para fondo oscuro: wordmark crema, isotipo verde y amarillo (relación 1232:312). */
+  /* Logo GALCOA+ sobre azul noche: `/galcoa-on-navy.svg`, derivado de `/galcoa.svg` (que queda
+     intacto, trazos `#1E3B60`/`#2463EC`, ilegibles sobre navy): wordmark `#F7F8F6`, isotipo verde
+     `#176A57` con borde crema y check/«+» `#FFDA47`. Proporción 931:307. Sin filtros ni máscaras. */
   .galcoa-brand {
     display: inline-block;
-    width: 110px;
     height: 28px;
+    aspect-ratio: 931 / 307;
     flex-shrink: 0;
-    background: url('/galcoa-on-dark.svg') no-repeat center / contain;
+    background: url('/galcoa-on-navy.svg') no-repeat center / contain;
+  }
+  /* Crecimiento moderado dentro de la cabecera de 64 px (antes 110×28): 28 → 36 → 40 px
+     de alto con la proporción 931:307 del SVG. */
+  @media (min-width: 40rem) {
+    .galcoa-brand { height: 36px; }
+  }
+  @media (min-width: 64rem) {
+    .galcoa-brand { height: 40px; }
   }
 
-  /* Chip de sección: amarillo con texto verde, mono mayúsculas. */
+  /* Logo de Hedera sobre azul noche: `/hedera-on-navy.svg`, versión en negativo `#F7F8F6` derivada
+     de `/hedera.svg` (intacto, `#0A0A0A`, invisible sobre navy); sin placa. Algo más bajo que
+     GALCOA+ para equilibrar el peso óptico (proporción 450:140). */
+  .hedera-logo {
+    display: inline-block;
+    flex-shrink: 0;
+    height: 22px;
+    aspect-ratio: 450 / 140;
+    background: url('/hedera-on-navy.svg') no-repeat center / contain;
+  }
+  @media (min-width: 40rem) {
+    .hedera-logo { height: 28px; }
+  }
+  @media (min-width: 64rem) {
+    .hedera-logo { height: 32px; }
+  }
+
+  /* Chip de sección: verde de marca con texto blanco. El amarillo queda para
+     acción principal y foco sobre azul. */
   .eyebrow {
-    @apply inline-block bg-primary px-2 py-1 font-mono text-xs font-medium tracking-wider text-primary-foreground uppercase;
+    @apply inline-block border border-border bg-secondary px-2 py-1 text-xs font-medium tracking-wide text-secondary-foreground;
   }
 
-  /* Rótulo técnico y metadato. */
+  /* Rótulo y metadato: sans, sin mayúsculas sistemáticas. Los identificadores
+     (hashes, referencias) usan `.tech-id`. */
   .tech-label {
-    @apply font-mono text-xs tracking-wider text-muted-foreground uppercase;
+    @apply text-[0.8125rem] leading-snug font-medium text-muted-foreground;
   }
 
+  .tech-id {
+    @apply font-mono text-[0.8125rem] leading-normal break-all;
+  }
+
+  /* Título de trabajo: neutro, 24px en móvil y 30px desde md. */
   .page-title {
-    @apply text-4xl font-medium tracking-tight text-primary md:text-5xl;
+    @apply text-2xl leading-tight font-semibold tracking-tight text-foreground md:text-3xl;
+    text-wrap: balance;
   }
 
   .panel {
     @apply border bg-card p-6;
+  }
+}
+
+/* Vocabulario de movimiento (design.md §7). Solo opacidad y transform.
+   - .motion-enter: entrada breve al montar una página o un bloque nuevo.
+     Con `backwards` el contenido es visible si la animación no corre.
+   - .motion-reveal: revelado único al entrar en pantalla; lo gestiona
+     `Reveal`, que solo oculta bloques que aún están fuera del viewport. */
+:root {
+  --motion-press: 140ms;
+  --motion-ui: 200ms;
+  --motion-exit: 140ms;
+  --motion-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes motion-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes motion-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@layer utilities {
+  .motion-fade {
+    animation: motion-fade var(--motion-press) var(--motion-ease-out);
+  }
+  .motion-enter {
+    animation: motion-enter var(--motion-ui) var(--motion-ease-out) backwards;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+  .motion-reveal[data-reveal="pending"] {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  .motion-reveal[data-reveal="shown"] {
+    transition:
+      opacity 260ms var(--motion-ease-out),
+      transform 260ms var(--motion-ease-out);
+    transition-delay: var(--enter-delay, 0ms);
+  }
+}
+
+@media print {
+  .motion-reveal[data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Movimiento reducido: sin desplazamientos ni escalas; se conservan los
+   cambios de color y opacidad que ayudan a entender el estado. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    scroll-behavior: auto !important;
+  }
+  @keyframes motion-enter {
+    from {
+      opacity: 0;
+    }
+  }
+  .motion-reveal[data-reveal="pending"] {
+    transform: none;
   }
 }

@@ -3,3 +3,27 @@
 
 @source "../src";
 @source ".";
+
+/* Mismas fuentes y bytes que next/font/local en src/app/layout.tsx: Vite sirve
+   public/ en la raíz, sin solicitudes externas. Las variables replican las que
+   Next inyecta en <html>. */
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/manrope-variable.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/ibm-plex-mono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-manrope: "Manrope";
+  --font-ibm-plex-mono: "IBM Plex Mono";
+}
