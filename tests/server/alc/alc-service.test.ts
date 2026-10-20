@@ -127,11 +127,13 @@ describe("evaluación de servidor (F-1)", () => {
     if (r.ok) expect(r.value.shared.claims[0].status).toBe("declarado");
   });
 
-  it("una fuente contradice al borrador: rojo, y se conserva la contradicción", async () => {
-    const { evaluator } = setup([claimOutput({ remito: "Remito: 10 cajas" })], reading("Se entregan 12 cajas", "Remito: 10 cajas"));
+  it("una fuente contradice al borrador: sin rojo (deuda 15), queda declarado y sellable", async () => {
+    const { evaluator, saved } = setup([claimOutput({ remito: "Remito: 10 cajas" })], reading("Se entregan 12 cajas", "Remito: 10 cajas"));
     const r = await run(evaluator);
-    expect(r).toMatchObject({ ok: true, value: { color: "rojo" } });
-    if (r.ok) expect(r.value.shared.claims[0].status).toBe("contradicho");
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
+    if (r.ok) expect(r.value.shared.claims[0].status).toBe("declarado");
+    // La base recalcula el color desde los hallazgos: no puede quedar ninguno rojo.
+    expect(JSON.stringify(saved[0].result)).not.toContain(ALC_RULE.CONTRADICTION);
   });
 
   it("una cita inventada se descarta: el dato queda declarado, sin fallo técnico", async () => {
@@ -141,12 +143,12 @@ describe("evaluación de servidor (F-1)", () => {
     if (r.ok) expect(r.value.shared.claims[0].status).toBe("declarado");
   });
 
-  it("un dato fuera del borrador se descarta y la cobertura incompleta queda en rojo, sin 503", async () => {
+  it("un dato fuera del borrador se descarta y la cobertura incompleta queda amarilla, sin 503", async () => {
     const out = claimOutput();
     out.claims[0].value = "99";
     const invented = setup([out]);
     const r = await run(invented.evaluator);
-    expect(r).toMatchObject({ ok: true, value: { color: "rojo" } });
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
     if (r.ok) expect(r.value.shared.claims).toHaveLength(0);
   });
 
@@ -181,11 +183,11 @@ describe("evaluación de servidor (F-1)", () => {
     expect(saved).toHaveLength(0);
   });
 
-  it("cobertura incompleta del borrador (un número sin afirmación) es rojo por ambigüedad", async () => {
+  it("cobertura incompleta del borrador (un número sin afirmación) queda amarilla, sin rojo (deuda 15)", async () => {
     const { evaluator } = setup([claimOutput()]);
     const r = await evaluator.evaluate({ ownerId: OWNER, documentId: DOC, draft: { ...draft, body: `${body} Precio 500 pesos.` }, selection: ["autor", "comprador"] });
-    expect(r).toMatchObject({ ok: true, value: { color: "rojo" } });
-    if (r.ok) expect(r.value.shared.findings.some((f) => f.ruleId === ALC_RULE.AMBIGUITY)).toBe(true);
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
+    if (r.ok) expect(r.value.shared.findings.some((f) => f.ruleId === ALC_RULE.AMBIGUITY)).toBe(false);
   });
 
   it("una selección fuera del contrato nuevo es rojo por participantes", async () => {

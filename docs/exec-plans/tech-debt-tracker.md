@@ -126,7 +126,16 @@
 - **Description**: En producción, congelar devolvía `503 ALC_CLAIM_INVALID` cuando Groq proponía un valor reformulado o el mismo dato dos veces. Además, la cobertura exigía que cada número de una fecha (`20/10/2026`) fuera una afirmación numérica, lo que dejaba casi todo documento en rojo. `src/lib/ai/alc/facts.ts` ahora: descarta afirmaciones cuyo valor no figura en el borrador y citas que no existen literalmente en su fuente; fusiona duplicados (si difieren, ambiguo); trata como texto los «números» sin unidad o con separadores; cuenta como cubiertos los números contenidos en sujeto, campo o valor de cualquier afirmación, e ignora la autoevaluación `contentCoverageComplete` del modelo (dejaba en rojo documentos con todos sus datos coincidentes).
 - **Impact**: Ya no hay 503 por salida imperfecta de la IA. Riesgo aceptado: una cita contradictoria mal copiada por el modelo se descarta en lugar de bloquear, y el dato puede quedar amarillo («declarado») o, si otra evidencia coincide, verde, cuando debió ser rojo. El verde sigue exigiendo al menos una cita literal verificada en una evidencia.
 - **Current State**: Restricción «fallo técnico, nunca un rojo» eliminada a pedido del usuario; tests actualizados.
-- **Remediation**: Registrar en la evaluación las afirmaciones/citas descartadas y marcarlas como ambigüedad visible, o reintentar la lectura de Groq con retroalimentación antes de descartar.
+- **Remediation**: Ver también la deuda 15. Registrar en la evaluación las afirmaciones/citas descartadas y marcarlas como ambigüedad visible, o reintentar la lectura de Groq con retroalimentación antes de descartar.
+
+### 15. Semáforo rojo desactivado: contradicciones y ambigüedades se sellan como «declarado»
+
+- **Discovered/Recorded**: 2026-10-20
+- **Originating Plan**: hotfix de producción para la reunión con inversores, por decisión expresa del usuario.
+- **Severity**: High / Contradice `docs/GALCOA-REGLAS-PRODUCTO.md` («rojo bloquea sellar»)
+- **Description**: `withoutRed` en `src/lib/documents/alc/service.ts` reescribe los hallazgos `ALC-CONTRADICCION`, `ALC-AMBIGUEDAD` y `ALC-NO-LECTURA` como `ALC-DATO-DECLARADO` antes de persistir. Como SQL recalcula el color desde los hallazgos, la evaluación queda amarilla y las guardas SQL (finalización, versión, sello) no bloquean. Solo `ALC-PARTICIPANTES` sigue en rojo. No se modificó ninguna migración.
+- **Impact**: Una diferencia real (pedido 200 / remito 198) se sella mostrándose como «declarado sin respaldo». Las revisiones ya rojas siguen rojas (inmutables): hay que congelar una revisión nueva.
+- **Remediation**: Revertir `withoutRed` y sus tests tras la reunión; restituir las pruebas «contradicción → rojo».
 
 ---
 
