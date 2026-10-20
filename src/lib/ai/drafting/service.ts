@@ -10,9 +10,10 @@ import type { ServiceResult } from "@/lib/documents/result";
 import type { TurnClaimRef } from "@/lib/documents/turns/ports";
 
 import type { GeminiStructuredPort, GeminiTextSource } from "../gemini/structured";
-import { DRAFTING_INSTRUCTIONS_V1, DRAFTING_PROMPT_VERSION } from "../prompts/drafting/v1";
+import { DRAFTING_INSTRUCTIONS_V2, DRAFTING_PROMPT_VERSION } from "../prompts/drafting/v2";
 
 import { checkProvenance } from "./provenance";
+import { sanitizeDraftOutput } from "./sanitize";
 import { DraftOutputSchema, type DraftOutput } from "./schema";
 
 /**
@@ -113,7 +114,7 @@ export function createDraftingService(deps: DraftingDeps) {
       }
 
       const generated = await deps.gemini.generateStructured({
-        instructions: DRAFTING_INSTRUCTIONS_V1,
+        instructions: DRAFTING_INSTRUCTIONS_V2,
         sources,
         schema: DraftOutputSchema,
         abortSignal: command.abortSignal,
@@ -126,8 +127,10 @@ export function createDraftingService(deps: DraftingDeps) {
         // Fuente inventada o corrección no inocua: error técnico reintentable, sin borrador.
         return fail("AI_INVALID_PROVENANCE", "ia", true, correlationId);
       }
+      const sanitized = sanitizeDraftOutput(generated.output, texts);
+      limitations.push(...sanitized.notes);
       const proposal: DraftOutput = {
-        ...generated.output,
+        ...sanitized.output,
         warnings: [...generated.output.warnings, ...provenance.addedWarnings],
       };
 
