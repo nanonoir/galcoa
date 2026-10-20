@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { DRAFTING_PROMPT_VERSION } from "../../src/lib/ai/prompts/drafting/v2";
 import { computeMetrics, scoreRun } from "../../evals/ai/metrics";
 import { buildRecord, renderTable } from "../../evals/ai/report";
 import { loadDataset, runEvaluation, type CaseRun, type EvalServices } from "../../evals/ai/runner";
@@ -246,7 +247,7 @@ describe("Runner con los servicios reales y dobles de proveedor (MVP-123)", () =
 
     expect(runs).toHaveLength(24);
     const c02 = runs.find((r) => r.caseId === "C02")!;
-    expect(c02.drafting).toMatchObject({ ok: true, inputs: ["m1", "e1"], promptVersion: "drafting-v1" });
+    expect(c02.drafting).toMatchObject({ ok: true, inputs: ["m1", "e1"], promptVersion: DRAFTING_PROMPT_VERSION });
     expect(c02.contrast).toMatchObject({ ok: true, inputs: ["m1", "e1", "b1"], promptVersion: "contrast-v1", modelId: "groq-doble" });
     expect(ports.groqCalls[0].map((s) => s.id)).toEqual(["m1", "b1"]);
 

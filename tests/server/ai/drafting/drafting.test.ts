@@ -6,7 +6,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { DraftOutput } from "@/lib/ai/drafting/schema";
 import { createDraftingService, VISUAL_LIMITATION } from "@/lib/ai/drafting/service";
 import type { GeminiStructuredPort, GeminiStructuredInput } from "@/lib/ai/gemini/structured";
-import { DRAFTING_PROMPT_VERSION } from "@/lib/ai/prompts/drafting/v1";
+import { DRAFTING_INSTRUCTIONS_V1, DRAFTING_PROMPT_VERSION as DRAFTING_PROMPT_VERSION_V1 } from "@/lib/ai/prompts/drafting/v1";
+import { DRAFTING_INSTRUCTIONS_V2, DRAFTING_PROMPT_VERSION } from "@/lib/ai/prompts/drafting/v2";
 import type { DraftStager, StageProposalInput } from "@/lib/documents/drafting/ports";
 import { createMessageService } from "@/lib/documents/messages";
 import type { SessionPort } from "@/lib/documents/ports";
@@ -287,6 +288,109 @@ describe("MVP-051 · Agente 1 con procedencia", () => {
     expect(r.ok).toBe(true);
     expect(drafts.staged[0].inputs.map((i) => i.ref)).toEqual(["m1", "e1"]);
     expect(drafts.staged[0].limitations).toEqual([VISUAL_LIMITATION]);
+  });
+});
+
+describe("S.4 · drafting-v2 y defensas deterministas", () => {
+  it("v2 es una versión nueva, v1 queda intacto y el servicio usa v2", async () => {
+    expect(DRAFTING_PROMPT_VERSION).toBe("drafting-v2");
+    expect(DRAFTING_PROMPT_VERSION_V1).toBe("drafting-v1");
+    expect(DRAFTING_INSTRUCTIONS_V1).toContain("Cada hecho lleva la ref de su fuente");
+    expect(DRAFTING_INSTRUCTIONS_V2).not.toBe(DRAFTING_INSTRUCTIONS_V1);
+
+    const t = await setup(["Hoy entregamos 10 cajas de yerba en el deposito."], base);
+    await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
+    expect(t.gemini.calls[0].instructions).toBe(DRAFTING_INSTRUCTIONS_V2);
+    expect(t.drafts.staged[0].promptVersion).toBe("drafting-v2");
+  });
+
+  it("recibió→recibio: descarta la corrección regresiva sin reescribir la prosa y deja rastro", async () => {
+    const output: DraftOutput = {
+      ...base,
+      body: "Luis recibio 10 cajas. Esta entrega cambió y esta bien; Cambio de turno.",
+      corrections: [{ original: "recibió", corrected: "recibio", kind: "ortografia", sourceRef: "m1" }],
+    };
+    const t = await setup(["Luis recibió 10 cajas de yerba."], output);
+
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // Sin restauración global: homógrafos y casing quedan exactamente como los propuso el modelo.
+    expect(r.value.proposal.body).toBe("Luis recibio 10 cajas. Esta entrega cambió y esta bien; Cambio de turno.");
+    expect(r.value.proposal.corrections).toEqual([]);
+    expect(t.drafts.staged[0].content.corrections).toEqual([]);
+    expect(r.value.limitations).toHaveLength(1);
+    expect(r.value.limitations[0]).toContain("Se descartaron 1 corrección(es)");
+    expect(r.value.limitations[0]).not.toContain("recibi");
+    expect(t.drafts.staged[0].limitations).toEqual(r.value.limitations);
+  });
+
+  it("homógrafos: esta→está y cambio→cambió no se reescriben aunque la fuente tenga tildes", async () => {
+    const output: DraftOutput = {
+      ...base,
+      body: "El pedido esta listo. Cambio la entrega.",
+      corrections: [
+        { original: "está", corrected: "esta", kind: "ortografia", sourceRef: "m1" },
+        { original: "cambió", corrected: "cambio", kind: "ortografia", sourceRef: "m1" },
+      ],
+    };
+    const t = await setup(["El pedido está listo y cambió la entrega de 10 cajas."], output);
+
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.proposal.body).toBe("El pedido esta listo. Cambio la entrega.");
+    expect(r.value.limitations[0]).toContain("Se descartaron 2 corrección(es)");
+  });
+
+  it("descarta correcciones identidad y conserva las legítimas", async () => {
+    const output: DraftOutput = {
+      ...base,
+      corrections: [
+        { original: "recibió", corrected: "recibió", kind: "formato", sourceRef: "m1" },
+        { original: "deposito", corrected: "depósito", kind: "ortografia", sourceRef: "m1" },
+      ],
+    };
+    const t = await setup(["Luis recibió 10 cajas en el deposito."], output);
+
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
+
+    expect(r.ok && r.value.proposal.corrections.map((c) => c.corrected)).toEqual(["depósito"]);
+  });
+
+  it("quita refs de fuente en prosa, conserva facts y no toca códigos de negocio", async () => {
+    const output: DraftOutput = {
+      ...base,
+      title: "Entrega (m1)",
+      body: "Se entregaron 10 cajas (m1) en el depósito [m1, m2]. El lote M1 y el pedido 5 siguen igual.",
+      corrections: [],
+    };
+    const t = await setup(["Entregamos 10 cajas de yerba.", "Remito 4455 confirmado."], output);
+
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.proposal.title).toBe("Entrega");
+    expect(r.value.proposal.body).toBe("Se entregaron 10 cajas en el depósito. El lote M1 y el pedido 5 siguen igual.");
+    expect(r.value.proposal.facts[0].sourceRef).toBe("m1");
+    expect(r.value.limitations).toEqual([expect.stringContaining("Se quitaron 3 referencia(s) de fuente")]);
+  });
+
+  it("conserva «(m1)» si la fuente lo usa como código propio, y refs desconocidas", async () => {
+    const output: DraftOutput = {
+      ...base,
+      body: "Se usó el modelo (m1) y la pieza (m7).",
+      facts: [{ field: "modelo", value: "m1", sourceRef: "m1", quote: "modelo m1" }],
+      corrections: [],
+    };
+    const t = await setup(["Usamos el modelo m1 en 10 cajas."], output);
+
+    const r = await t.service.generateDraft({ documentId: t.documentId, expectedDraftRevision: 0, claim: CLAIM });
+
+    expect(r.ok && r.value.proposal.body).toBe("Se usó el modelo (m1) y la pieza (m7).");
   });
 });
 
