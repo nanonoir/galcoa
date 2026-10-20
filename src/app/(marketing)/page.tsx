@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 /** Bloque amarillo de alto completo a la derecha del encabezado, igual que en el área privada. */
 const HEADER_ACTION =
-  "inline-flex h-full items-center rounded-none border-0 bg-primary px-6 font-mono text-xs tracking-wider text-primary-foreground uppercase hover:bg-primary/90";
+  "inline-flex h-full items-center rounded-none border-0 bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 export default async function HomePage() {
   const session = await getCurrentSession().catch(() => ({ status: "unavailable" as const }));
