@@ -134,15 +134,37 @@ describe("evaluación de servidor (F-1)", () => {
     if (r.ok) expect(r.value.shared.claims[0].status).toBe("contradicho");
   });
 
-  it("una cita inventada o un dato fuera del borrador es un fallo técnico, nunca un rojo", async () => {
+  it("una cita inventada se descarta: el dato queda declarado, sin fallo técnico", async () => {
     const forged = setup([claimOutput({ remito: "Remito: 12 cajas falsas" })]);
-    expect(await run(forged.evaluator)).toMatchObject({ ok: false, error: { code: ALC_TECHNICAL.CITATION } });
-    expect(forged.saved).toHaveLength(0);
+    const r = await run(forged.evaluator);
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
+    if (r.ok) expect(r.value.shared.claims[0].status).toBe("declarado");
+  });
+
+  it("un dato fuera del borrador se descarta y la cobertura incompleta queda en rojo, sin 503", async () => {
     const out = claimOutput();
     out.claims[0].value = "99";
     const invented = setup([out]);
-    expect(await run(invented.evaluator)).toMatchObject({ ok: false, error: { code: ALC_TECHNICAL.CLAIM } });
-    expect(invented.saved).toHaveLength(0);
+    const r = await run(invented.evaluator);
+    expect(r).toMatchObject({ ok: true, value: { color: "rojo" } });
+    if (r.ok) expect(r.value.shared.claims).toHaveLength(0);
+  });
+
+  it("el mismo dato repetido se fusiona en una afirmación y no aborta la evaluación", async () => {
+    const out = claimOutput();
+    const [chat, remito] = out.claims[0].assertions;
+    out.claims = [{ ...out.claims[0], assertions: [chat] }, { ...out.claims[0], assertions: [remito] }];
+    const r = await run(setup([out]).evaluator);
+    expect(r).toMatchObject({ ok: true, value: { color: "verde" } });
+    if (r.ok) expect(r.value.shared.claims).toHaveLength(1);
+  });
+
+  it("una fecha del borrador cubre sus números aunque no sea numérica", async () => {
+    const dated = { ...draft, body: "Se entregan 12 cajas el 20/10/2026." };
+    const out = claimOutput();
+    out.claims.push({ subject: "entrega", field: "fecha", value: "20/10/2026", unit: "", numeric: true, ambiguous: false, assertions: [] });
+    const r = await setup([out]).evaluator.evaluate({ ownerId: OWNER, documentId: DOC, draft: dated, selection: ["autor", "comprador"] });
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
   });
 
   it("un original aceptado sin extracción es lectura incompleta (técnico), no un rojo", async () => {
