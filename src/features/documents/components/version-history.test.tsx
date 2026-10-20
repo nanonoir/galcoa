@@ -198,6 +198,28 @@ describe("VersionHistory", () => {
     for (const button of items()) expect(button).not.toHaveAttribute("aria-current");
   });
 
+  it("con pdfHref ofrece un enlace hermano de descarga por versión, fuera del botón de selección", () => {
+    const { state } = scenario("v1-registered-v2-pending");
+    render(
+      <VersionHistory
+        state={state}
+        selectedVersionId={null}
+        onSelect={vi.fn()}
+        onRetry={vi.fn()}
+        pdfHref={(n) => `/api/documents/doc-1/versions/${n}/pdf`}
+      />,
+    );
+    const link = screen.getByRole("link", { name: "Descargar PDF de la versión 2" });
+    expect(link).toHaveAttribute("href", "/api/documents/doc-1/versions/2/pdf");
+    expect(screen.getByRole("link", { name: "Descargar PDF de la versión 1" })).toHaveAttribute("href", "/api/documents/doc-1/versions/1/pdf");
+    expect(item(2)).not.toContainElement(link);
+  });
+
+  it("sin pdfHref no hay enlaces de descarga", () => {
+    renderScenario("v1-registered-v2-pending");
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
   it("no ofrece editar, regenerar PDF ni reintentar sello, y no usa afirmaciones prohibidas", () => {
     for (const s of versionHistoryScenarios) {
       const { unmount } = render(<VersionHistory state={s.state} selectedVersionId={s.selectedVersionId} onSelect={vi.fn()} onRetry={vi.fn()} />);

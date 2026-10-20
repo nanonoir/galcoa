@@ -41,7 +41,7 @@ describe("SealedVersionContainer", () => {
     expect(screen.getByText("Contrato subido. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
     expect(screen.getByText(/versión 2 quedó finalizada/i)).toBeInTheDocument();
     expect(screen.getByText(/Topic 0\.0\.1234 · Secuencia 7/)).toBeInTheDocument();
-    expect(screen.getByText(`${HASH.slice(0, 10)}…${HASH.slice(-8)}`)).toHaveClass("font-mono");
+    expect(screen.getByText(`${HASH.slice(0, 10)}…${HASH.slice(-8)}`)).toHaveClass("tech-id");
     expect(screen.getByRole("link", { name: /ver verificación/i })).toHaveAttribute("href", "/verify/ref-abc");
     const hashscan = screen.getByRole("link", { name: /hashscan/i });
     expect(hashscan).toHaveAttribute("href", "https://hashscan.io/testnet/transaction/1700000001.123456789");
