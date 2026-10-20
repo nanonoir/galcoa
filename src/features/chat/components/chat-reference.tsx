@@ -77,19 +77,19 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function Message({ message }: { message: ChatMessageView }) {
+function Message({ message, enter }: { message: ChatMessageView; enter: boolean }) {
   const author = message.sender === "autor";
   return (
-    <li className={author ? "flex justify-end" : "flex justify-start"}>
+    <li className={`${author ? "flex justify-end" : "flex justify-start"}${enter ? " motion-enter" : ""}`}>
       <div
         className={
           author
-            ? "max-w-[85%] min-w-0 rounded-lg bg-primary/10 p-3"
-            : "max-w-[85%] min-w-0 rounded-lg border border-border bg-muted/40 p-3"
+            ? "max-w-[92%] min-w-0 border border-input bg-accent p-3 sm:max-w-[85%]"
+            : "max-w-[92%] min-w-0 border border-border border-l-4 border-l-secondary bg-card p-3 sm:max-w-[85%]"
         }
       >
-        <p className="text-xs text-muted-foreground">
-          {author ? "Vos" : "Asistente"} · {formatDate(message.sentAt)}
+        <p className="tech-label">
+          <span className="font-semibold text-foreground">{author ? "Vos" : "Asistente"}</span> · {formatDate(message.sentAt)}
         </p>
         <p className="mt-1 break-words whitespace-pre-wrap">{message.content}</p>
       </div>
@@ -106,14 +106,14 @@ function Attachment({
 }) {
   const failed = attachment.status === "rejected" || attachment.status === "failed";
   return (
-    <li className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-2">
+    <li className="flex flex-wrap items-center gap-2 border border-border bg-muted/40 p-2 text-sm">
       <Paperclip aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
       <span className="min-w-0 break-all">{attachment.fileName}</span>
       <span className="text-xs text-muted-foreground">{formatBytes(attachment.byteLength)}</span>
       <Badge variant={failed ? "destructive" : "outline"}>{attachmentLabels[attachment.status]}</Badge>
       {attachment.status === "uploading" && attachment.progress !== null ? (
         <progress
-          className="h-2 w-24"
+          className="h-2 w-24 accent-success"
           max={100}
           value={attachment.progress}
           aria-label={`Progreso de carga de ${attachment.fileName}`}
@@ -134,6 +134,7 @@ function Attachment({
 
 export function ChatReference({
   state,
+  historyStatus = "ready",
   maxMessageChars,
   onSend,
   onCancel,
@@ -146,6 +147,12 @@ export function ChatReference({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Mensajes presentes al terminar la carga inicial: son historial y no se animan.
+  const [baseline, setBaseline] = useState<ReadonlySet<string> | null>(() =>
+    historyStatus === "ready" ? new Set(state.messages.map((m) => m.messageId)) : null,
+  );
+  if (baseline === null && historyStatus === "ready") setBaseline(new Set(state.messages.map((m) => m.messageId)));
+
   const busy = state.streaming !== null;
   const tooLong = draft.length > maxMessageChars;
   // El borrador se conserva tras `onSend` hasta que el estado recibido lo confirme
@@ -157,7 +164,7 @@ export function ChatReference({
   }
   const awaitingAck =
     sent !== null && draft === sent.content && state.messages.length === sent.count && state.turnError === sent.error;
-  const canSend = !busy && !awaitingAck && !tooLong && draft.trim().length > 0;
+  const canSend = historyStatus !== "loading" && !busy && !awaitingAck && !tooLong && draft.trim().length > 0;
   const contrastLabel = DEMO_HIDE_WARNINGS ? null : contrastLabels[state.contrast];
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -179,21 +186,40 @@ export function ChatReference({
   }
 
   return (
-    <section aria-label="Chat del documento" className="flex min-w-0 flex-col gap-4">
+    <section aria-label="Chat del documento" className="mx-auto flex w-full max-w-[720px] min-w-0 flex-col gap-4">
       {state.messages.length === 0 && state.streaming === null ? (
-        <p className="text-sm text-muted-foreground">
-          Todavía no hay mensajes. Contá la operación con tus palabras o adjuntá un archivo.
-        </p>
+        historyStatus === "ready" ? (
+          <p className="border border-dashed p-4 text-sm text-muted-foreground">
+            Todavía no hay mensajes. Contá la operación con tus palabras o adjuntá un archivo.
+          </p>
+        ) : null
       ) : (
         <ol role="log" aria-label="Mensajes" aria-live="polite" className="flex flex-col gap-3">
           {state.messages.map((message) => (
-            <Message key={message.messageId} message={message} />
+            <Message
+              key={message.messageId}
+              message={message}
+              // Solo entran con animación los mensajes propios posteriores a la carga inicial. Las respuestas
+              // del asistente reemplazan en sitio a la burbuja de streaming: animarlas la haría parpadear.
+              enter={message.sender === "autor" && baseline !== null && !baseline.has(message.messageId)}
+            />
           ))}
           {state.streaming ? (
-            <li className="flex justify-start">
-              <div className="max-w-[85%] min-w-0 rounded-lg border border-border bg-muted/40 p-3" aria-busy="true">
-                <p className="text-xs text-muted-foreground">Asistente · respondiendo…</p>
-                <p className="mt-1 break-words whitespace-pre-wrap">{state.streaming.content}</p>
+            <li className="motion-enter flex justify-start">
+              <div
+                className="max-w-[92%] min-w-0 border border-border border-l-4 border-l-secondary bg-card p-3 sm:max-w-[85%]"
+                aria-busy="true"
+              >
+                <p className="tech-label">
+                  <span className="font-semibold text-foreground">Asistente</span> · respondiendo…
+                </p>
+                <p className="mt-1 break-words whitespace-pre-wrap">
+                  {state.streaming.content === "" ? (
+                    <span className="text-muted-foreground">Esperando la respuesta del asistente…</span>
+                  ) : (
+                    state.streaming.content
+                  )}
+                </p>
               </div>
             </li>
           ) : null}
@@ -201,7 +227,7 @@ export function ChatReference({
       )}
 
       {state.turnError ? (
-        <Alert variant="destructive" role="alert">
+        <Alert variant="destructive" role="alert" className="motion-enter">
           <AlertTriangle aria-hidden="true" />
           <AlertTitle>{errorTitles[state.turnError.kind]}</AlertTitle>
           <AlertDescription>
@@ -221,7 +247,7 @@ export function ChatReference({
       ) : null}
 
       {state.draft ? (
-        <Alert role="status">
+        <Alert role="status" className="motion-enter">
           <FileText aria-hidden="true" />
           <AlertTitle>Borrador «{state.draft.title}» actualizado (revisión {state.draft.draftRevision})</AlertTitle>
           {!DEMO_HIDE_WARNINGS && (state.draft.warnings !== undefined || state.draft.notInformed !== undefined) ? (
@@ -258,13 +284,13 @@ export function ChatReference({
         </ul>
       ) : null}
 
-      <p role="status" className="text-sm text-muted-foreground">
+      <p role="status" className="text-sm text-muted-foreground empty:hidden">
         {contrastLabel}
       </p>
 
       {actions}
 
-      <form onSubmit={submit} className="flex flex-col gap-2">
+      <form onSubmit={submit} className="flex flex-col gap-2 border bg-card p-3">
         <Label htmlFor="chat-composer">Mensaje</Label>
         <Textarea
           id="chat-composer"
@@ -273,12 +299,13 @@ export function ChatReference({
           onChange={(event) => setDraft(event.target.value)}
           aria-invalid={tooLong}
           aria-describedby="chat-composer-count"
+          className="min-h-24"
         />
-        <p id="chat-composer-count" className={tooLong ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
+        <p id="chat-composer-count" className={tooLong ? "tech-label text-destructive" : "tech-label"}>
           {draft.length} / {maxMessageChars} caracteres
           {tooLong ? ". El mensaje supera el límite y no se enviará." : ""}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           <input
             ref={fileRef}
             type="file"

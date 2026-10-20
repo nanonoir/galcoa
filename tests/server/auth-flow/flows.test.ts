@@ -192,7 +192,7 @@ describe("Alta", () => {
     const { deps } = fakeClient({ signUp: vi.fn(async () => ({ data: { user: USER, session: null }, error: null })) });
     const response = await handleRegister(post("/api/auth/register", { email: EMAIL, password: PASSWORD, confirmPassword: PASSWORD }), deps);
     expect(response.status).toBe(503);
-    expect(await read(response)).toEqual({ state: { status: "error", message: MESSAGES.unavailable, fieldErrors: [] } });
+    expect(await read(response)).toEqual({ state: { status: "error", message: MESSAGES.registerNoSession, fieldErrors: [] } });
   });
 
   it("alta repetida: error neutral sin redirección ni intento de acceso", async () => {
