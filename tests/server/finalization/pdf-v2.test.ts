@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildReceipts } from "@/lib/documents/finalization/receipts";
 import { renderFinalPdf, renderPreviewPdf } from "@/lib/documents/pdf/render";
+import { verifyUrlFor } from "@/lib/documents/pdf/verify-url";
 
 import { fakeEvaluation } from "../revisions/alc-double";
 
@@ -20,11 +21,14 @@ const responses = [
 function pdfText(bytes: Uint8Array): string {
   const raw = Buffer.from(bytes).toString("latin1");
   const out: string[] = [];
-  for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+  // Se corta cada flujo por su `/Length`: buscar el `endstream` falla si los bytes comprimidos terminan en `\r`.
+  for (const m of raw.matchAll(/\/Length (\d+)\b[\s\S]*?>>\s*stream\r?\n/g)) {
+    const start = (m.index ?? 0) + m[0].length;
+    const data = raw.slice(start, start + Number(m[1]));
     try {
-      out.push(inflateSync(Buffer.from(m[1], "latin1")).toString("latin1"));
+      out.push(inflateSync(Buffer.from(data, "latin1")).toString("latin1"));
     } catch {
-      out.push(m[1]);
+      out.push(data);
     }
   }
   const lines: string[] = [];
@@ -67,4 +71,29 @@ describe("PDF final v2 y vista previa (F-5)", () => {
     expect(createHash("sha256").update(preview).digest("hex")).not.toBe(final.sha256);
     expect(Buffer.from(preview).toString("latin1")).not.toContain(SNAP.slice(0, 16));
   }, 30_000);
+  it("encabezado, tabla de datos y pie con QR y enlace al verificador", async () => {
+    const url = "https://app.ejemplo.test/verify/000102030405060708090a0b0c0d0e0f";
+    const text = pdfText((await renderFinalPdf({ ...input(), verifyUrl: url })).bytes);
+    for (const phrase of ["DOCUMENTO VERIFICABLE", "Finalizado el 16/10/2026 a las 12:05 (UTC)", "Producto", "Unidad", "Estado", "Datos t", "Comprob", url]) {
+      expect(text, phrase).toContain(phrase);
+    }
+    const withoutUrl = pdfText((await renderFinalPdf(input())).bytes);
+    expect(withoutUrl).toContain("000102030405060708090a0b0c0d0e0f");
+    expect(withoutUrl).not.toContain("Comprob");
+  }, 30_000);
+
+  it("el mismo snapshot da siempre los mismos bytes, también con QR", async () => {
+    const url = "https://app.ejemplo.test/verify/000102030405060708090a0b0c0d0e0f";
+    const a = await renderFinalPdf({ ...input(), verifyUrl: url });
+    const b = await renderFinalPdf({ ...input(), verifyUrl: url });
+    expect(a.sha256).toBe(b.sha256);
+    expect(a.sha256).not.toBe((await renderFinalPdf(input())).sha256);
+  }, 30_000);
+
+  it("el enlace del verificador sale del origen canónico y, sin configuración, no hay QR", () => {
+    const env = (value: string | undefined) => (name: string) => (name === "NEXT_PUBLIC_APP_URL" ? value : undefined);
+    expect(verifyUrlFor("abc123", env("https://app.ejemplo.test/, https://otro.test"))).toBe("https://app.ejemplo.test/verify/abc123");
+    expect(verifyUrlFor("abc123", env(undefined))).toBeNull();
+    expect(verifyUrlFor("abc123", env("no es una url"))).toBeNull();
+  });
 });

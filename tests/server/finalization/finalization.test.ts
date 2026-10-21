@@ -38,12 +38,14 @@ const RESPONSES = [
 function pdfText(bytes: Uint8Array): string {
   const raw = Buffer.from(bytes).toString("latin1");
   const out: string[] = [];
-  const re = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+  // Se corta cada flujo por su `/Length`: buscar el `endstream` falla si los bytes comprimidos terminan en `\r`.
+  const re = /\/Length (\d+)\b[\s\S]*?>>\s*stream\r?\n/g;
   for (let m = re.exec(raw); m; m = re.exec(raw)) {
+    const data = raw.slice(re.lastIndex, re.lastIndex + Number(m[1]));
     try {
-      out.push(inflateSync(Buffer.from(m[1], "latin1")).toString("latin1"));
+      out.push(inflateSync(Buffer.from(data, "latin1")).toString("latin1"));
     } catch {
-      out.push(m[1]);
+      out.push(data);
     }
   }
   // react-pdf escribe cada línea como un arreglo TJ de fragmentos hex (WinAnsi) con ajustes de kerning entre medio.

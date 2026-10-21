@@ -8,6 +8,7 @@ import type { TechnicalError } from "@/lib/contracts/technical";
 import { failure, newId } from "../result";
 import type { DocumentRpc } from "../persistence/store";
 import { renderFinalPdf, type PdfInput } from "../pdf/render";
+import { verifyUrlFor } from "../pdf/verify-url";
 
 import { buildReceipts, ReceiptsError } from "./receipts";
 
@@ -74,6 +75,8 @@ export type StagingResult = { ok: true; value: StagedPdf } | { ok: false; error:
 export type PdfStagingDeps = {
   store: PdfStagingStore;
   render?: typeof renderFinalPdf;
+  /** Enlace del verificador público para el QR del PDF; por defecto sale de `NEXT_PUBLIC_APP_URL`. */
+  verifyUrl?: (publicReference: string) => string | null;
   newCorrelationId?: () => string;
 };
 
@@ -81,6 +84,7 @@ const STATUS_CODES = { not_available: "NOT_AVAILABLE", abandoned: "FINALIZATION_
 
 export function createPdfStagingService(deps: PdfStagingDeps) {
   const render = deps.render ?? renderFinalPdf;
+  const verifyUrl = deps.verifyUrl ?? ((reference: string) => verifyUrlFor(reference));
   const correlation = deps.newCorrelationId ?? newId;
   return {
     /** Guarda el PDF canónico de la operación; idempotente con el mismo fencing, rechaza uno anterior. */
@@ -111,6 +115,7 @@ export function createPdfStagingService(deps: PdfStagingDeps) {
             snapshotHash: loaded.snapshotHash,
             publicReference: loaded.publicReference,
             finalizedAt: loaded.claimedAt,
+            verifyUrl: verifyUrl(loaded.publicReference),
           };
           rendered = await render(pdf);
         } catch {
