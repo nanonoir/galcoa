@@ -82,6 +82,7 @@ describe("ChatReference", () => {
     expect(alert).toHaveTextContent("El proveedor de IA no respondió");
     expect(alert).toHaveTextContent("PROVIDER_UNAVAILABLE");
     expect(alert).toHaveTextContent("corr-1");
+    expect(alert).toHaveTextContent("Esperá unos segundos y tocá «Reintentar respuesta»");
     await user.click(screen.getByRole("button", { name: "Reintentar respuesta" }));
     expect(onRetryTurn).toHaveBeenCalledTimes(1);
   });

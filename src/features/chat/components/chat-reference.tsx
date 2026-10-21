@@ -232,6 +232,10 @@ export function ChatReference({
           <AlertTitle>{errorTitles[state.turnError.kind]}</AlertTitle>
           <AlertDescription>
             <p>{errorDetails[state.turnError.kind]}</p>
+            {state.turnError.kind === "provider" && state.turnError.retryable ? (
+              // Incluye los límites de consultas del plan gratis (429): no se reintenta solo para no gastar cupo.
+              <p>Puede estar recibiendo muchas consultas. Esperá unos segundos y tocá «Reintentar respuesta».</p>
+            ) : null}
             <p className="text-xs break-words">
               Código: {state.turnError.code}
               {state.turnError.correlationId ? ` · Referencia: ${state.turnError.correlationId}` : ""}
