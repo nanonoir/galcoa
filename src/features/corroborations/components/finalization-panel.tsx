@@ -75,7 +75,7 @@ export function FinalizationPanel({ state, onFinalize, onRefresh }: Finalization
         Finalización
       </h2>
 
-      {state.status === "idle" && <p className="text-sm text-muted-foreground">Todos los participantes confirmaron esta revisión. Al finalizar se genera la versión con su PDF y se registra su huella en Hedera Testnet.</p>}
+      {state.status === "idle" && <p className="text-sm text-muted-foreground">Todos los participantes confirmaron esta revisión. Al finalizar se genera la versión con su PDF y se registra en Hedera Testnet una huella que permite comprobar que el PDF no cambió.</p>}
 
       {state.status === "published" && (
         <div className="motion-enter">

@@ -10,7 +10,7 @@ describe("FinalizationPanel · vocabulario (F-5)", () => {
     render(<FinalizationPanel state={{ status: "idle" }} onFinalize={onFinalize} onRefresh={vi.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: "Finalizar y registrar huella" }));
     expect(onFinalize).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(/se registra su huella en Hedera Testnet/)).toBeInTheDocument();
+    expect(screen.getByText(/se registra en Hedera Testnet una huella que permite comprobar que el PDF no cambió/)).toBeInTheDocument();
   });
 
   it("fallido o detenido: ofrece «Reintentar», nunca «Reintentar subida»", () => {
