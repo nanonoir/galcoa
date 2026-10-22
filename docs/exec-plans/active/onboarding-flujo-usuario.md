@@ -155,7 +155,7 @@ Dueño: **Facu** = presentación en `src/features/<dominio>/components/` con sus
 - **Estados:** sin cambios de lógica: `ready`, `unavailable`, `technical_error`, `submitting`, `submit_error` y `done`. La casilla vacía, el rechazo visible y el modal se mantienen tal cual (INV-13).
 - **Texto clave:**
   - Arriba: «**[Proveedor]** te pide que confirmes esta entrega **como comprador**. No hace falta cuenta. Solo podés confirmar o decir que no coincide; no podés editarla.»
-  - Al confirmar: «Registramos tu confirmación. Cuando estén todas, el proveedor genera el PDF final y registra su huella.»
+  - Al confirmar: «Registramos tu confirmación. Cuando estén todas, el proveedor genera el PDF final y registra una huella que permite comprobar que no cambió.»
   - Al rechazar: «Registramos que no coincide. El proveedor tiene que corregir y pedirte una nueva confirmación.»
   - Se conserva: «El nombre es el que declaraste; no se verificó contra ningún documento.»
 - **Dueño:** Facu para los textos (F-6). Mostrar el nombre del proveedor necesita que venga en el contrato de la invitación: **requiere Nahuel** si no está (pregunta 4).
@@ -294,3 +294,26 @@ Orden sugerido para Facu: F-1 → F-3 → F-6 → F-4 → F-5 → F-9 → F-2 �
 
 - 2026-10-22: plan escrito por orquestación en Orca. Trabajaron cuatro: W1, inventario (OpenCode); W2, buenas prácticas (OpenCode); W3, usuarios y reglas (Claude Haiku); W4, demo (OpenCode). Claude verificó cada nota contra el código y el PRD, y corrigió tres cosas: el ejemplo «amarillo» de W4 era rojo por ambigüedad, W2 proponía audio (fuera de P0) y W2 pedía un motivo para rechazar (INV-13 no lo exige). No se ejecutaron tests: no hubo cambios de código.
 - 2026-10-22: correcciones de Facu aplicadas: discurso único, cuatro pantallas de error con código de referencia (F-8, N-2), vocabulario único con «Detalles técnicos» (F-9), aviso de sesión caída en la landing (F-10, N-9), documento finalizado sin escritura (N-8) y redacción de la huella sin decir «huella del PDF».
+- 2026-10-22: **implementación de los tickets de Facu** (F-1 a F-7 y F-9), con orquestación en Orca. F-8 y F-10 quedan fuera de esta corrida.
+  - **Quién hizo qué:**
+    - A, con Claude Sonnet: panel, F-1, F-2, F-7 y la parte de F-9 del panel (`f6d98df`).
+    - B, con OpenCode: chat, F-3 (`cf00519`).
+    - C, con OpenCode: revisión, F-4, F-5 y la parte de F-9 del avance (`69693b0`). No escribió tests ni reportó los checks; Claude agregó los tests (`finalization-panel.test.tsx` y casos en `corroborations.test.tsx`).
+    - D, con OpenCode: pantalla del comercio y tarjeta sellada, F-6 y la parte de F-9 de la tarjeta (`820b15d`). Solo agregó tests y no tocó los existentes de INV-13.
+    - Claude: integración y correcciones. Se quitó «Contrato subido» de la tarjeta, se sacó un rótulo «Huella digital» que quedaba suelto y se alinearon los textos de P4 (`dc0aaae`). Además, «F-9: vocabulario restante» (`13fbe14`): versión congelada, Registro en Hedera y control de consistencia.
+  - **Integración:** los worktrees de Orca salieron de `origin/main` (`c9fff82`) y no de esta rama. Por eso no se mergearon: se aplicó solo el diff de los archivos permitidos de cada trabajador (`git apply --3way`) y se descartó `opencode.json`. `git log origin/develop..feat/onboarding-flujo-usuario` muestra solo el plan y los commits de esta corrida.
+  - **Fuera del carril de Facu** (solo cadenas o comentarios, sin lógica; para revisión de Nahuel):
+    - `2dc0cef` y `ee0f333`: textos esperados en tests de containers y en `tests/e2e/review/review.spec.ts`.
+    - `6461156`: comentarios con «Subir Contrato» en una ruta y en containers.
+    - `13fbe14`: `tests/e2e/preview.spec.ts`. Los IDs de revisión ya no son texto visible y el foco va primero a «Te falta».
+  - **Checks reales** (una corrida completa al final, en `13fbe14`): `npm run lint` ✔, `npm run typecheck` ✔, `npm test` ✔ (111 archivos, 1544/1544), `npm run test:boundaries` ✔ (69/69). `grep -rn "Subir Contrato" src` da vacío.
+    - Línea base antes de la corrida: 110 archivos, 1519/1519.
+    - Durante la integración, `confirmation-screen.test.tsx` agotó su tiempo de 5 s con la máquina cargada por los trabajadores. Corrido solo pasa 22/22 y en la corrida final pasó.
+  - **Cambios posteriores a la corrida completa:** después del suite apareció una edición en `finalization-panel.tsx` y su test (texto «…una huella que permite comprobar que el PDF no cambió», por C8). Se verificó solo ese archivo: 3/3 tests y `eslint` sin errores. Typecheck y suite completo no se volvieron a correr. Esa edición y el texto de P4 de este plan quedan sin commitear, para que decida Facu.
+  - **No verificado:** el E2E del preview (`npx playwright test --project preview`) no se pudo correr porque falta el navegador de Playwright en esta máquina (`chrome-headless-shell` no instalado). Se instala con `npx playwright install chromium`. Tampoco se corrieron los E2E con Supabase.
+  - **Pendiente de Nahuel:**
+    - N-4: «Diferencia por aclarar» (rojo) y «quién falta» en «Te falta» necesitan ampliar `DocumentSummary`.
+    - El texto para rojo de P3 necesita que la revisión reciba el color ALC por props.
+    - El nombre del proveedor en `/confirm/:token` necesita un cambio en el contrato de invitación (pregunta 4).
+    - (Resuelto después de la corrida: «Sello HCS» → «Registro en Hedera» también en `version-history.tsx`, con su test.)
+    - Hallazgo: `main` tiene `39f7f00` («demote red findings to declared so revisions can be sealed for the demo»). Contradice «el rojo bloquea» (REGLAS §5.2, F-1) y el caso rojo 200/198 del guion de demo. Hay que decidir qué rama manda y alinear `main` y `develop`.
