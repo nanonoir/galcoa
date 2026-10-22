@@ -71,7 +71,7 @@ describe("FinalizationContainer", () => {
 
     await tick(SEAL_RETRY_MS);
     expect(fetchMock.mock.calls[3]).toEqual(["/api/documents/doc-1/revisions/rev-1/finalization", expect.objectContaining({ method: "POST" })]);
-    expect(screen.getByText("Contrato subido. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
+    expect(screen.getByText("Versión finalizada. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /ver verificación/i })).toHaveAttribute("href", "/verify/ref-abc");
     const hashscan = screen.getByRole("link", { name: /hashscan/i });
     expect(hashscan).toHaveAttribute("href", "https://hashscan.io/testnet/transaction/1700000001.123456789");
@@ -95,7 +95,7 @@ describe("FinalizationContainer", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(router.refresh).toHaveBeenCalledTimes(1);
     // El recuadro no desaparece solo tras `done`: lo reemplaza la tarjeta persistente del servidor.
-    expect(screen.getByText("Contrato subido. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
+    expect(screen.getByText("Versión finalizada. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /hashscan/i })).toBeInTheDocument();
   });
 
