@@ -38,6 +38,13 @@ describe("ParticipantSelector", () => {
     expect(screen.getByText(/sugerido por el asistente/i)).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /^Transportista/ })).not.toBeChecked();
   });
+
+  it("antes de congelar explica qué se congela; con la selección fija ya no lo repite", () => {
+    const { rerender } = render(<ParticipantSelector value={["autor", "comprador"]} locked={false} onChange={vi.fn()} />);
+    expect(screen.getByText(/Vas a congelar esta versión\. El comprador va a ver exactamente esto\./)).toBeInTheDocument();
+    rerender(<ParticipantSelector value={["autor", "comprador"]} locked onChange={vi.fn()} />);
+    expect(screen.queryByText(/Vas a congelar esta versión/)).not.toBeInTheDocument();
+  });
 });
 
 describe("ReviewProgress", () => {
@@ -85,6 +92,18 @@ describe("ReviewProgress", () => {
     rerender(<ReviewProgress {...base} participants={[...base.participants]} refreshing confirmationStatus="pendiente" finalizedVersionNumber={null} hcsStatus="no_iniciado" />);
     expect(screen.getByRole("button", { name: /Actualizando/ })).toBeDisabled();
   });
+
+  it("vocabulario único: «Registro en Hedera» y glosario plegado «¿Qué significa?»", () => {
+    const { container } = render(<ReviewProgress {...base} participants={[...base.participants]} confirmationStatus="pendiente" finalizedVersionNumber={null} hcsStatus="no_iniciado" />);
+    expect(screen.getByText("Registro en Hedera (independiente de la finalización)")).toBeInTheDocument();
+    const glossary = container.querySelector("details");
+    expect(glossary).not.toBeNull();
+    expect(within(glossary as HTMLElement).getByText("¿Qué significa?")).toBeInTheDocument();
+    expect(glossary).toHaveTextContent("Rojo: hay una diferencia o algo ilegible, y así no se finaliza.");
+    const outside = container.cloneNode(true) as HTMLElement;
+    outside.querySelectorAll("details").forEach((d) => d.remove());
+    expect(outside.textContent).not.toMatch(/sello hcs|hash|snapshot|topic|contraste/i);
+  });
 });
 
 describe("ShareLinksPanel", () => {
@@ -126,6 +145,11 @@ describe("ShareLinksPanel", () => {
     expect(within(container).getByText(/no manda correos ni mensajes/i)).toBeInTheDocument();
     const text = container.textContent!.toLowerCase();
     for (const w of ["certificado", "firma digital", "identidad verificada", "garantizado verdadero"]) expect(text).not.toContain(w);
+  });
+
+  it("después de congelar dice qué hacer: confirmar como proveedor y mandar el enlace", () => {
+    render(<ShareLinksPanel links={[item]} onCopy={vi.fn()} onReissue={vi.fn()} />);
+    expect(screen.getByText(/Confirmá vos como proveedor y mandale el enlace al comprador por WhatsApp, correo o QR\./)).toBeInTheDocument();
   });
 
   it("sin terceros no hay enlaces", () => {
