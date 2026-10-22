@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LogoutButton } from "@/features/auth/containers/auth-containers";
+import { TrackView } from "@/features/conversion/containers/track-view";
 import { LandingPage } from "@/features/marketing/components/landing-page";
 import { buildLandingContent } from "@/features/marketing/containers/landing-content";
 import { getCurrentSession, LOGIN_PATH } from "@/lib/supabase/auth";
@@ -16,7 +17,9 @@ export default async function HomePage() {
   const session = await getCurrentSession().catch(() => ({ status: "unavailable" as const }));
   const signedIn = session.status === "authenticated";
   return (
-    <LandingPage
+    <>
+      {signedIn ? null : <TrackView event="landing_viewed" />}
+      <LandingPage
       content={buildLandingContent(signedIn)}
       headerAction={
         signedIn ? (
@@ -27,6 +30,7 @@ export default async function HomePage() {
           </Link>
         )
       }
-    />
+      />
+    </>
   );
 }

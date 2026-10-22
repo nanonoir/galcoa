@@ -41,21 +41,47 @@ const base = {
   ],
 };
 
+/** Problema (reglas de producto §3): se cuenta antes de la solución para que el visitante se reconozca. */
+const problem = {
+  title: "Trabajás bien, pero ¿lo podés demostrar?",
+  points: [
+    "Remitos, planillas y mensajes de WhatsApp desparramados.",
+    "Reclamos sin respaldo: cuando algo sale mal, nadie puede probar qué pasó.",
+    "Todo queda en tu palabra, sin un tercero que lo confirme.",
+  ],
+};
+
+/**
+ * Embudo de conversión (docs/exec-plans/active/conversion-funnel.md, D2): sin
+ * sesión, la acción principal es probar la demo sin registrarse y la secundaria
+ * crear la cuenta; con sesión, ir al panel. «Planes» está siempre visible.
+ */
 export function buildLandingContent(signedIn: boolean): LandingContent {
   const common = [
     { label: "Cómo funciona", href: "#como-funciona" },
+    { label: "Planes", href: "/precios" },
   ];
+  const pricingTeaser = {
+    text: "Abono mensual desde USD 30. Probá primero la demo; contratás cuando te convenza.",
+    link: { label: "Ver planes", href: "/precios" },
+  };
   return LandingContentSchema.parse(
     signedIn
       ? {
           ...base,
+          problem,
+          pricingTeaser,
           navigation: [...common, { label: "Mis documentos", href: "/dashboard" }],
           primaryAction: { label: "Ir a mis documentos", href: "/dashboard" },
+          secondaryAction: { label: "Ver la demo", href: "/demo" },
         }
       : {
           ...base,
-          navigation: [...common, { label: "Ingresar", href: "/acceso" }],
-          primaryAction: { label: "Crear cuenta", href: "/registro" },
+          problem,
+          pricingTeaser,
+          navigation: [...common, { label: "Demo", href: "/demo" }, { label: "Ingresar", href: "/acceso" }],
+          primaryAction: { label: "Probar la demo sin registrarte", href: "/demo" },
+          secondaryAction: { label: "Crear cuenta", href: "/registro?origen=landing" },
         },
   );
 }

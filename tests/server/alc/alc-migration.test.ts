@@ -24,9 +24,14 @@ function block(name: string): string {
 }
 
 describe("migración ALC (estática)", () => {
-  it("es la más reciente y aditiva (no hay otra posterior)", () => {
+  it("ninguna migración posterior redefine sus guardas ni funciones ALC", () => {
+    // Antes exigía ser la última; con migraciones aditivas ajenas (p. ej. conversion_funnel)
+    // lo que importa es que nada posterior toque la evaluación ni el congelamiento.
     const all = readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();
-    expect(all.at(-1)).toBe(file);
+    const later = all.slice(all.indexOf(file) + 1);
+    for (const name of later) {
+      expect(readFileSync(path.join(dir, name), "utf8"), name).not.toMatch(/alc_|freeze_revision|check_seal_eligibility|claim_finalization/i);
+    }
   });
 
   it("no borra datos ni tablas existentes", () => {
