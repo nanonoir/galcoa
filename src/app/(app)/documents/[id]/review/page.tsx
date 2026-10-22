@@ -42,7 +42,7 @@ export default async function DocumentReviewPage({ params }: PageProps<"/documen
   });
   const hcsStatus = result.value.hcsStatus;
   const finalized = result.value.documentStatus === "finalizado";
-  // Mismo render que oculta «Subir Contrato»: la tarjeta persistente ocupa su lugar sin intervalo vacío.
+  // Mismo render que oculta «Finalizar y registrar huella»: la tarjeta persistente ocupa su lugar sin intervalo vacío.
   const sealed = finalized ? await sealedVersionForRequest(id) : null;
   const bundle = await store.getActiveRevision(context.session.user.id, id);
   // Con revisión vigente también se lee el borrador actual: así se detecta si cambió desde el congelado.
