@@ -54,7 +54,7 @@ describe("ChatReference", () => {
     expect(log).toHaveAttribute("aria-live", "polite");
     expect(log).toHaveTextContent("Entregué 40 bolsas de semilla a Pérez el lunes.");
     expect(log).toHaveTextContent("¿Quién la recibió y en qué lugar?");
-    expect(screen.getByRole("status")).toHaveTextContent("Contraste disponible");
+    expect(screen.getByRole("status")).toHaveTextContent("Control de consistencia disponible");
   });
 
   it("movimiento: el historial no se anima; solo un mensaje propio nuevo entra, y la respuesta del asistente no se reanima", () => {
@@ -147,7 +147,7 @@ describe("ChatReference", () => {
     };
     renderState(state);
     expect(screen.getByText("Cargado sin extracción")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Contraste no disponible");
+    expect(screen.getByRole("status")).toHaveTextContent("Control de consistencia no disponible");
     expect(screen.getByText("1.9 MB")).toBeInTheDocument();
   });
 

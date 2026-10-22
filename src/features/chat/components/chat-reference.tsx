@@ -57,8 +57,8 @@ const attachmentLabels: Record<ChatAttachmentStatus, string> = {
 const contrastLabels: Record<ChatContrastStatus, string | null> = {
   idle: null,
   running: "Contrastando fuentes…",
-  done: "Contraste disponible",
-  unavailable: "Contraste no disponible",
+  done: "Control de consistencia disponible",
+  unavailable: "Control de consistencia no disponible",
 };
 
 const dateFormat = new Intl.DateTimeFormat("es-AR", {
@@ -269,7 +269,7 @@ export function ChatReference({
       {!DEMO_HIDE_WARNINGS && state.contrastFindings && state.contrastFindings.length > 0 ? (
         <Alert role="status">
           <Info aria-hidden="true" />
-          <AlertTitle>Avisos del contraste (no bloquean)</AlertTitle>
+          <AlertTitle>Avisos del control de consistencia (no bloquean el sello)</AlertTitle>
           <AlertDescription>
             <ul className="list-disc pl-4">
               {state.contrastFindings.map((finding, index) => (
