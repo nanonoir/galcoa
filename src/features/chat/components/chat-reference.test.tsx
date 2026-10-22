@@ -27,7 +27,7 @@ function renderState(state: ChatViewState, maxMessageChars = 8000) {
   const view = render(<ChatReference state={state} maxMessageChars={maxMessageChars} {...handlers} />);
   const rerenderState = (next: ChatViewState) =>
     view.rerender(<ChatReference state={next} maxMessageChars={maxMessageChars} {...handlers} />);
-  return { ...handlers, rerenderState, user: userEvent.setup() };
+  return { ...handlers, rerenderState, user: userEvent.setup(), container: view.container };
 }
 
 const forbiddenClaims = /certificad|validado|garantizad|firma digital|identidad verificada|verificado visualmente/i;
@@ -37,6 +37,15 @@ describe("ChatReference", () => {
     renderState(scenarioState("empty"));
     expect(screen.getByText(/Todavía no hay mensajes/)).toBeInTheDocument();
     expect(screen.queryByRole("log")).not.toBeInTheDocument();
+  });
+
+  it("vacío: guía con ejemplo y datos mínimos, sin mencionar audio", () => {
+    const { container } = renderState(scenarioState("empty"));
+    expect(screen.getByText(/Todavía no hay mensajes\. Contá la entrega como se la contarías a un compañero\./)).toBeInTheDocument();
+    expect(screen.getByText(/Entregué 200 cajas de galletitas/)).toBeInTheDocument();
+    expect(screen.getByText("qué, cuánto (con unidad), a quién y cuándo")).toBeInTheDocument();
+    expect(screen.getByText(/Adjuntá el remito en PDF o una foto/)).toBeInTheDocument();
+    expect(container.textContent ?? "").not.toMatch(/audio/i);
   });
 
   it("historial: muestra el texto original de cada mensaje en una región viva", () => {
