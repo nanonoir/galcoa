@@ -225,7 +225,7 @@ describe("ConfirmationScreen · mensajes de la invitación", () => {
     setup({ status: "done", result: result("confirmar") });
     const status = screen.getByRole("status");
     expect(status).toHaveTextContent("Registramos tu confirmación");
-    expect(status).toHaveTextContent("Cuando estén todas, el proveedor genera el PDF final y registra su huella.");
+    expect(status).toHaveTextContent("Cuando estén todas, el proveedor genera el PDF final y registra una huella que permite comprobar que no cambió.");
     expect(status).toHaveTextContent("El nombre es el que declaraste; no se verificó contra ningún documento.");
   });
 

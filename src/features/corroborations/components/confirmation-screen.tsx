@@ -313,7 +313,7 @@ function DoneCard({ state }: { state: Extract<ConfirmationViewState, { status: "
       </p>
       <p className="text-sm break-words">
         {confirmed
-          ? "Cuando estén todas, el proveedor genera el PDF final y registra su huella."
+          ? "Cuando estén todas, el proveedor genera el PDF final y registra una huella que permite comprobar que no cambió."
           : "El proveedor tiene que corregir y pedirte una nueva confirmación."}
       </p>
       <p className="text-xs text-muted-foreground">
