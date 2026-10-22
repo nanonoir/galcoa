@@ -1,4 +1,4 @@
-import { AlertTriangle, FileText, Info, Plus, RotateCcw } from "lucide-react";
+import { AlertTriangle, Check, Circle, FileText, Info, Plus, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -180,7 +180,7 @@ function DocumentItem({
               name="Confirmaciones"
               value={document.confirmationStatus ? confirmationStatusLabels[document.confirmationStatus] : NO_FROZEN_REVISION}
             />
-            <Dimension name="Sello HCS" value={hcsStatusLabels[document.hcsStatus]} />
+            <Dimension name="Registro en Hedera" value={hcsStatusLabels[document.hcsStatus]} />
           </dl>
           {!DEMO_HIDE_WARNINGS && document.warnings.length > 0 && (
             <section aria-label={`Advertencias de ${document.title}`} className="flex flex-col gap-2">
@@ -194,24 +194,110 @@ function DocumentItem({
               </ul>
             </section>
           )}
-          {/* Identificadores técnicos al final: son de consulta, no de lectura. */}
-          <p className="tech-label break-all">
-            {document.revisionId ? (
-              <>
-                Revisión <span className="tech-id">{document.revisionId}</span>
+          {/* Identificadores técnicos al final y plegados: son de consulta, no de lectura. */}
+          {document.revisionId ? (
+            <details className="text-xs text-muted-foreground">
+              <summary className="tech-label cursor-pointer">Detalles técnicos</summary>
+              <div className="mt-1 flex flex-col gap-1 break-all">
+                <p>
+                  Revisión <span className="tech-id">{document.revisionId}</span>
+                </p>
                 {document.snapshotId && (
-                  <>
-                    {" · "}snapshot <span className="tech-id">{document.snapshotId}</span>
-                  </>
+                  <p>
+                    Versión congelada <span className="tech-id">{document.snapshotId}</span>
+                  </p>
                 )}
-              </>
-            ) : (
-              NO_FROZEN_REVISION
-            )}
-          </p>
+              </div>
+            </details>
+          ) : (
+            <p className="tech-label break-all">{NO_FROZEN_REVISION}</p>
+          )}
         </CardContent>
       </Card>
     </li>
+  );
+}
+
+/** Motivo por el que un documento queda pendiente; `null` si no hay nada que atender. */
+function pendingReason(document: DocumentSummary): string | null {
+  if (document.confirmationStatus === "rechazada" || document.documentStatus === "revision_rechazada") {
+    return "Revisión rechazada: corregí y pedí una nueva confirmación";
+  }
+  if (document.confirmationStatus === "pendiente" || document.confirmationStatus === "parcial") {
+    return "Esperando confirmaciones";
+  }
+  if (document.documentStatus === "finalizado" && (document.hcsStatus === "pendiente" || document.hcsStatus === "fallido")) {
+    return "Registro en Hedera pendiente";
+  }
+  return null;
+}
+
+function GettingStarted({ documents }: { documents: DocumentSummary[] }) {
+  const steps = [
+    { label: "Contar una entrega", done: documents.length > 0 },
+    { label: "Pedir la confirmación", done: documents.some((d) => d.confirmationStatus !== null) },
+    { label: "Quedar respaldado", done: documents.some((d) => d.documentStatus === "finalizado") },
+  ];
+  return (
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle>
+          <h3 className="text-base font-semibold">Primeros pasos</h3>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="flex flex-col gap-2 text-sm">
+          {steps.map((step) => (
+            <li key={step.label} className="flex items-center gap-2">
+              {step.done ? (
+                <Check aria-hidden="true" className="size-4 shrink-0" />
+              ) : (
+                <Circle aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+              )}
+              <span>{step.label}</span>
+              <span className="sr-only">{step.done ? "hecho" : "pendiente"}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PendingList({ documents, onOpen }: { documents: DocumentSummary[]; onOpen: (documentId: string) => void }) {
+  const items = documents
+    .map((document) => ({ document, reason: pendingReason(document) }))
+    .filter((item): item is { document: DocumentSummary; reason: string } => item.reason !== null)
+    .sort((a, b) => Date.parse(a.document.updatedAt) - Date.parse(b.document.updatedAt));
+  if (items.length === 0) return null;
+  return (
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle>
+          <h3 className="text-base font-semibold">Te falta</h3>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul aria-label="Te falta" className="flex flex-col gap-2 text-sm">
+          {items.map(({ document, reason }) => (
+            <li key={document.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-col">
+                <span className="font-medium break-words">{document.title}</span>
+                <span className="text-muted-foreground">{reason}</span>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full shrink-0 sm:w-auto"
+                onClick={() => onOpen(document.id)}
+                aria-label={`Abrir pendiente: ${document.title}`}
+              >
+                Abrir
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -259,11 +345,29 @@ export function DashboardReference({ state, onCreate, onOpen, onRetry }: Dashboa
         <div className="flex flex-col items-center gap-2 border border-dashed p-8 text-center">
           <FileText aria-hidden="true" className="size-6 text-muted-foreground" />
           <p className="font-medium">Todavía no hay documentos.</p>
-          <p className="max-w-prose text-sm text-muted-foreground">
-            Creá el primero con «Crear documento» y contá la operación por chat; después se revisa y se confirma.
-          </p>
+          <p className="mt-2 font-medium">Registrá tu primera entrega en 3 pasos:</p>
+          <ol className="flex max-w-prose list-inside list-decimal flex-col gap-1 text-left text-sm">
+            <li>
+              <strong>Contala por chat</strong> y adjuntá el remito.
+            </li>
+            <li>
+              <strong>Pedí la confirmación</strong> del comercio con un enlace o QR.
+            </li>
+            <li>
+              <strong>Quedá respaldado:</strong> se genera el PDF y se registra una huella que permite comprobar que no cambió.
+            </li>
+          </ol>
+          <Button onClick={() => onCreate()} className="mt-2">
+            Contar mi primera entrega
+          </Button>
         </div>
       )}
+
+      {state.status === "ready" && state.documents.length > 0 && !state.documents.some((d) => d.documentStatus === "finalizado") && (
+        <GettingStarted documents={state.documents} />
+      )}
+
+      {state.status === "ready" && state.documents.length > 0 && <PendingList documents={state.documents} onOpen={onOpen} />}
 
       {state.status === "ready" && state.documents.length > 0 && (
         <ul aria-labelledby="dashboard-reference-title" className="flex flex-col gap-3">
