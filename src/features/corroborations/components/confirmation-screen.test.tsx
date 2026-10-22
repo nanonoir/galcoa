@@ -191,6 +191,52 @@ describe("ConfirmationScreen · modal de rechazo", () => {
   });
 });
 
+describe("ConfirmationScreen · mensajes de la invitación", () => {
+  function invitationWithRole(role: PublicInvitation["role"]): PublicInvitation {
+    return {
+      ...invitation,
+      role,
+      selection: role === "intermediario" ? ["autor", "intermediario", "comprador"] : ["autor", "comprador"],
+    };
+  }
+
+  it.each([
+    ["comprador", "comprador"],
+    ["intermediario", "transportista"],
+  ] as const)("en ready explica que el proveedor pide confirmar como %s", (role, label) => {
+    setup({ status: "ready", invitation: invitationWithRole(role) });
+    expect(screen.getByRole("heading", { name: "Revisión de una operación" })).toBeInTheDocument();
+    const intro = screen.getByText(/El proveedor te pide que confirmes esta entrega como/);
+    expect(within(intro).getByText(label).tagName).toBe("STRONG");
+    expect(intro).toHaveTextContent(
+      `El proveedor te pide que confirmes esta entrega como ${label}. No hace falta cuenta. Solo podés confirmar o decir que no coincide; no podés editarla.`,
+    );
+  });
+
+  it.each([
+    ["submitting", { status: "submitting", invitation }],
+    ["submit_error", { status: "submit_error", invitation, message: "No pudimos enviar tu respuesta." }],
+  ] as const)("en %s conserva el mensaje del proveedor", (_status, state) => {
+    setup(state);
+    expect(screen.getByText(/El proveedor te pide que confirmes esta entrega como/)).toHaveTextContent("No hace falta cuenta.");
+  });
+
+  it("al confirmar avisa que el proveedor genera el PDF final y registra la huella", () => {
+    setup({ status: "done", result: result("confirmar") });
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Registramos tu confirmación");
+    expect(status).toHaveTextContent("Cuando estén todas, el proveedor genera el PDF final y registra su huella.");
+    expect(status).toHaveTextContent("El nombre es el que declaraste; no se verificó contra ningún documento.");
+  });
+
+  it("al rechazar avisa que el proveedor tiene que corregir y pedir una nueva confirmación", () => {
+    setup({ status: "done", result: result("rechazar") });
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Registramos que no coincide");
+    expect(status).toHaveTextContent("El proveedor tiene que corregir y pedirte una nueva confirmación.");
+  });
+});
+
 describe("ConfirmationScreen · estados", () => {
   it("enviando: bloquea el formulario y no muestra éxito", () => {
     setup({ status: "submitting", invitation });
