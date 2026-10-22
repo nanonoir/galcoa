@@ -23,7 +23,11 @@ export function internalPath(value: string | undefined): string | null {
   return value && /^\/(?![/\\])/.test(value) ? value : null;
 }
 
-export function useAuthForm<TValues>(endpoint: string): { state: AuthFormState; submit: (values: TValues) => void } {
+export function useAuthForm<TValues>(
+  endpoint: string,
+  /** Aviso opcional tras un éxito confirmado por el servidor (p. ej. medir el registro). No cambia el destino. */
+  onSuccess?: () => void,
+): { state: AuthFormState; submit: (values: TValues) => void } {
   const router = useRouter();
   const [state, setState] = useState<AuthFormState>({ status: "idle" });
 
@@ -42,6 +46,7 @@ export function useAuthForm<TValues>(endpoint: string): { state: AuthFormState; 
           if (!parsed.success) return setState(networkError);
           setState(parsed.data.state);
           const target = internalPath(parsed.data.redirectTo);
+          if (parsed.data.state.status === "success") onSuccess?.();
           if (parsed.data.state.status === "success" && target) {
             router.replace(target);
             // Descarta el caché del router: las páginas se vuelven a verificar con las cookies nuevas.
@@ -52,7 +57,7 @@ export function useAuthForm<TValues>(endpoint: string): { state: AuthFormState; 
         }
       })();
     },
-    [endpoint, router],
+    [endpoint, router, onSuccess],
   );
 
   return { state, submit };

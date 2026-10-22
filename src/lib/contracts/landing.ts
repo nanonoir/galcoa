@@ -28,6 +28,11 @@ export const LandingUpcomingSchema = z.strictObject({
   disclaimer: z.string().min(1),
 });
 
+export const LandingProblemSchema = z.strictObject({
+  title: z.string().min(1),
+  points: z.array(z.string().min(1)).min(1),
+});
+
 export const LandingContentSchema = z.strictObject({
   brand: z.string().min(1),
   navigation: z.array(NavLinkSchema).min(1),
@@ -38,9 +43,16 @@ export const LandingContentSchema = z.strictObject({
   /** Límites del alcance, visibles para no prometer de más (PRD §1, §11). */
   limits: z.array(z.string().min(1)),
   upcoming: LandingUpcomingSchema.optional(),
+  /** Acción alternativa del hero (p. ej. registrarse sin pasar por la demo). */
+  secondaryAction: NavLinkSchema.optional(),
+  /** Problema que resuelve el producto (reglas de producto §3), antes de «Cómo funciona». */
+  problem: LandingProblemSchema.optional(),
+  /** Llamado a ver los planes, al pie de la página. */
+  pricingTeaser: z.strictObject({ text: z.string().min(1), link: NavLinkSchema }).optional(),
 });
 
 export type NavLink = z.infer<typeof NavLinkSchema>;
 export type LandingUpcoming = z.infer<typeof LandingUpcomingSchema>;
 export type LandingFeature = z.infer<typeof LandingFeatureSchema>;
 export type LandingContent = z.infer<typeof LandingContentSchema>;
+export type LandingProblem = z.infer<typeof LandingProblemSchema>;
