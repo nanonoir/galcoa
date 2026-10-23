@@ -186,7 +186,7 @@ test.describe("revisión del autor (E2E real local)", () => {
       const progress = page.getByRole("region", { name: /Avance de la revisión/ });
       await expect(progress.getByText(/Confirmaciones · Revisión actual/)).toBeVisible();
       await expect(progress.getByText("Finalización de la versión", { exact: true })).toBeVisible();
-      await expect(progress.getByText("Sello HCS (independiente de la finalización)", { exact: true })).toBeVisible();
+      await expect(progress.getByText("Registro en Hedera (independiente de la finalización)", { exact: true })).toBeVisible();
 
       // Confirmación del autor persistida.
       await confirmAsAuthor(page);

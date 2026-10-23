@@ -141,14 +141,14 @@ export function SnapshotView({ state, onRetry }: SnapshotViewProps) {
     <section aria-labelledby="snapshot-view-title" className="flex min-w-0 flex-col gap-4">
       <header className="flex min-w-0 flex-col gap-1">
         <h2 id="snapshot-view-title" className="text-lg font-semibold">
-          Snapshot congelado
+          Versión congelada
         </h2>
         <p className="text-sm text-muted-foreground">Contenido de la revisión, solo lectura.</p>
       </header>
 
       {state.status === "loading" && (
         <div role="status" aria-live="polite" className="flex flex-col gap-3">
-          <p className="text-sm text-muted-foreground">Cargando snapshot…</p>
+          <p className="text-sm text-muted-foreground">Cargando la versión congelada…</p>
           <Skeleton aria-hidden="true" className="h-20 w-full" />
           <Skeleton aria-hidden="true" className="h-40 w-full" />
         </div>
@@ -157,7 +157,7 @@ export function SnapshotView({ state, onRetry }: SnapshotViewProps) {
       {state.status === "error" && (
         <Alert variant="destructive">
           <AlertTriangle aria-hidden="true" />
-          <AlertTitle>No se pudo cargar el snapshot</AlertTitle>
+          <AlertTitle>No se pudo cargar la versión congelada</AlertTitle>
           <AlertDescription>
             <p className="break-words">{state.message}</p>
             <Button variant="outline" className="mt-2" onClick={() => onRetry()}>
@@ -172,7 +172,7 @@ export function SnapshotView({ state, onRetry }: SnapshotViewProps) {
         <div className="flex flex-col items-center gap-2 border border-dashed p-6 text-center">
           <FileText aria-hidden="true" className="size-6 text-muted-foreground" />
           <p className="font-medium">Todavía no hay una revisión congelada.</p>
-          <p className="text-sm text-muted-foreground">El snapshot aparece cuando se congela una revisión.</p>
+          <p className="text-sm text-muted-foreground">La versión congelada aparece cuando se congela una revisión.</p>
         </div>
       )}
 
@@ -215,7 +215,7 @@ function ReadySnapshot({ state }: { state: Extract<SnapshotViewProps["state"], {
               />
             )}
             <Dimension name="Confirmaciones" value={confirmationLabel(confirmationStatus)} />
-            <Dimension name="Sello HCS" value={hcsStatusLabels[state.hcsStatus]} />
+            <Dimension name="Registro en Hedera" value={hcsStatusLabels[state.hcsStatus]} />
           </dl>
           {!DEMO_HIDE_WARNINGS && state.controlStatus === "sin_inconsistencias_criticas_detectadas" && (
             <p className="text-xs text-muted-foreground">

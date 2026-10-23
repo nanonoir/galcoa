@@ -35,7 +35,7 @@ function readyDocuments(id: string) {
 
 /** Tarjetas de documento (las advertencias también son `li`, por eso se parte del título). */
 function cards() {
-  return screen.getAllByRole("heading", { level: 3 }).map((h) => h.closest("li") as HTMLElement);
+  return within(screen.getByRole("list", { name: "Documentos" })).getAllByRole("heading", { level: 3 }).map((h) => h.closest("li") as HTMLElement);
 }
 
 /** Valor de una dimensión dentro del elemento `<dl>` de una tarjeta. */
@@ -73,12 +73,64 @@ describe("DashboardReference", () => {
     expect(screen.getByText(/Todavía no hay documentos/)).toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Documentos" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Crear documento" }));
     expect(onCreate).toHaveBeenCalledTimes(1);
     expect(onCreate).toHaveBeenCalledWith();
     expect(onOpen).not.toHaveBeenCalled();
     expect(onRetry).not.toHaveBeenCalled();
+  });
+
+  it("vacío que enseña: los mismos 4 pasos que la guía de activación y «Crear mi primer documento» llama a onCreate", async () => {
+    const { user, onCreate } = renderScenario("empty");
+    expect(screen.getByText("Tu primera entrega sellada, en 4 pasos:")).toBeInTheDocument();
+    const steps = within(screen.getByRole("list")).getAllByRole("listitem");
+    expect(steps).toHaveLength(4);
+    expect(steps[0]).toHaveTextContent("Creá tu primer documento");
+    expect(steps[1]).toHaveTextContent("Contá la entrega y revisá el documento");
+    expect(steps[2]).toHaveTextContent("Pedí la confirmación");
+    expect(steps[3]).toHaveTextContent("Sellá la huella");
+    expect(steps[3]).toHaveTextContent("una huella que permite comprobar que no cambió");
+    await user.click(screen.getByRole("button", { name: "Crear mi primer documento" }));
+    expect(onCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("sin checklist propia: el panel no duplica la guía de activación", () => {
+    renderScenario("confirmations");
+    expect(screen.queryByRole("heading", { name: "Primeros pasos" })).not.toBeInTheDocument();
+  });
+
+  describe("Te falta", () => {
+    it("lista los pendientes del más viejo al más nuevo y «Abrir» llama a onOpen", async () => {
+      const documents = [
+        ...readyDocuments("finalized-pending"),
+        ...readyDocuments("confirmations"),
+        ...readyDocuments("finalized-registered"),
+      ];
+      const { user, onOpen } = renderState({ status: "ready", documents });
+      const list = screen.getByRole("list", { name: "Te falta" });
+      const items = within(list).getAllByRole("listitem");
+      expect(items).toHaveLength(2);
+      expect(items[0]).toHaveTextContent("Venta de trigo");
+      expect(items[0]).toHaveTextContent("Esperando confirmaciones");
+      expect(items[1]).toHaveTextContent("Entrega de soja");
+      expect(items[1]).toHaveTextContent("Registro en Hedera pendiente");
+      await user.click(within(items[1]).getByRole("button", { name: /Abrir/ }));
+      expect(onOpen).toHaveBeenCalledWith("doc-finalizado-pendiente-001");
+    });
+
+    it("revisión rechazada muestra su motivo", () => {
+      const [base] = readyDocuments("confirmations");
+      renderState({ status: "ready", documents: [{ ...base, documentStatus: "revision_rechazada", confirmationStatus: "rechazada" }] });
+      expect(screen.getByRole("list", { name: "Te falta" })).toHaveTextContent("Revisión rechazada: corregí y pedí una nueva confirmación");
+    });
+
+    it("sin pendientes no se muestra", () => {
+      renderScenario("finalized-registered");
+      expect(screen.queryByRole("heading", { name: "Te falta" })).not.toBeInTheDocument();
+      renderScenario("measurement");
+      expect(screen.queryByRole("heading", { name: "Te falta" })).not.toBeInTheDocument();
+    });
   });
 
   it("lista: título, fecha legible con su ISO y recuento", () => {
@@ -136,23 +188,25 @@ describe("DashboardReference", () => {
     const [card] = cards();
     expect(dimension(card, "Documento")).toBe("Esperando confirmaciones");
     expect(dimension(card, "Confirmaciones")).toBe("Parcial");
-    expect(dimension(card, "Sello HCS")).toBe("No iniciado");
+    expect(dimension(card, "Registro en Hedera")).toBe("No iniciado");
     expect(card).toHaveTextContent("Revisión rev-confirmaciones-001-2");
-    expect(card).toHaveTextContent("snapshot snap-confirmaciones-001-2");
+    expect(card).toHaveTextContent("Versión congelada snap-confirmaciones-001-2");
+    expect(within(card).getByText("Detalles técnicos")).toBeInTheDocument();
+    expect(card.textContent).not.toMatch(/snapshot|hash|Sello HCS|Topic|contraste/i);
   });
 
   it("no mezcla dimensiones: finalizado con sello pendiente vs registrado", () => {
     renderScenario("finalized-pending");
-    const pending = cards().find((li) => dimension(li, "Sello HCS") === "Pendiente");
+    const pending = cards().find((li) => dimension(li, "Registro en Hedera") === "Pendiente");
     expect(pending).toBeDefined();
     expect(dimension(pending as HTMLElement, "Documento")).toBe("Finalizado");
     expect(dimension(pending as HTMLElement, "Confirmaciones")).toBe("Completa");
-    expect(dimension(pending as HTMLElement, "Sello HCS")).toBe("Pendiente");
+    expect(dimension(pending as HTMLElement, "Registro en Hedera")).toBe("Pendiente");
   });
 
   it("el sello registrado no cambia el estado documental ni el de control", () => {
     renderScenario("finalized-registered");
-    const card = cards().find((li) => dimension(li, "Sello HCS") === "Registrado");
+    const card = cards().find((li) => dimension(li, "Registro en Hedera") === "Registrado");
     expect(card).toBeDefined();
     expect(dimension(card as HTMLElement, "Documento")).toBe("Finalizado");
     expect(dimension(card as HTMLElement, "Control")).toBe("Sin inconsistencias críticas detectadas");
@@ -161,7 +215,7 @@ describe("DashboardReference", () => {
   it("abrir emite el id del documento y no persiste ni usa red", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const { user, onOpen, onCreate, onRetry } = renderScenario("confirmations");
-    await user.click(screen.getByRole("button", { name: /^Abrir / }));
+    await user.click(screen.getByRole("button", { name: /^Abrir (?!pendiente)/ }));
     expect(onOpen).toHaveBeenCalledTimes(1);
     expect(onOpen).toHaveBeenCalledWith("doc-confirmaciones-001");
     expect(onCreate).not.toHaveBeenCalled();
@@ -176,6 +230,8 @@ describe("DashboardReference", () => {
     expect(screen.getByRole("button", { name: "Crear documento" })).toHaveFocus();
     await user.keyboard("{Enter}");
     expect(onCreate).toHaveBeenCalledTimes(1);
+    await user.tab();
+    expect(screen.getByRole("button", { name: /^Abrir pendiente: Entrega de soja/ })).toHaveFocus();
     await user.tab();
     expect(screen.getByRole("button", { name: /^Abrir Entrega de soja/ })).toHaveFocus();
     await user.keyboard("{Enter}");
@@ -203,7 +259,7 @@ describe("DashboardReference", () => {
     const { container } = render(<DashboardReference state={{ status: "ready", documents: [document] }} onCreate={() => {}} onOpen={() => {}} onRetry={() => {}} />);
     expect(container.querySelector("img")).toBeNull();
     expect(container.querySelector("b")).toBeNull();
-    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(markup);
+    expect(within(screen.getByRole("list", { name: "Documentos" })).getByRole("heading", { level: 3 })).toHaveTextContent(markup);
     expect(screen.getByText(/<b>12<\/b> toneladas/)).toBeInTheDocument();
     expect(screen.getByText("Fuentes: no informadas")).toBeInTheDocument();
   });

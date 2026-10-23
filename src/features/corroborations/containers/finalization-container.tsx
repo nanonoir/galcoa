@@ -11,7 +11,7 @@ import {
 } from "@/features/corroborations/components/finalization-panel";
 
 /**
- * Container de «Subir Contrato» (MVP-082). `POST` reclama/reanuda en el servidor, avanza las fases
+ * Container de «Finalizar y registrar huella» (MVP-082). `POST` reclama/reanuda en el servidor, avanza las fases
  * y, ya publicada la versión, espera el sello en Hedera; `GET` solo lee. Sin éxito optimista: el
  * estado sale de la respuesta. Dos sondeos acotados (intervalo fijo y tope de intentos, solo con la
  * pestaña visible): `GET` mientras las fases avanzan y `POST` idempotente (reconcilia sin reenviar)

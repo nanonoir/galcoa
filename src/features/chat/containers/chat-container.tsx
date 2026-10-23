@@ -55,7 +55,7 @@ const EMPTY: ChatViewState = { messages: [], streaming: null, attachments: [], c
 
 /**
  * `finalized` viene del render del servidor: un documento finalizado no ofrece Revisar/Confirmar/
- * Compartir/Subir Contrato (la tarjeta persistente de la versión ocupa ese lugar en la página).
+ * Compartir/Finalizar y registrar huella (la tarjeta persistente de la versión ocupa ese lugar en la página).
  */
 export function ChatContainer({ documentId, finalized = false }: { documentId: string; finalized?: boolean }) {
   const router = useRouter();

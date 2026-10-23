@@ -27,7 +27,7 @@ function renderState(state: ChatViewState, maxMessageChars = 8000) {
   const view = render(<ChatReference state={state} maxMessageChars={maxMessageChars} {...handlers} />);
   const rerenderState = (next: ChatViewState) =>
     view.rerender(<ChatReference state={next} maxMessageChars={maxMessageChars} {...handlers} />);
-  return { ...handlers, rerenderState, user: userEvent.setup() };
+  return { ...handlers, rerenderState, user: userEvent.setup(), container: view.container };
 }
 
 const forbiddenClaims = /certificad|validado|garantizad|firma digital|identidad verificada|verificado visualmente/i;
@@ -39,13 +39,22 @@ describe("ChatReference", () => {
     expect(screen.queryByRole("log")).not.toBeInTheDocument();
   });
 
+  it("vacío: guía con ejemplo y datos mínimos, sin mencionar audio", () => {
+    const { container } = renderState(scenarioState("empty"));
+    expect(screen.getByText(/Todavía no hay mensajes\. Contá la entrega como se la contarías a un compañero\./)).toBeInTheDocument();
+    expect(screen.getByText(/Entregué 200 cajas de galletitas/)).toBeInTheDocument();
+    expect(screen.getByText("qué, cuánto (con unidad), a quién y cuándo")).toBeInTheDocument();
+    expect(screen.getByText(/Adjuntá el remito en PDF o una foto/)).toBeInTheDocument();
+    expect(container.textContent ?? "").not.toMatch(/audio/i);
+  });
+
   it("historial: muestra el texto original de cada mensaje en una región viva", () => {
     renderState(scenarioState("history"));
     const log = screen.getByRole("log", { name: "Mensajes" });
     expect(log).toHaveAttribute("aria-live", "polite");
     expect(log).toHaveTextContent("Entregué 40 bolsas de semilla a Pérez el lunes.");
     expect(log).toHaveTextContent("¿Quién la recibió y en qué lugar?");
-    expect(screen.getByRole("status")).toHaveTextContent("Contraste disponible");
+    expect(screen.getByRole("status")).toHaveTextContent("Control de consistencia disponible");
   });
 
   it("movimiento: el historial no se anima; solo un mensaje propio nuevo entra, y la respuesta del asistente no se reanima", () => {
@@ -138,7 +147,7 @@ describe("ChatReference", () => {
     };
     renderState(state);
     expect(screen.getByText("Cargado sin extracción")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Contraste no disponible");
+    expect(screen.getByRole("status")).toHaveTextContent("Control de consistencia no disponible");
     expect(screen.getByText("1.9 MB")).toBeInTheDocument();
   });
 

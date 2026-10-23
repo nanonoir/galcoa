@@ -58,7 +58,7 @@ describe("FinalizationContainer", () => {
       .mockResolvedValueOnce(json({ outcome: "replayed", ...op("published", 2), seal: SEAL }));
     render(<FinalizationContainer documentId="doc-1" revisionId="rev-1" onPublished={onPublished} />);
 
-    await click(/^subir contrato$/i);
+    await click(/^finalizar y registrar huella$/i);
     expect(fetchMock.mock.calls[0]).toEqual(["/api/documents/doc-1/revisions/rev-1/finalization", expect.objectContaining({ method: "POST" })]);
     expect(screen.getByRole("status")).toHaveTextContent("Generando el PDF…");
 
@@ -71,7 +71,7 @@ describe("FinalizationContainer", () => {
 
     await tick(SEAL_RETRY_MS);
     expect(fetchMock.mock.calls[3]).toEqual(["/api/documents/doc-1/revisions/rev-1/finalization", expect.objectContaining({ method: "POST" })]);
-    expect(screen.getByText("Contrato subido. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
+    expect(screen.getByText("Versión finalizada. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /ver verificación/i })).toHaveAttribute("href", "/verify/ref-abc");
     const hashscan = screen.getByRole("link", { name: /hashscan/i });
     expect(hashscan).toHaveAttribute("href", "https://hashscan.io/testnet/transaction/1700000001.123456789");
@@ -83,26 +83,26 @@ describe("FinalizationContainer", () => {
     expect(pdfLinks[0]).toHaveAttribute("href", "/api/documents/doc-1/versions/2/pdf");
     expect(onPublished).toHaveBeenCalledWith(2);
     expect(router.refresh).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("button", { name: /subir contrato/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /finalizar y registrar huella/i })).not.toBeInTheDocument();
   });
 
   it("si el POST ya devuelve el sello registrado, termina sin reintentos", async () => {
     fetchMock.mockResolvedValueOnce(json({ outcome: "claimed", ...op("published", 1), seal: SEAL }, 201));
     render(<FinalizationContainer documentId="doc-1" revisionId="rev-1" />);
-    await click(/^subir contrato$/i);
+    await click(/^finalizar y registrar huella$/i);
     expect(screen.getByText(/huella registrada en hedera testnet/i)).toBeInTheDocument();
     await tick(SEAL_RETRY_MS * 3);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(router.refresh).toHaveBeenCalledTimes(1);
     // El recuadro no desaparece solo tras `done`: lo reemplaza la tarjeta persistente del servidor.
-    expect(screen.getByText("Contrato subido. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
+    expect(screen.getByText("Versión finalizada. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /hashscan/i })).toBeInTheDocument();
   });
 
   it("con el sello pendiente reintenta el POST con tope y termina detenido, con opción de reintentar", async () => {
     fetchMock.mockImplementation(async () => json({ outcome: "replayed", ...op("published", 1), seal: { status: "pendiente" } }));
     render(<FinalizationContainer documentId="doc-1" revisionId="rev-1" />);
-    await click(/^subir contrato$/i);
+    await click(/^finalizar y registrar huella$/i);
     expect(screen.getByRole("status")).toHaveTextContent("Registrando la huella en Hedera…");
 
     for (let i = 0; i < SEAL_RETRY_MAX_ATTEMPTS; i += 1) await tick(SEAL_RETRY_MS);
@@ -114,7 +114,7 @@ describe("FinalizationContainer", () => {
 
     fetchMock.mockReset();
     fetchMock.mockResolvedValueOnce(json({ outcome: "replayed", ...op("published", 1), seal: SEAL }));
-    await click(/reintentar subida/i);
+    await click(/^reintentar$/i);
     expect(screen.getByText(/huella registrada en hedera testnet/i)).toBeInTheDocument();
   });
 
@@ -128,18 +128,18 @@ describe("FinalizationContainer", () => {
   ])("muestra un texto claro para %s y no sondea", async (code, text) => {
     fetchMock.mockResolvedValueOnce(json({ error: { code } }, 409));
     render(<FinalizationContainer documentId="doc-1" revisionId="rev-1" />);
-    await click(/^subir contrato$/i);
+    await click(/^finalizar y registrar huella$/i);
     expect(screen.getByText(text)).toBeInTheDocument();
     await tick();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("button", { name: /reintentar subida/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /^reintentar$/i })).toBeEnabled();
   });
 
   it("el sondeo tiene tope: termina en estado detenido y permite actualizar", async () => {
     fetchMock.mockResolvedValueOnce(json({ outcome: "claimed", ...op("manifest_ready") }, 201));
     fetchMock.mockImplementation(async () => json(op("manifest_ready")));
     render(<FinalizationContainer documentId="doc-1" revisionId="rev-1" />);
-    await click(/^subir contrato$/i);
+    await click(/^finalizar y registrar huella$/i);
     for (let i = 0; i < FINALIZATION_POLL_MAX_ATTEMPTS; i += 1) await tick();
 
     expect(screen.getByText(/sigue en curso/i)).toBeInTheDocument();
