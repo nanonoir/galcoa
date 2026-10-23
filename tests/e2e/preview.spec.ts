@@ -82,7 +82,7 @@ test.describe("preview local (datos ficticios)", () => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto("/");
     await scenarioButton(page, "Entrega comercial contradictoria (10 vs 12)").click();
-    // El panel tiene además «Primeros pasos» y «Te falta» (F-2/F-7): se espera la tarjeta del documento.
+    // El panel tiene además «Te falta» (F-7): se espera la tarjeta del documento.
     await expect(stage(page).getByRole("heading", { level: 3, name: /Entrega de maíz/ })).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);

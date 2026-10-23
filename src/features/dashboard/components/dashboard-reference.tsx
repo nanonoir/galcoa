@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Circle, FileText, Info, Plus, RotateCcw } from "lucide-react";
+import { AlertTriangle, FileText, Info, Plus, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -232,38 +232,6 @@ function pendingReason(document: DocumentSummary): string | null {
   return null;
 }
 
-function GettingStarted({ documents }: { documents: DocumentSummary[] }) {
-  const steps = [
-    { label: "Contar una entrega", done: documents.length > 0 },
-    { label: "Pedir la confirmación", done: documents.some((d) => d.confirmationStatus !== null) },
-    { label: "Quedar respaldado", done: documents.some((d) => d.documentStatus === "finalizado") },
-  ];
-  return (
-    <Card size="sm">
-      <CardHeader>
-        <CardTitle>
-          <h3 className="text-base font-semibold">Primeros pasos</h3>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="flex flex-col gap-2 text-sm">
-          {steps.map((step) => (
-            <li key={step.label} className="flex items-center gap-2">
-              {step.done ? (
-                <Check aria-hidden="true" className="size-4 shrink-0" />
-              ) : (
-                <Circle aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-              )}
-              <span>{step.label}</span>
-              <span className="sr-only">{step.done ? "hecho" : "pendiente"}</span>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
-
 function PendingList({ documents, onOpen }: { documents: DocumentSummary[]; onOpen: (documentId: string) => void }) {
   const items = documents
     .map((document) => ({ document, reason: pendingReason(document) }))
@@ -345,26 +313,25 @@ export function DashboardReference({ state, onCreate, onOpen, onRetry }: Dashboa
         <div className="flex flex-col items-center gap-2 border border-dashed p-8 text-center">
           <FileText aria-hidden="true" className="size-6 text-muted-foreground" />
           <p className="font-medium">Todavía no hay documentos.</p>
-          <p className="mt-2 font-medium">Registrá tu primera entrega en 3 pasos:</p>
+          <p className="mt-2 font-medium">Tu primera entrega sellada, en 4 pasos:</p>
           <ol className="flex max-w-prose list-inside list-decimal flex-col gap-1 text-left text-sm">
             <li>
-              <strong>Contala por chat</strong> y adjuntá el remito.
+              <strong>Creá tu primer documento:</strong> uno por entrega.
             </li>
             <li>
-              <strong>Pedí la confirmación</strong> del comercio con un enlace o QR.
+              <strong>Contá la entrega y revisá el documento:</strong> escribí qué entregaste y adjuntá el remito.
             </li>
             <li>
-              <strong>Quedá respaldado:</strong> se genera el PDF y se registra una huella que permite comprobar que no cambió.
+              <strong>Pedí la confirmación:</strong> compartí el enlace o QR con el comercio.
+            </li>
+            <li>
+              <strong>Sellá la huella:</strong> con todas las confirmaciones se genera el PDF y se registra una huella que permite comprobar que no cambió.
             </li>
           </ol>
           <Button onClick={() => onCreate()} className="mt-2">
-            Contar mi primera entrega
+            Crear mi primer documento
           </Button>
         </div>
-      )}
-
-      {state.status === "ready" && state.documents.length > 0 && !state.documents.some((d) => d.documentStatus === "finalizado") && (
-        <GettingStarted documents={state.documents} />
       )}
 
       {state.status === "ready" && state.documents.length > 0 && <PendingList documents={state.documents} onOpen={onOpen} />}

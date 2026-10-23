@@ -81,50 +81,23 @@ describe("DashboardReference", () => {
     expect(onRetry).not.toHaveBeenCalled();
   });
 
-  it("vacío que enseña: muestra los 3 pasos y «Contar mi primera entrega» llama a onCreate", async () => {
+  it("vacío que enseña: los mismos 4 pasos que la guía de activación y «Crear mi primer documento» llama a onCreate", async () => {
     const { user, onCreate } = renderScenario("empty");
-    expect(screen.getByText("Registrá tu primera entrega en 3 pasos:")).toBeInTheDocument();
+    expect(screen.getByText("Tu primera entrega sellada, en 4 pasos:")).toBeInTheDocument();
     const steps = within(screen.getByRole("list")).getAllByRole("listitem");
-    expect(steps).toHaveLength(3);
-    expect(steps[0]).toHaveTextContent("Contala por chat y adjuntá el remito.");
-    expect(steps[1]).toHaveTextContent("Pedí la confirmación del comercio con un enlace o QR.");
-    expect(steps[2]).toHaveTextContent("Quedá respaldado: se genera el PDF y se registra una huella que permite comprobar que no cambió.");
-    await user.click(screen.getByRole("button", { name: "Contar mi primera entrega" }));
+    expect(steps).toHaveLength(4);
+    expect(steps[0]).toHaveTextContent("Creá tu primer documento");
+    expect(steps[1]).toHaveTextContent("Contá la entrega y revisá el documento");
+    expect(steps[2]).toHaveTextContent("Pedí la confirmación");
+    expect(steps[3]).toHaveTextContent("Sellá la huella");
+    expect(steps[3]).toHaveTextContent("una huella que permite comprobar que no cambió");
+    await user.click(screen.getByRole("button", { name: "Crear mi primer documento" }));
     expect(onCreate).toHaveBeenCalledTimes(1);
   });
 
-  describe("Primeros pasos", () => {
-    const stepItems = () => within(screen.getByRole("heading", { name: "Primeros pasos" }).closest("[data-slot=card]") as HTMLElement).getAllByRole("listitem");
-
-    it("sin documentos no aparece la tarjeta sino el estado vacío", () => {
-      renderScenario("empty");
-      expect(screen.queryByRole("heading", { name: "Primeros pasos" })).not.toBeInTheDocument();
-      expect(screen.getByText(/Todavía no hay documentos/)).toBeInTheDocument();
-    });
-
-    it("con confirmación en curso: 2 de 3 hechos", () => {
-      renderScenario("confirmations");
-      const items = stepItems();
-      expect(items[0]).toHaveTextContent("Contar una entrega");
-      expect(items[0]).toHaveTextContent("hecho");
-      expect(items[1]).toHaveTextContent("Pedir la confirmación");
-      expect(items[1]).toHaveTextContent("hecho");
-      expect(items[2]).toHaveTextContent("Quedar respaldado");
-      expect(items[2]).toHaveTextContent("pendiente");
-    });
-
-    it("solo un borrador: 1 de 3 hechos", () => {
-      renderScenario("measurement");
-      const items = stepItems();
-      expect(items[0]).toHaveTextContent("hecho");
-      expect(items[1]).toHaveTextContent("pendiente");
-      expect(items[2]).toHaveTextContent("pendiente");
-    });
-
-    it("con un documento finalizado la tarjeta se oculta", () => {
-      renderScenario("finalized-registered");
-      expect(screen.queryByRole("heading", { name: "Primeros pasos" })).not.toBeInTheDocument();
-    });
+  it("sin checklist propia: el panel no duplica la guía de activación", () => {
+    renderScenario("confirmations");
+    expect(screen.queryByRole("heading", { name: "Primeros pasos" })).not.toBeInTheDocument();
   });
 
   describe("Te falta", () => {
