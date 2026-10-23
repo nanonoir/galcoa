@@ -349,3 +349,7 @@ Razones de Facu para su versión: menos pasos, habla del resultado que le import
     - El nombre del proveedor en `/confirm/:token` necesita un cambio en el contrato de invitación (pregunta 4).
     - (Resuelto después de la corrida: «Sello HCS» → «Registro en Hedera» también en `version-history.tsx`, con su test.)
     - Hallazgo: `main` tiene `39f7f00` («demote red findings to declared so revisions can be sealed for the demo»). Contradice «el rojo bloquea» (REGLAS §5.2, F-1) y el caso rojo 200/198 del guion de demo. Hay que decidir qué rama manda y alinear `main` y `develop`.
+- 2026-10-23: **estado final del PR #156** (commit `14989d1`).
+  - Cambios posteriores a la corrida del 22/10: F-2 retirado y panel vacío alineado con el PR #157; corrección de un E2E del preview; revisión visual a 360 y 1280 px (un solo botón principal en el panel vacío y «Versión congelada»); capturas en `docs/design-experiments/onboarding-2026-10-23/`, también publicadas en el Issue #28.
+  - **Checks reales** sobre `14989d1`: `npm run lint` ✔, `npm run typecheck` ✔, `npm test` ✔ (1541/1541; línea base en `origin/develop`: 1519/1519), `npm run test:boundaries` ✔ (69/69), `npx playwright test --project preview` ✔ (85/85).
+  - CI: `validate` ✔ desde la corrección del E2E. `local-server-db` falla igual que en `develop` (suite «servidor local», sin archivos de servidor tocados por este PR).
