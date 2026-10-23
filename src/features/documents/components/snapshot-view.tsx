@@ -141,7 +141,7 @@ export function SnapshotView({ state, onRetry }: SnapshotViewProps) {
     <section aria-labelledby="snapshot-view-title" className="flex min-w-0 flex-col gap-4">
       <header className="flex min-w-0 flex-col gap-1">
         <h2 id="snapshot-view-title" className="text-lg font-semibold">
-          Snapshot congelado
+          Versión congelada
         </h2>
         <p className="text-sm text-muted-foreground">Contenido de la revisión, solo lectura.</p>
       </header>

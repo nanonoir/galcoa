@@ -273,7 +273,7 @@ test.describe("snapshot MVP-112 (datos ficticios)", () => {
       test(`${width}px · «${capture.label}» real y sin desbordamiento`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width, height: 900 });
         await openSnapshot(page, capture.label);
-        await expect(stage(page).getByRole("region", { name: "Snapshot congelado" })).toBeVisible();
+        await expect(stage(page).getByRole("region", { name: "Versión congelada" })).toBeVisible();
         await expect(stage(page).getByText(capture.visible).first()).toBeVisible();
         if (capture.hidden) await expect(stage(page).getByText(capture.hidden)).toHaveCount(0);
         await expect(stage(page).getByTestId("scenario-json")).toHaveCount(0);

@@ -69,7 +69,7 @@ describe("entrada snapshot (MVP-112)", () => {
     for (const scenario of snapshotScenarios) {
       const { unmount } = render(<div>{entry?.render(scenario.id, handlers)}</div>);
       expect(screen.queryByTestId("scenario-json")).not.toBeInTheDocument();
-      expect(screen.getByRole("region", { name: "Snapshot congelado" })).toBeInTheDocument();
+      expect(screen.getByRole("region", { name: "Versión congelada" })).toBeInTheDocument();
       unmount();
     }
   });

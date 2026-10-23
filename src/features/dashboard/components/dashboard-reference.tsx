@@ -328,7 +328,7 @@ export function DashboardReference({ state, onCreate, onOpen, onRetry }: Dashboa
               <strong>Sellá la huella:</strong> con todas las confirmaciones se genera el PDF y se registra una huella que permite comprobar que no cambió.
             </li>
           </ol>
-          <Button onClick={() => onCreate()} className="mt-2">
+          <Button variant="outline" onClick={() => onCreate()} className="mt-2">
             Crear mi primer documento
           </Button>
         </div>

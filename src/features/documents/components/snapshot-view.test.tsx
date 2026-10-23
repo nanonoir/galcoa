@@ -228,7 +228,7 @@ describe("SnapshotView", () => {
 
   it("nombres accesibles: región titulada, encabezados y lista de estados etiquetada", () => {
     renderScenario("critical-two-sources");
-    expect(screen.getByRole("region", { name: "Snapshot congelado" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Versión congelada" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: /Entrega de maíz/ })).toBeInTheDocument();
     expect(screen.getByLabelText("Estado del snapshot").tagName).toBe("DL");
   });
