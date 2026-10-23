@@ -6,7 +6,7 @@ Estado: **propuesto** (2026-10-22). Solo definición: no se tocó código. Pedid
 
 1. Hoy el flujo completo existe en código, pero un usuario nuevo entra a un panel vacío y nadie le explica el camino ni sus tres momentos: **contar, pedir confirmación y quedar respaldado**.
 2. Encontramos **8 puntos donde se traba**: panel vacío sin ejemplo, chat sin frase guía, «Subir Contrato» (no es un contrato), revisión sin borrador sin salida, tercero sin «qué pasa después», pendientes difíciles de ver, sin pantallas propias de error/404 y vocabulario técnico (HCS, snapshot, hash).
-3. Propuesta: **no hacer un tour largo**. Enseñar en el lugar: panel vacío con 3 pasos, chat con ejemplo de frase, revisión que explica qué se congela y una pantalla del comercio que dice qué implica confirmar.
+3. Propuesta: **no hacer un tour largo**. Enseñar en el lugar: panel vacío con los mismos 4 pasos que la guía de activación, chat con ejemplo de frase, revisión que explica qué se congela y una pantalla del comercio que dice qué implica confirmar.
 4. **Facu** puede hacer solo, en presentación, 10 tickets chicos (F-1 a F-10). **Nahuel** tiene 9 (N-1 a N-9): rutas, contratos, datos de demo, cuenta de demo, documentación de demo y bloqueos del servidor.
 5. La demo para usuario nuevo dura **4 minutos** y usa tres casos ficticios ya preparados: **verde** (se confirma y se sella), **rojo** (200/198, no se sella) y **finalizado** (para verificar el PDF).
 6. El runbook de jurados está **desactualizado**: dice que una advertencia crítica no bloquea. Con la regla ALC vigente, **el rojo bloquea**. Hay que corregirlo antes de cualquier demo (N-6).
@@ -99,8 +99,8 @@ Principios (detalle y fuentes en `.orquesta/onboarding/notas/02-buenas-practicas
 ```mermaid
 flowchart TD
   L["/ landing<br/>'Cada entrega cuenta' + Ver cómo funciona"] -->|Crear cuenta| R["/registro"]
-  R --> D0["/dashboard vacío<br/>3 pasos + 'Contar mi primera entrega'"]
-  D0 -->|Contar mi primera entrega| DOC["/documents/:id<br/>chat con frase de ejemplo<br/>y qué adjuntar"]
+  R --> D0["/dashboard vacío<br/>4 pasos + 'Crear mi primer documento'"]
+  D0 -->|Crear mi primer documento| DOC["/documents/:id<br/>chat con frase de ejemplo<br/>y qué adjuntar"]
   DOC -->|borrador listo| SEM{"Semáforo"}
   SEM -->|rojo| FIX["Aclarar en el chat<br/>(nueva revisión)"] --> DOC
   SEM -->|verde o amarillo| REV["/review<br/>explica qué se congela<br/>proveedor + comprador (+ transportista)"]
@@ -126,10 +126,10 @@ Dueño: **Facu** = presentación en `src/features/<dominio>/components/` con sus
 ### P1. Panel vacío que enseña (`/dashboard`, estado vacío)
 
 - **Propósito:** que el primer clic sea contar una entrega, sabiendo para qué sirve.
-- **Estados:** vacío (nuevo), lista con «Primeros pasos» hasta tener la primera versión finalizada, y lista normal.
-- **Texto clave:** «Registrá tu primera entrega en 3 pasos: **1. Contala por chat** y adjuntá el remito. **2. Pedí la confirmación** del comercio con un enlace o QR. **3. Quedá respaldado:** se genera el PDF y se registra una huella que permite comprobar que no cambió.» Botón: **«Contar mi primera entrega»** (usa el `onCreate` existente).
-- **Primeros pasos:** tres ítems que se marcan solos a partir de los datos que ya trae cada tarjeta (hay documento, hay confirmaciones en curso y hay versión finalizada). No persiste nada. Desaparece cuando hay una versión finalizada.
-- **Dueño:** Facu (F-1, F-2).
+- **Estados:** vacío (nuevo) y lista normal.
+- **Texto clave (alineado con la guía de activación del PR #157):** «Tu primera entrega sellada, en 4 pasos: **1. Creá tu primer documento:** uno por entrega. **2. Contá la entrega y revisá el documento:** escribí qué entregaste y adjuntá el remito. **3. Pedí la confirmación:** compartí el enlace o QR con el comercio. **4. Sellá la huella:** con todas las confirmaciones se genera el PDF y se registra una huella que permite comprobar que no cambió.» Botón: **«Crear mi primer documento»** (usa el `onCreate` existente).
+- **Checklist de avance:** la cubre la guía de activación del PR #157 (`ActivationChecklist`), que se muestra arriba del panel. Para no tener dos checklists en la misma pantalla, F-2 se retiró de este PR (ver «Coordinación con el PR #157»).
+- **Dueño:** Facu (F-1).
 
 ### P2. Chat del primer documento (`/documents/:id`, chat vacío)
 
@@ -214,6 +214,13 @@ Dueño: **Facu** = presentación en `src/features/<dominio>/components/` con sus
 
 ## Demo para un usuario nuevo (4 minutos)
 
+**Dos demos que se complementan:**
+
+- **Demo pública sin cuenta: `/demo` del PR #157 (Gastón).** Es la entrada para cualquier visitante: 4 pasos con datos de ejemplo, el control ALC real en el navegador (verde, amarillo y rojo 200/198 que bloquea) y la huella SHA-256 real, sin llamadas a API, Supabase, IA ni Hedera. **Resuelve la pregunta 6** («Ver cómo funciona» en la landing). Es lo que usa un usuario nuevo para entender el producto antes de registrarse.
+- **Demo guiada con cuenta real (este guion).** Para mostrar el recorrido completo en vivo (jurado, cliente o reunión), incluida la pantalla del comercio y el verificador con un PDF sellado en Testnet. Necesita la cuenta preparada (N-3).
+
+Las dos tienen que contar lo mismo: mismos 4 pasos, mismo discurso y la misma regla de que el rojo bloquea.
+
 Detalle y alternativas: `.orquesta/onboarding/notas/04-demo-actual.md`. Corrige el runbook actual, que es anterior a la regla ALC.
 
 **Precondiciones (todas las prepara Nahuel, N-3):** una cuenta de demo con tres documentos ficticios; un perfil de navegador sin sesión para hacer de comercio; un PDF final de referencia y una copia con un byte alterado. Se anotan la fecha y el commit. No se registran cuentas en vivo, por el límite de correo de Supabase.
@@ -249,8 +256,8 @@ Cada uno es chico, con criterio verificable. **Sin carril de Nahuel** = Facu lo 
 
 | ID | Qué | Archivos probables | Criterio de aceptación | Dueño | ¿Sin carril de Nahuel? |
 | --- | --- | --- | --- | --- | --- |
-| F-1 | Panel vacío que enseña: 3 pasos y botón «Contar mi primera entrega» dentro del bloque | `src/features/dashboard/components/dashboard-reference.tsx` y su test | Con lista vacía se ven los 3 pasos y el botón llama a `onCreate`; los tests del panel pasan; sin cambios de contrato | Facu | Sí |
-| F-2 | «Primeros pasos» derivado de las tarjetas; se oculta con una versión finalizada | `dashboard-reference.tsx` y su test | Test con 3 escenarios (sin documentos, con confirmación en curso, con finalizado) que muestra el avance correcto; no persiste nada | Facu | Sí |
+| F-1 | Panel vacío que enseña: los 4 pasos de la guía de activación y botón «Crear mi primer documento» dentro del bloque | `src/features/dashboard/components/dashboard-reference.tsx` y su test | Con lista vacía se ven los 3 pasos y el botón llama a `onCreate`; los tests del panel pasan; sin cambios de contrato | Facu | Sí |
+| F-2 | ~~«Primeros pasos» derivado de las tarjetas~~ **Retirado:** lo cubre `ActivationChecklist` del PR #157. Propuesta original de Facu en «Coordinación con el PR #157» | `dashboard-reference.tsx` y su test | Test con 3 escenarios (sin documentos, con confirmación en curso, con finalizado) que muestra el avance correcto; no persiste nada | Facu | Sí |
 | F-3 | Chat vacío con frase de ejemplo y qué adjuntar (sin audio) | `src/features/chat/components/chat-reference.tsx` y su test | Con chat vacío se ven el ejemplo y «qué, cuánto con unidad, a quién y cuándo»; el texto no dice «audio»; los tests del chat pasan | Facu | Sí |
 | F-4 | Revisión que explica: antes de congelar, con rojo, después de congelar y glosario corto | `src/features/corroborations/components/participant-selector.tsx`, `review-progress.tsx`, `share-links-panel.tsx` y sus tests | Los textos de P3 y P7 aparecen en sus estados; no cambia la selección (proveedor y comprador fijos); el test de lenguaje prohibido pasa | Facu | Sí |
 | F-5 | «Subir Contrato» → «Finalizar y registrar huella»; «Reintentar subida» → «Reintentar» | `src/features/corroborations/components/finalization-panel.tsx` y sus tests | Ya no aparece «Contrato» en la UI; se actualizan los tests y E2E que buscan el texto viejo (`grep -rn "Subir Contrato" src tests` vacío) | Facu (avisar a Nahuel si un E2E del núcleo cambia) | Sí, salvo los E2E |
@@ -269,7 +276,32 @@ Cada uno es chico, con criterio verificable. **Sin carril de Nahuel** = Facu lo 
 | N-8 | Chat con el documento finalizado: no se puede escribir más. Formulario oculto o deshabilitado con el aviso «Este documento está finalizado y registrado. No se puede modificar.» Ofrecer una versión nueva solo si P0 ya la permite | `chat-container.tsx` (prop) y `chat-reference.tsx` (texto); bloqueo en el servidor | Con el documento finalizado no se puede enviar ni desde la UI ni desde la API; el test lo cubre | Nahuel la prop y el bloqueo del servidor, Facu el texto | Parcial |
 | N-9 | La landing distingue «visitante» de «no se pudo comprobar la sesión» | `src/app/(marketing)/page.tsx` | Con Auth caído, la landing recibe el estado nuevo y F-10 muestra el aviso | Nahuel | No (ruta) |
 
-Orden sugerido para Facu: F-1 → F-3 → F-6 → F-4 → F-5 → F-9 → F-2 → F-7 → F-8 → F-10. Va de una presentación activa por vez ([orden del equipo](../../execution/team-ticket-order.md)). Validación de cada ticket: `npm run lint`, `npm run typecheck`, `npm test` y `npm run test:boundaries`. Para F-5 y F-6, también el Playwright relevante.
+Orden sugerido para Facu: F-1 → F-3 → F-6 → F-4 → F-5 → F-9 → F-7 → F-8 → F-10. Va de una presentación activa por vez ([orden del equipo](../../execution/team-ticket-order.md)). Validación de cada ticket: `npm run lint`, `npm run typecheck`, `npm test` y `npm run test:boundaries`. Para F-5 y F-6, también el Playwright relevante.
+
+## Coordinación con el PR #157 (conversión, Gastón)
+
+El PR #157 resuelve parte del mismo pedido desde la conversión: `/demo` pública, registro con contexto, guía de activación en el panel, `/precios` y medición del embudo. No comparte archivos con este PR, pero sí pantallas. Para que el producto no se contradiga:
+
+- **Retirado de este PR:** F-2 «Primeros pasos». Con los dos PR mergeados habría dos checklists en el panel.
+- **Alineado:** el panel vacío (F-1) usa los mismos 4 pasos y el mismo botón que `ActivationChecklist`.
+- **Demo:** la entrada pública es `/demo` del PR #157; el guion de este plan queda para la demo guiada con cuenta real.
+
+**Propuesta original de Facu, para que compares** (no está implementada; queda a tu decisión):
+
+| | Propuesta de Facu (F-2) | Guía de activación (PR #157) |
+| --- | --- | --- |
+| Pasos | 3, en lenguaje de resultado: «Contar una entrega» · «Pedir la confirmación» · «Quedar respaldado» | 4, en lenguaje de tarea: crear · contar y revisar · pedir confirmación · sellar |
+| Dónde | Componente de presentación del panel, derivado de los datos de las tarjetas | Container propio en la página del panel, con eventos del embudo |
+| Qué necesita | Nada nuevo: sin contratos, migraciones ni API | La medición del embudo (migración nueva, `POST /api/funnel`) |
+| Cuándo desaparece | Con la primera versión finalizada | Al sellar la primera entrega, con mensaje de cierre y planes |
+
+Razones de Facu para su versión: menos pasos, habla del resultado que le importa a la distribuidora (quedar respaldada) y no depende de nada que todavía tenga que aprobarse. Si preferís esa versión, se recupera del historial de esta rama (commit `f6d98df`) y la guía del PR #157 se adapta a esos textos.
+
+**Ajustes para que los dos PR digan lo mismo** (sea cual sea el orden de merge):
+
+1. La ayuda del paso 4 de `ActivationChecklist` dice «Subir Contrato»; con este PR el botón pasa a ser «Finalizar y registrar huella».
+2. La ayuda del paso 3 dice «Confirmá como autor»; en pantalla el rol se llama «proveedor» (alineación, etiquetas visibles).
+3. Revisar los textos de `/demo` y `/precios` contra la lista de palabras prohibidas y el «Discurso» de este plan.
 
 ## Preguntas para Nahuel
 
@@ -278,7 +310,7 @@ Orden sugerido para Facu: F-1 → F-3 → F-6 → F-4 → F-5 → F-9 → F-2 �
 3. **`DEMO_HIDE_WARNINGS`:** ¿sigue en `true` para usuarios reales? Oculta advertencias heredadas, no el semáforo ALC.
 4. **Nombre del proveedor en la pantalla del comercio:** ¿se puede mostrar el nombre o título del documento del proveedor en `/confirm/:token`, o solo «la distribuidora»? Afecta qué datos expone el contrato de invitación.
 5. **Texto del botón final:** ¿aprobás «Finalizar y registrar huella» en vez de «Subir Contrato»?
-6. **Entrada pública a la demo:** ¿se agrega en la landing un enlace «Ver cómo funciona» que lleve al guion o a un video? Si es video, ¿quién lo graba y dónde se aloja?
+6. **Entrada pública a la demo (resuelta por el PR #157 con `/demo`):** ¿se agrega en la landing un enlace «Ver cómo funciona» que lleve al guion o a un video? Si es video, ¿quién lo graba y dónde se aloja?
 7. **Público y discurso:** ¿aprobás el discurso de la sección «Discurso»? Propuesta de Facu: el público es la distribución (distribuidoras, transportistas y comercios) **y** cualquier empresa que necesite verificar datos de sus operaciones con otra parte. Hoy REGLAS §2 deja a los demás rubros como «se nombran, no son foco»: si se amplía, hay que actualizar REGLAS §2 y la landing.
 8. **Ubicación de `ErrorScreen` (F-8):** ¿`src/features/errors/components/` o preferís otra carpeta?
 
