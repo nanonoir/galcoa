@@ -1,12 +1,12 @@
 # ExecPlan — Onboarding: pantallas, flujo de usuario y demo
 
-Estado: **propuesto** (2026-10-22). Solo definición: no se tocó código. Pedido de Nahuel: «Definir bien las pantallas y el flujo de usuario + una demo, para que los usuarios nuevos se adapten rápido e integren GALCOA+ a su flujo de trabajo normal». Se implementa por tickets cuando Facu y Nahuel aprueben este plan. Rama: `feat/onboarding-flujo-usuario`.
+Estado: **implementado e integrado** (octubre 2026). Definición del 2026-10-22 implementada en PR #156 e integrada con el PR #157 en la rama `integration/onboarding-conversion` ([plan de integración archivado](../completed/integracion-onboarding-conversion.md), [PR #158](https://github.com/nanonoir/galcoa/pull/158)). Pedido de Nahuel: «Definir bien las pantallas y el flujo de usuario + una demo, para que los usuarios nuevos se adapten rápido e integren GALCOA+ a su flujo de trabajo normal». Rama origen: `feat/onboarding-flujo-usuario`.
 
 ## Resumen (leer primero)
 
 1. Hoy el flujo completo existe en código, pero un usuario nuevo entra a un panel vacío y nadie le explica el camino ni sus tres momentos: **contar, pedir confirmación y quedar respaldado**.
 2. Encontramos **8 puntos donde se traba**: panel vacío sin ejemplo, chat sin frase guía, «Subir Contrato» (no es un contrato), revisión sin borrador sin salida, tercero sin «qué pasa después», pendientes difíciles de ver, sin pantallas propias de error/404 y vocabulario técnico (HCS, snapshot, hash).
-3. Propuesta: **no hacer un tour largo**. Enseñar en el lugar: panel vacío con los mismos 4 pasos que la guía de activación, chat con ejemplo de frase, revisión que explica qué se congela y una pantalla del comercio que dice qué implica confirmar.
+3. Propuesta y resultado: **no hacer un tour largo**. Enseñar en el lugar: guía de activación arriba (`ActivationChecklistCard`) y panel vacío limpio sin duplicar pasos (`DashboardReference`), chat con ejemplo de frase, revisión que explica qué se congela y una pantalla del comercio que dice qué implica confirmar.
 4. **Facu** puede hacer solo, en presentación, 10 tickets chicos (F-1 a F-10). **Nahuel** tiene 9 (N-1 a N-9): rutas, contratos, datos de demo, cuenta de demo, documentación de demo y bloqueos del servidor.
 5. La demo para usuario nuevo dura **4 minutos** y usa tres casos ficticios ya preparados: **verde** (se confirma y se sella), **rojo** (200/198, no se sella) y **finalizado** (para verificar el PDF).
 6. El runbook de jurados está **desactualizado**: dice que una advertencia crítica no bloquea. Con la regla ALC vigente, **el rojo bloquea**. Hay que corregirlo antes de cualquier demo (N-6).
@@ -99,7 +99,7 @@ Principios (detalle y fuentes en `.orquesta/onboarding/notas/02-buenas-practicas
 ```mermaid
 flowchart TD
   L["/ landing<br/>'Cada entrega cuenta' + Ver cómo funciona"] -->|Crear cuenta| R["/registro"]
-  R --> D0["/dashboard vacío<br/>4 pasos + 'Crear mi primer documento'"]
+  R --> D0["/dashboard vacío<br/>Guía de activación arriba +<br/>panel vacío sin duplicados"]
   D0 -->|Crear mi primer documento| DOC["/documents/:id<br/>chat con frase de ejemplo<br/>y qué adjuntar"]
   DOC -->|borrador listo| SEM{"Semáforo"}
   SEM -->|rojo| FIX["Aclarar en el chat<br/>(nueva revisión)"] --> DOC
@@ -127,9 +127,11 @@ Dueño: **Facu** = presentación en `src/features/<dominio>/components/` con sus
 
 - **Propósito:** que el primer clic sea contar una entrega, sabiendo para qué sirve.
 - **Estados:** vacío (nuevo) y lista normal.
-- **Texto clave (alineado con la guía de activación del PR #157):** «Tu primera entrega sellada, en 4 pasos: **1. Creá tu primer documento:** uno por entrega. **2. Contá la entrega y revisá el documento:** escribí qué entregaste y adjuntá el remito. **3. Pedí la confirmación:** compartí el enlace o QR con el comercio. **4. Sellá la huella:** con todas las confirmaciones se genera el PDF y se registra una huella que permite comprobar que no cambió.» Botón: **«Crear mi primer documento»** (usa el `onCreate` existente).
-- **Checklist de avance:** la cubre la guía de activación del PR #157 (`ActivationChecklist`), que se muestra arriba del panel. Para no tener dos checklists en la misma pantalla, F-2 se retiró de este PR (ver «Coordinación con el PR #157»).
-- **Dueño:** Facu (F-1).
+- **Evolución en la integración:** la propuesta inicial de listar los 4 pasos dentro del bloque vacío de `DashboardReference` se eliminó para evitar duplicidad con la guía de activación (`ActivationChecklistCard`) incorporada arriba del panel.
+- **Estado final integrado:**
+  - Arriba: `ActivationChecklistCard` muestra la guía de activación de 4 pasos derivada de los documentos reales.
+  - Abajo: `DashboardReference` muestra un estado vacío limpio («Todavía no hay documentos.») sin duplicar la lista de 4 pasos ni mostrar un botón redundante en el encabezado cuando la guía está visible (`emptyWithGuide`).
+- **Dueño:** Facu (F-1 original) y Nahuel (unificación e integración).
 
 ### P2. Chat del primer documento (`/documents/:id`, chat vacío)
 
@@ -216,7 +218,7 @@ Dueño: **Facu** = presentación en `src/features/<dominio>/components/` con sus
 
 **Dos demos que se complementan:**
 
-- **Demo pública sin cuenta: `/demo` del PR #157 (Gastón).** Es la entrada para cualquier visitante: 4 pasos con datos de ejemplo, el control ALC real en el navegador (verde, amarillo y rojo 200/198 que bloquea) y la huella SHA-256 real, sin llamadas a API, Supabase, IA ni Hedera. **Resuelve la pregunta 6** («Ver cómo funciona» en la landing). Es lo que usa un usuario nuevo para entender el producto antes de registrarse.
+- **Demo pública sin cuenta: `/demo` del PR #157 (Gastón).** Es la entrada para cualquier visitante: 4 pasos con datos de ejemplo, el control ALC real en el navegador (verde, amarillo y rojo 200/198 que bloquea) y la huella SHA-256 real calculada localmente en cliente. El recorrido de negocio opera 100 % en el navegador sin endpoints de documentos, IA ni registro en Hedera. No obstante, no es estrictamente sin llamadas de red: la telemetría opcional del embudo emite eventos vía `POST /api/funnel` (que en un entorno con Supabase configurado persistirían en la base). **Resuelve la pregunta 6** («Ver cómo funciona» en la landing). Es lo que usa un usuario nuevo para entender el producto antes de registrarse.
 - **Demo guiada con cuenta real (este guion).** Para mostrar el recorrido completo en vivo (jurado, cliente o reunión), incluida la pantalla del comercio y el verificador con un PDF sellado en Testnet. Necesita la cuenta preparada (N-3).
 
 Las dos tienen que contar lo mismo: mismos 4 pasos, mismo discurso y la misma regla de que el rojo bloquea.
@@ -256,7 +258,7 @@ Cada uno es chico, con criterio verificable. **Sin carril de Nahuel** = Facu lo 
 
 | ID | Qué | Archivos probables | Criterio de aceptación | Dueño | ¿Sin carril de Nahuel? |
 | --- | --- | --- | --- | --- | --- |
-| F-1 | Panel vacío que enseña: los 4 pasos de la guía de activación y botón «Crear mi primer documento» dentro del bloque | `src/features/dashboard/components/dashboard-reference.tsx` y su test | Con lista vacía se ven los 3 pasos y el botón llama a `onCreate`; los tests del panel pasan; sin cambios de contrato | Facu | Sí |
+| F-1 | Panel vacío sin duplicar guía: estado vacío limpio; la acción de crear queda unificada en la guía de activación superior | `src/features/dashboard/components/dashboard-reference.tsx` y su test | Con lista vacía y guía activa se evita duplicar pasos; empty state limpio; sin cambios de contrato | Facu / Nahuel (integración) | Sí |
 | F-2 | ~~«Primeros pasos» derivado de las tarjetas~~ **Retirado:** lo cubre `ActivationChecklist` del PR #157. Propuesta original de Facu en «Coordinación con el PR #157» | `dashboard-reference.tsx` y su test | Test con 3 escenarios (sin documentos, con confirmación en curso, con finalizado) que muestra el avance correcto; no persiste nada | Facu | Sí |
 | F-3 | Chat vacío con frase de ejemplo y qué adjuntar (sin audio) | `src/features/chat/components/chat-reference.tsx` y su test | Con chat vacío se ven el ejemplo y «qué, cuánto con unidad, a quién y cuándo»; el texto no dice «audio»; los tests del chat pasan | Facu | Sí |
 | F-4 | Revisión que explica: antes de congelar, con rojo, después de congelar y glosario corto | `src/features/corroborations/components/participant-selector.tsx`, `review-progress.tsx`, `share-links-panel.tsx` y sus tests | Los textos de P3 y P7 aparecen en sus estados; no cambia la selección (proveedor y comprador fijos); el test de lenguaje prohibido pasa | Facu | Sí |
@@ -307,11 +309,13 @@ Razones de Facu para su versión: menos pasos, habla del resultado que le import
 
 1. **Cuenta de demo:** ¿la demo para usuarios nuevos usa una cuenta compartida preparada (recomendado, por el límite de correo de Supabase) o cada uno se registra? ¿Quién crea los tres casos (N-3) y en qué entorno?
 2. **Confirmación de correo en el registro:** `docs/development.md` pide desactivarla y el runbook pide no hacerlo. ¿Cuál vale para usuarios reales?
+   - **Resolución canónica:** Rige la decisión de `docs/development.md#registro-con-acceso-inmediato` (correo autoconfirmado en Supabase, acceso inmediato con sesión sin requerir confirmación por correo; no acredita propiedad del correo). El runbook de jurados fue alineado con esta decisión.
 3. **`DEMO_HIDE_WARNINGS`:** ¿sigue en `true` para usuarios reales? Oculta advertencias heredadas, no el semáforo ALC.
 4. **Nombre del proveedor en la pantalla del comercio:** ¿se puede mostrar el nombre o título del documento del proveedor en `/confirm/:token`, o solo «la distribuidora»? Afecta qué datos expone el contrato de invitación.
 5. **Texto del botón final:** ¿aprobás «Finalizar y registrar huella» en vez de «Subir Contrato»?
 6. **Entrada pública a la demo (resuelta por el PR #157 con `/demo`):** ¿se agrega en la landing un enlace «Ver cómo funciona» que lleve al guion o a un video? Si es video, ¿quién lo graba y dónde se aloja?
 7. **Público y discurso:** ¿aprobás el discurso de la sección «Discurso»? Propuesta de Facu: el público es la distribución (distribuidoras, transportistas y comercios) **y** cualquier empresa que necesite verificar datos de sus operaciones con otra parte. Hoy REGLAS §2 deja a los demás rubros como «se nombran, no son foco»: si se amplía, hay que actualizar REGLAS §2 y la landing.
+   - **Resolución:** No se amplía el público de producto en P0. Conforme a `docs/GALCOA-REGLAS-PRODUCTO.md` §2, el producto se enfoca exclusivamente en la distribución (distribuidora pyme de alimentos y bebidas, comercio y transportista). Otros rubros solo se mencionan como posibles aplicaciones genéricas pero no son funciones ni público objetivo de P0.
 8. **Ubicación de `ErrorScreen` (F-8):** ¿`src/features/errors/components/` o preferís otra carpeta?
 
 ## Fuentes
