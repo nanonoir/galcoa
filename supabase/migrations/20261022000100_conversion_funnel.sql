@@ -1,7 +1,8 @@
 -- Embudo de conversión (docs/exec-plans/active/conversion-funnel.md, D5–D7). Aditiva.
 -- Mismo patrón F4/F7: tablas sin acceso directo de roles de API, escritas solo por funciones
--- SECURITY DEFINER con owner dedicado sin login ni bypass de RLS. Sin datos personales en el
--- embudo: identificador aleatorio de navegador, nombre de evento de lista cerrada y etiquetas cortas.
+-- SECURITY DEFINER con owner dedicado sin login ni bypass de RLS. El embudo
+-- es seudónimo, no anónimo de forma absoluta: guarda un identificador aleatorio de navegador (sin clave
+-- foránea a cuentas), un nombre de evento de lista cerrada y etiquetas cortas.
 -- No aplicada a galcoa-dev: requiere autorización explícita del líder (AGENTS.md).
 
 create role galcoa_conversion_writer nologin noinherit nosuperuser nocreatedb nocreaterole nobypassrls;
@@ -13,11 +14,12 @@ revoke all on function private.conversion_actor() from public, anon, authenticat
 grant execute on function private.conversion_actor() to galcoa_conversion_writer;
 
 -- Etapas del embudo --------------------------------------------------------------------------
+-- Sin `user_id` ni clave foránea a cuentas a propósito: el embudo es seudónimo (identificador del
+-- navegador), no anonimato absoluto; el sistema no vincula el visitante con una cuenta.
 create table public.funnel_events (
   id bigint generated always as identity primary key,
   occurred_at timestamptz not null default clock_timestamp(),
   visitor_id uuid not null,
-  user_id uuid null references auth.users (id) on delete set null,
   event text not null check (event in (
     'landing_viewed', 'cta_clicked', 'demo_started', 'demo_step_viewed', 'demo_verdict_shown', 'demo_completed',
     'signup_viewed', 'signup_completed', 'activation_step_completed', 'pricing_viewed', 'plan_selected',
@@ -28,9 +30,11 @@ create table public.funnel_events (
 );
 create index funnel_events_event_time_idx on public.funnel_events (event, occurred_at);
 create index funnel_events_visitor_time_idx on public.funnel_events (visitor_id, occurred_at);
+create index funnel_events_time_idx on public.funnel_events (occurred_at);
 alter table public.funnel_events enable row level security;
 revoke all on public.funnel_events from public, anon, authenticated, service_role;
-grant select, insert on public.funnel_events to galcoa_conversion_writer;
+-- `delete` solo para la retención acotada dentro de `record_funnel_event`.
+grant select, insert, delete on public.funnel_events to galcoa_conversion_writer;
 create policy conversion_writer_funnel on public.funnel_events to galcoa_conversion_writer using (true) with check (true);
 
 -- Solicitudes de suscripción (sin cobro en P0: el equipo las activa en el piloto) ------------
@@ -49,38 +53,58 @@ revoke all on public.subscription_requests from public, anon, authenticated, ser
 grant select, insert on public.subscription_requests to galcoa_conversion_writer;
 create policy conversion_writer_subscriptions on public.subscription_requests to galcoa_conversion_writer using (true) with check (true);
 
--- Registro de un evento: anónimo o con sesión. Tope por visitante para limitar ruido y abuso:
--- por encima de 60 eventos por minuto se descarta en silencio (la medición nunca falla al usuario).
+-- Registro de un evento: anónimo o con sesión. El visitante lo genera el navegador, así que rotar
+-- identificadores evade el tope por visitante: se suma un tope global. Por encima de cualquiera de
+-- los dos (60 por visitante o 300 en total, por minuto) se descarta en silencio (la medición nunca
+-- falla al usuario ni revela el tope). Retención: cada llamada que registra borra hasta 20 eventos de
+-- más de 90 días; es oportunista, no un TTL garantizado (sin tráfico no se borra nada).
+-- Serialización: un lock de asesor transaccional de espacio fijo (funnel) protege conteo e inserción
+-- para que llamadas concurrentes no superen los topes. Es fail-fast: si no se obtiene, se descarta la
+-- métrica en vez de esperar (sin cola). Límite conocido: el tope global permite que un atacante sature
+-- el cupo y deje sin registrar métricas legítimas (inanición de la medición, no del producto).
 create function public.record_funnel_event(p_visitor_id uuid, p_event text, p_step text, p_source text, p_plan text) returns void
 language plpgsql security definer set search_path = '' as $$
 declare recent integer;
 begin
   if p_visitor_id is null or p_event is null then raise invalid_parameter_value; end if;
-  select count(*) into recent from public.funnel_events
-    where visitor_id = p_visitor_id and occurred_at > clock_timestamp() - interval '1 minute';
+  if not pg_try_advisory_xact_lock(7001, 1) then return; end if;
+  select count(*) into recent from (
+    select 1 from public.funnel_events
+    where visitor_id = p_visitor_id and occurred_at > clock_timestamp() - interval '1 minute' limit 60) visitor_recent;
   if recent >= 60 then return; end if;
-  insert into public.funnel_events (visitor_id, user_id, event, step, source, plan)
-    values (p_visitor_id, private.conversion_actor(), p_event, p_step, p_source, p_plan);
+  select count(*) into recent from (
+    select 1 from public.funnel_events where occurred_at > clock_timestamp() - interval '1 minute' limit 300) all_recent;
+  if recent >= 300 then return; end if;
+  insert into public.funnel_events (visitor_id, event, step, source, plan)
+    values (p_visitor_id, p_event, p_step, p_source, p_plan);
+  delete from public.funnel_events where id in (
+    select id from public.funnel_events where occurred_at < clock_timestamp() - interval '90 days' order by occurred_at limit 20 for update skip locked);
 end
 $$;
 
 -- Solicitud de plan del usuario con sesión. Idempotente por clave y una sola abierta por plan.
 create function public.request_subscription(p_plan text, p_idempotency_key uuid) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare actor uuid := private.conversion_actor();
+declare actor uuid := private.conversion_actor(); stored text;
 begin
   if actor is null then raise insufficient_privilege; end if;
   if p_plan is null or p_plan not in ('inicial', 'crecimiento', 'pro') or p_idempotency_key is null then
     raise invalid_parameter_value;
   end if;
-  if exists (select 1 from public.subscription_requests
-             where user_id = actor and (idempotency_key = p_idempotency_key or (plan = p_plan and status = 'solicitada'))) then
+  -- Repetición de la misma clave: se devuelve el plan ya guardado, aunque ahora se pida otro.
+  select plan into stored from public.subscription_requests where user_id = actor and idempotency_key = p_idempotency_key;
+  if stored is not null then
+    return jsonb_build_object('status', 'ya_solicitada', 'plan', stored);
+  end if;
+  if exists (select 1 from public.subscription_requests where user_id = actor and plan = p_plan and status = 'solicitada') then
     return jsonb_build_object('status', 'ya_solicitada', 'plan', p_plan);
   end if;
   insert into public.subscription_requests (user_id, plan, idempotency_key) values (actor, p_plan, p_idempotency_key);
   return jsonb_build_object('status', 'solicitada', 'plan', p_plan);
 exception when unique_violation then
-  return jsonb_build_object('status', 'ya_solicitada', 'plan', p_plan);
+  -- Carrera con otra petición de la misma clave o del mismo plan abierto.
+  select plan into stored from public.subscription_requests where user_id = actor and idempotency_key = p_idempotency_key;
+  return jsonb_build_object('status', 'ya_solicitada', 'plan', coalesce(stored, p_plan));
 end
 $$;
 

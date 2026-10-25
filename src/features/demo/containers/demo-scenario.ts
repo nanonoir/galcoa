@@ -10,7 +10,7 @@ import { evaluateAlc } from "@/lib/rules/alc";
  */
 
 export const DEMO_UNIT = "cajas";
-const MERCHANT = "Almacén Los Pinos";
+const MERCHANT = "Almacén Ejemplo";
 const PRODUCT = "Agua mineral 500 ml";
 const TIME = "9:42";
 
@@ -82,7 +82,7 @@ export function buildDemoAlcInput(input: {
 const REASONS: Partial<Record<AlcRuleId, string>> = {
   [ALC_RULE.MATCHING]: "La cantidad de tu mensaje coincide con la del remito.",
   [ALC_RULE.DECLARED]: "La cantidad solo está en tu mensaje: queda como «declarada», sin un comprobante que la respalde.",
-  [ALC_RULE.CONTRADICTION]: "Tu mensaje y el remito no dicen la misma cantidad. Hay que aclarar la diferencia antes de sellar.",
+  [ALC_RULE.CONTRADICTION]: "Tu mensaje y el remito no dicen la misma cantidad. Hay que aclarar la diferencia antes de finalizar.",
   [ALC_RULE.AMBIGUITY]: "No se puede determinar qué se está confirmando.",
   [ALC_RULE.UNREADABLE]: "Un comprobante no se pudo leer.",
   [ALC_RULE.PARTICIPANTS]: "Faltan participantes obligatorios.",

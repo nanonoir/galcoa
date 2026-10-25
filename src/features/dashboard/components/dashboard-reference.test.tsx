@@ -81,18 +81,26 @@ describe("DashboardReference", () => {
     expect(onRetry).not.toHaveBeenCalled();
   });
 
-  it("vacío que enseña: los mismos 4 pasos que la guía de activación y «Crear mi primer documento» llama a onCreate", async () => {
-    const { user, onCreate } = renderScenario("empty");
-    expect(screen.getByText("Tu primera entrega sellada, en 4 pasos:")).toBeInTheDocument();
-    const steps = within(screen.getByRole("list")).getAllByRole("listitem");
-    expect(steps).toHaveLength(4);
-    expect(steps[0]).toHaveTextContent("Creá tu primer documento");
-    expect(steps[1]).toHaveTextContent("Contá la entrega y revisá el documento");
-    expect(steps[2]).toHaveTextContent("Pedí la confirmación");
-    expect(steps[3]).toHaveTextContent("Sellá la huella");
-    expect(steps[3]).toHaveTextContent("una huella que permite comprobar que no cambió");
-    await user.click(screen.getByRole("button", { name: "Crear mi primer documento" }));
-    expect(onCreate).toHaveBeenCalledTimes(1);
+  it("vacío con la guía de activación: sin pasos ni botones propios (la guía es la única)", () => {
+    const handlers = { onCreate: vi.fn(), onOpen: vi.fn(), onRetry: vi.fn() };
+    render(<DashboardReference state={scenarioState("empty")} guideShown {...handlers} />);
+    expect(screen.getByText(/Todavía no hay documentos/)).toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(screen.queryByText(/en 4 pasos/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("vacío sin guía: conserva una única acción para crear y no repite los pasos", () => {
+    renderScenario("empty");
+    expect(screen.getAllByRole("button", { name: /Crear/ })).toHaveLength(1);
+    expect(screen.queryByText(/en 4 pasos/)).not.toBeInTheDocument();
+  });
+
+  it("con documentos la guía no oculta «Crear documento»", () => {
+    const handlers = { onCreate: vi.fn(), onOpen: vi.fn(), onRetry: vi.fn() };
+    render(<DashboardReference state={scenarioState("confirmations")} guideShown {...handlers} />);
+    expect(screen.getByRole("button", { name: "Crear documento" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Te falta" })).toBeInTheDocument();
   });
 
   it("sin checklist propia: el panel no duplica la guía de activación", () => {
@@ -123,6 +131,12 @@ describe("DashboardReference", () => {
       const [base] = readyDocuments("confirmations");
       renderState({ status: "ready", documents: [{ ...base, documentStatus: "revision_rechazada", confirmationStatus: "rechazada" }] });
       expect(screen.getByRole("list", { name: "Te falta" })).toHaveTextContent("Revisión rechazada: corregí y pedí una nueva confirmación");
+    });
+
+    it("contradicción crítica muestra «Diferencia por aclarar»", () => {
+      const [base] = readyDocuments("confirmations");
+      renderState({ status: "ready", documents: [{ ...base, documentStatus: "borrador", controlStatus: "contradiccion_critica", confirmationStatus: null }] });
+      expect(screen.getByRole("list", { name: "Te falta" })).toHaveTextContent("Diferencia por aclarar");
     });
 
     it("sin pendientes no se muestra", () => {

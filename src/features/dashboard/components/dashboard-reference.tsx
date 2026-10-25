@@ -223,6 +223,9 @@ function pendingReason(document: DocumentSummary): string | null {
   if (document.confirmationStatus === "rechazada" || document.documentStatus === "revision_rechazada") {
     return "Revisión rechazada: corregí y pedí una nueva confirmación";
   }
+  if (document.controlStatus === "contradiccion_critica") {
+    return "Diferencia por aclarar";
+  }
   if (document.confirmationStatus === "pendiente" || document.confirmationStatus === "parcial") {
     return "Esperando confirmaciones";
   }
@@ -269,7 +272,9 @@ function PendingList({ documents, onOpen }: { documents: DocumentSummary[]; onOp
   );
 }
 
-export function DashboardReference({ state, onCreate, onOpen, onRetry }: DashboardViewProps) {
+export function DashboardReference({ state, guideShown = false, onCreate, onOpen, onRetry }: DashboardViewProps) {
+  // Con la guía de activación visible y sin documentos, ella ofrece la única acción de crear.
+  const emptyWithGuide = guideShown && state.status === "ready" && state.documents.length === 0;
   return (
     <section aria-labelledby="dashboard-reference-title" className="flex min-w-0 flex-col gap-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -281,10 +286,12 @@ export function DashboardReference({ state, onCreate, onOpen, onRetry }: Dashboa
             <p className="tech-label">{countLabel(state.documents.length, "documento", "documentos")}</p>
           )}
         </div>
-        <Button onClick={() => onCreate()} className="w-full sm:w-auto">
-          <Plus aria-hidden="true" data-icon="inline-start" />
-          Crear documento
-        </Button>
+        {!emptyWithGuide && (
+          <Button onClick={() => onCreate()} className="w-full sm:w-auto">
+            <Plus aria-hidden="true" data-icon="inline-start" />
+            Crear documento
+          </Button>
+        )}
       </header>
 
       {state.status === "loading" && (
@@ -313,24 +320,6 @@ export function DashboardReference({ state, onCreate, onOpen, onRetry }: Dashboa
         <div className="flex flex-col items-center gap-2 border border-dashed p-8 text-center">
           <FileText aria-hidden="true" className="size-6 text-muted-foreground" />
           <p className="font-medium">Todavía no hay documentos.</p>
-          <p className="mt-2 font-medium">Tu primera entrega sellada, en 4 pasos:</p>
-          <ol className="flex max-w-prose list-inside list-decimal flex-col gap-1 text-left text-sm">
-            <li>
-              <strong>Creá tu primer documento:</strong> uno por entrega.
-            </li>
-            <li>
-              <strong>Contá la entrega y revisá el documento:</strong> escribí qué entregaste y adjuntá el remito.
-            </li>
-            <li>
-              <strong>Pedí la confirmación:</strong> compartí el enlace o QR con el comercio.
-            </li>
-            <li>
-              <strong>Sellá la huella:</strong> con todas las confirmaciones se genera el PDF y se registra una huella que permite comprobar que no cambió.
-            </li>
-          </ol>
-          <Button variant="outline" onClick={() => onCreate()} className="mt-2">
-            Crear mi primer documento
-          </Button>
         </div>
       )}
 

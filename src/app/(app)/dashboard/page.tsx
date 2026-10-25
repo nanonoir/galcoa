@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <h1 className="page-title">Mis documentos</h1>
       {result.ok && userKey ? <ActivationContainer checklist={toActivationChecklist(result.value)} userKey={userKey} /> : null}
-      <DashboardContainer initialState={toDashboardState(result)} />
+      <DashboardContainer initialState={toDashboardState(result)} guideShown={result.ok && Boolean(userKey)} />
     </main>
   );
 }

@@ -134,6 +134,17 @@ describe("evaluación de servidor (F-1)", () => {
     if (r.ok) expect(r.value.shared.claims[0].status).toBe("contradicho");
   });
 
+  it("200/198 conserva el rojo y la contradicción al persistir, sin reclasificar como declarado", async () => {
+    const facts = claimOutput({ chat: "Se entregan 200 cajas", remito: "Remito: 198 cajas" });
+    facts.claims[0].value = "200";
+    const { evaluator, saved } = setup([facts], reading("Se entregan 200 cajas", "Remito: 198 cajas"));
+    const result = await run(evaluator, { draft: { ...draft, body: "Se entregan 200 cajas de ejemplo." } });
+    expect(result).toMatchObject({ ok: true, value: { color: "rojo" } });
+    expect(saved[0]).toMatchObject({ color: "rojo", result: { color: "rojo" } });
+    expect(saved[0].shared.claims[0].status).toBe("contradicho");
+    expect(saved[0].shared.findings).toEqual(expect.arrayContaining([expect.objectContaining({ ruleId: ALC_RULE.CONTRADICTION })]));
+  });
+
   it("una cita inventada o un dato fuera del borrador es un fallo técnico, nunca un rojo", async () => {
     const forged = setup([claimOutput({ remito: "Remito: 12 cajas falsas" })]);
     expect(await run(forged.evaluator)).toMatchObject({ ok: false, error: { code: ALC_TECHNICAL.CITATION } });

@@ -41,6 +41,50 @@ describe("POST /api/funnel (puerto doble, no demuestra Supabase)", () => {
     const { deps } = setup(new Error("sin configuración"));
     expect((await handleFunnelEvent(post("/api/funnel", event), deps)).status).toBe(204);
   });
+
+  it("Do Not Track y Global Privacy Control: 204 sin llamar a la base", async () => {
+    const optOuts: Record<string, string>[] = [{ dnt: "1" }, { "sec-gpc": "1" }];
+    for (const header of optOuts) {
+      const { call, deps } = setup();
+      const request = new Request("https://galcoa.test/api/funnel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...header },
+        body: JSON.stringify(event),
+      });
+      expect((await handleFunnelEvent(request, deps)).status).toBe(204);
+      expect(call).not.toHaveBeenCalled();
+    }
+  });
+
+  it("origen cruzado o tipo de contenido que no es JSON: 400 sin llamar a la base", async () => {
+    const variants: Record<string, string>[] = [{ "Content-Type": "text/plain" }, { "Content-Type": "application/json", "sec-fetch-site": "cross-site" }];
+    for (const headers of variants) {
+      const { call, deps } = setup();
+      const request = new Request("https://galcoa.test/api/funnel", { method: "POST", headers, body: JSON.stringify(event) });
+      expect((await handleFunnelEvent(request, deps)).status).toBe(400);
+      expect(call).not.toHaveBeenCalled();
+    }
+  });
+
+  it("cuerpo por trozos que supera el tope sin declarar tamaño: 400 y se corta la lectura", async () => {
+    const chunk = new TextEncoder().encode("x".repeat(MAX_BODY_BYTES));
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(chunk);
+        controller.enqueue(chunk);
+        controller.close();
+      },
+    });
+    const { call, deps } = setup();
+    const request = new Request("https://galcoa.test/api/funnel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      duplex: "half",
+    } as RequestInit);
+    expect((await handleFunnelEvent(request, deps)).status).toBe(400);
+    expect(call).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/subscriptions (puerto doble, no demuestra Supabase)", () => {
@@ -50,6 +94,16 @@ describe("POST /api/subscriptions (puerto doble, no demuestra Supabase)", () => 
     for (const [session, status] of [[{ status: "anonymous" }, 401], [{ status: "unavailable" }, 503]] as const) {
       const { call, deps } = setup(undefined, session);
       expect((await handleSubscriptionRequest(post("/api/subscriptions", body), deps)).status).toBe(status);
+      expect(call).not.toHaveBeenCalled();
+    }
+  });
+
+  it("origen cruzado o contenido que no es JSON: 400 sin llamar a la base", async () => {
+    const variants: Record<string, string>[] = [{ "Content-Type": "text/plain" }, { "Content-Type": "application/json", "sec-fetch-site": "cross-site" }];
+    for (const headers of variants) {
+      const { call, deps } = setup();
+      const request = new Request("https://galcoa.test/api/subscriptions", { method: "POST", headers, body: JSON.stringify(body) });
+      expect((await handleSubscriptionRequest(request, deps)).status).toBe(400);
       expect(call).not.toHaveBeenCalled();
     }
   });

@@ -1,5 +1,7 @@
 "use client";
 
+import { z } from "zod";
+
 import { FunnelEventSchema, type FunnelEventName, type PlanId } from "@/lib/contracts/conversion";
 
 /**
@@ -27,7 +29,7 @@ export function visitorId(): string {
   const store = storage();
   try {
     const saved = store?.getItem(VISITOR_KEY);
-    if (saved && /^[0-9a-f-]{36}$/.test(saved)) return saved;
+    if (saved && z.uuid().safeParse(saved).success) return saved;
   } catch {
     // Almacenamiento bloqueado: se usa un identificador de esta pestaña.
   }
@@ -45,6 +47,16 @@ function doNotTrack(): boolean {
   return typeof navigator !== "undefined" && (navigator.doNotTrack === "1" || (navigator as { globalPrivacyControl?: boolean }).globalPrivacyControl === true);
 }
 
+/** Con «Do Not Track» no se conserva el identificador previo del navegador. */
+function forgetVisitor(): void {
+  memoryVisitor = null;
+  try {
+    storage()?.removeItem(VISITOR_KEY);
+  } catch {
+    // Almacenamiento bloqueado: no hay nada persistido que borrar.
+  }
+}
+
 export interface TrackOptions {
   step?: string | null;
   source?: string | null;
@@ -52,7 +64,11 @@ export interface TrackOptions {
 }
 
 export function track(event: FunnelEventName, options: TrackOptions = {}): void {
-  if (typeof window === "undefined" || doNotTrack()) return;
+  if (typeof window === "undefined") return;
+  if (doNotTrack()) {
+    forgetVisitor();
+    return;
+  }
   const parsed = FunnelEventSchema.safeParse({
     event,
     visitorId: visitorId(),
@@ -76,6 +92,11 @@ export function track(event: FunnelEventName, options: TrackOptions = {}): void 
 
 /** Registra un evento una sola vez por navegador (p. ej. cada paso de activación). */
 export function trackOnce(key: string, event: FunnelEventName, options: TrackOptions = {}): void {
+  if (typeof window === "undefined") return;
+  if (doNotTrack()) {
+    forgetVisitor();
+    return;
+  }
   const store = storage();
   try {
     if (store?.getItem(ONCE_PREFIX + key)) return;

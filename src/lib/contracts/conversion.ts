@@ -70,7 +70,7 @@ const FunnelLabelSchema = z.string().regex(/^[a-z0-9_]{1,40}$/);
 
 export const FunnelEventSchema = z.strictObject({
   event: FunnelEventNameSchema,
-  /** Identificador aleatorio del navegador (UUID), no vinculado a una persona. */
+  /** Identificador aleatorio del navegador (UUID), seudónimo: el servidor no lo vincula a cuentas. */
   visitorId: z.uuid(),
   step: FunnelLabelSchema.nullable(),
   source: FunnelLabelSchema.nullable(),

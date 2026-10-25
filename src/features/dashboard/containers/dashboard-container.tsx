@@ -20,7 +20,7 @@ export { NEW_DOCUMENT_TITLE };
 const LOGIN_PATH = "/acceso";
 const CREATE_ERROR = "No se pudo crear el documento. Intenta nuevamente.";
 
-export function DashboardContainer({ initialState }: { initialState: DashboardViewState }) {
+export function DashboardContainer({ initialState, guideShown = false }: { initialState: DashboardViewState; guideShown?: boolean }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -54,6 +54,7 @@ export function DashboardContainer({ initialState }: { initialState: DashboardVi
   return (
     <DashboardReference
       state={state}
+      guideShown={guideShown}
       onCreate={() => void create()}
       onOpen={(documentId) => router.push(`/documents/${encodeURIComponent(documentId)}`)}
       onRetry={() => {

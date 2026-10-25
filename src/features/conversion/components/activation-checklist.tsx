@@ -10,8 +10,8 @@ import type { ActivationChecklist, ActivationStepId } from "@/lib/contracts/conv
 const COPY: Record<ActivationStepId, { title: string; hint: string }> = {
   creado: { title: "Creá tu primer documento", hint: "Un documento por entrega." },
   verificado: { title: "Contá la entrega y revisá el documento", hint: "Escribí qué entregaste y adjuntá el remito; después tocá «Revisar»." },
-  confirmado: { title: "Pedí la confirmación", hint: "Confirmá como autor y compartí el enlace o QR con el comercio." },
-  sellado: { title: "Sellá la huella", hint: "Con todas las confirmaciones, «Subir Contrato» registra la huella en Hedera Testnet." },
+  confirmado: { title: "Pedí la confirmación", hint: "Confirmá como proveedor y compartí el enlace o QR con el comprador (y con el transportista, si lo incluiste)." },
+  sellado: { title: "Sellá la huella", hint: "Con todas las confirmaciones, «Finalizar y registrar huella» registra la huella en Hedera Testnet." },
 };
 
 export interface ActivationChecklistProps {

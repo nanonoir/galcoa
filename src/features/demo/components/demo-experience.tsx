@@ -6,7 +6,7 @@ import type { DemoColor, DemoRemito, DemoStep, DemoViewProps } from "@/features/
 
 /**
  * Demo pública de GALCOA+ (conversion-funnel.md, D1 y D2). Cuatro pasos del
- * flujo real con datos de ejemplo. Nada se guarda ni se registra en Hedera, y
+ * flujo real con datos de ejemplo. La entrega de ejemplo no se guarda ni se registra en Hedera, y
  * lo dice siempre. La invitación a registrarse acompaña sin bloquear.
  */
 
@@ -14,7 +14,7 @@ const STEPS: { id: DemoStep; title: string }[] = [
   { id: 1, title: "Contá la entrega" },
   { id: 2, title: "Se controla" },
   { id: 3, title: "El comercio confirma" },
-  { id: 4, title: "Queda sellada" },
+  { id: 4, title: "Se calcula la huella" },
 ];
 
 const REMITO_OPTIONS: { id: DemoRemito; title: string; hint: string }[] = [
@@ -66,7 +66,10 @@ export function DemoExperience(props: DemoViewProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Badge variant="outline" className="h-auto w-fit max-w-full py-1 text-left whitespace-normal">Demo con datos de ejemplo — nada se guarda ni se registra en Hedera</Badge>
+        <div className="flex flex-col gap-1">
+          <Badge variant="outline" className="h-auto w-fit max-w-full py-1 text-left whitespace-normal">Demo con datos de ejemplo — la entrega de ejemplo no se guarda ni se registra en Hedera</Badge>
+          <p className="text-xs text-muted-foreground">Medimos el uso de la demo con un identificador de navegador seudónimo; respetamos «No rastrear» (DNT/GPC).</p>
+        </div>
         {state.step > 1 ? (
           <Button variant="ghost" size="sm" onClick={props.onRestart}>
             Empezar de nuevo
@@ -97,7 +100,7 @@ function StoryStep({ state, onQuantityChange, onRemitoChange, onBuild }: DemoVie
     <section aria-labelledby="demo-paso-1" className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
         <h2 id="demo-paso-1" className="text-2xl font-semibold tracking-tight">1. Contá la entrega como se la contarías a alguien</h2>
-        <p className="text-sm text-muted-foreground">En GALCOA+ escribís o grabás un mensaje y adjuntás la foto del remito. Acá lo armamos por vos.</p>
+        <p className="text-sm text-muted-foreground">En GALCOA+ escribís un mensaje y adjuntás la foto del remito. Acá lo armamos por vos.</p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -197,7 +200,7 @@ function ControlStep({ state, signupHref, onBackToStory, onRequestConfirmation, 
       {verdict.sealable ? (
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button size="lg" onClick={onRequestConfirmation}>
-            Pedir confirmación al comercio
+            Pedir confirmación al comprador
           </Button>
           <Button size="lg" variant="outline" onClick={onBackToStory}>
             Probar otro caso
@@ -224,17 +227,17 @@ function ConfirmStep({ state, qr, onMerchantConfirm }: DemoViewProps) {
     <section aria-labelledby="demo-paso-3" className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
         <h2 id="demo-paso-3" className="text-2xl font-semibold tracking-tight">3. El comercio confirma con un QR, sin crear una cuenta</h2>
-        <p className="text-sm text-muted-foreground">Ahora sos el almacén: revisás la misma versión del documento y confirmás.</p>
+        <p className="text-sm text-muted-foreground">Ahora sos el comprador: revisás la misma versión del documento y confirmás.</p>
       </div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         {qr ? <div className="shrink-0">{qr}</div> : null}
         <div className="flex max-w-md flex-col gap-3 border border-border bg-card p-4 text-sm">
-          <p className="font-semibold">Almacén Los Pinos — confirmación de entrega (ejemplo)</p>
+          <p className="font-semibold">Almacén Ejemplo — confirmación de entrega (ejemplo)</p>
           <p>
             {state.document?.cantidad} {state.document?.unidad} de {state.document?.producto}, a las {state.document?.hora}.
           </p>
           <p className="text-muted-foreground">La confirmación muestra quién la dio con el enlace, no verifica identidad.</p>
-          <Button onClick={onMerchantConfirm}>Confirmar la entrega como el comercio</Button>
+          <Button onClick={onMerchantConfirm}>Confirmar la entrega como comprador</Button>
         </div>
       </div>
     </section>
@@ -245,7 +248,7 @@ function SealStep({ state, signupHref, pricingHref, onSeal, onCtaClick }: DemoVi
   return (
     <section aria-labelledby="demo-paso-4" className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
-        <h2 id="demo-paso-4" className="text-2xl font-semibold tracking-tight">4. Se calcula la huella y queda sellada</h2>
+        <h2 id="demo-paso-4" className="text-2xl font-semibold tracking-tight">4. Se calcula la huella del documento de ejemplo</h2>
         <p className="text-sm text-muted-foreground">
           La huella SHA-256 identifica este documento exacto: si alguien lo cambia, deja de coincidir. Prueba que no se modificó, no que lo declarado sea verdadero.
         </p>
@@ -256,13 +259,13 @@ function SealStep({ state, signupHref, pricingHref, onSeal, onCtaClick }: DemoVi
           <p className="tech-label">Huella del documento de ejemplo</p>
           <p className="font-mono text-sm break-all">{state.hash}</p>
           <p className="text-sm text-muted-foreground">
-            En la demo no se envía a Hedera. En tu cuenta, esta huella se registra en Hedera Testnet y cualquiera la puede comprobar con el QR del PDF.
+            En la demo no se registra nada en Hedera. En tu cuenta, al finalizar con todas las confirmaciones, una huella como esta se registra en Hedera Testnet y cualquiera la puede comprobar con el QR del PDF.
           </p>
         </div>
       ) : (
         <div>
           <Button size="lg" onClick={onSeal} disabled={state.sealing}>
-            {state.sealing ? "Calculando la huella…" : "Sellar el documento"}
+            {state.sealing ? "Calculando la huella…" : "Calcular la huella del documento"}
           </Button>
         </div>
       )}
@@ -271,7 +274,7 @@ function SealStep({ state, signupHref, pricingHref, onSeal, onCtaClick }: DemoVi
         <div className="flex flex-col gap-4 border-t border-border pt-6">
           <h3 className="text-xl font-semibold tracking-tight">Esto mismo, con tus entregas reales</h3>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Creá tu cuenta y te guiamos hasta sellar tu primer documento. Tu historial de operaciones es tu mejor carta de presentación.
+            Creá tu cuenta y te guiamos hasta registrar la huella de tu primera entrega. Tu historial de operaciones es tu mejor carta de presentación.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <a href={signupHref} onClick={() => onCtaClick("demo_final")} className={buttonVariants({ size: "lg", className: "px-6" })}>

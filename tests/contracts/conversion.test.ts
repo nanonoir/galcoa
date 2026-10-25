@@ -116,12 +116,13 @@ describe("activación derivada de los documentos reales (D4)", () => {
     ]);
   });
 
-  it("sugiere seguir con el documento sin sellar más reciente", () => {
+  it("una entrega completa cierra la activación aunque existan borradores recientes", () => {
     const docs = [
       { ...base, id: "viejo", updatedAt: "2026-10-20T10:00:00Z" },
-      { ...base, id: "sellado", hcsStatus: "registrado" as const, updatedAt: "2026-10-22T12:00:00Z" },
+      { ...base, id: "sellado", documentStatus: "finalizado" as const, revisionId: "r1", confirmationStatus: "completa" as const, hcsStatus: "registrado" as const, updatedAt: "2026-10-22T12:00:00Z" },
       { ...base, id: "reciente", updatedAt: "2026-10-21T10:00:00Z" },
     ];
-    expect(toActivationChecklist(docs).nextDocumentId).toBe("reciente");
+    expect(toActivationChecklist(docs).nextDocumentId).toBeNull();
+    expect(done(docs)).toEqual(["creado", "verificado", "confirmado", "sellado"]);
   });
 });

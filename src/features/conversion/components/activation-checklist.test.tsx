@@ -30,6 +30,14 @@ describe("ActivationChecklistCard (conversion-funnel.md, D4)", () => {
     expect(onContinue).toHaveBeenCalledWith("doc-9");
   });
 
+  it("usa los textos vigentes: proveedor/comprador y «Finalizar y registrar huella»", () => {
+    const { rerender } = render(<ActivationChecklistCard {...props} checklist={checklist(2, "doc-9")} />);
+    expect(screen.getByRole("listitem", { current: "step" })).toHaveTextContent(/Confirmá como proveedor.*comprador.*transportista/);
+    rerender(<ActivationChecklistCard {...props} checklist={checklist(3, "doc-9")} />);
+    expect(screen.getByRole("listitem", { current: "step" })).toHaveTextContent("«Finalizar y registrar huella»");
+    expect(document.body.textContent).not.toMatch(/Subir Contrato|como autor/);
+  });
+
   it("completo: felicita e invita a ver los planes", () => {
     render(<ActivationChecklistCard {...props} checklist={checklist(4)} pricingHref="/precios?plan=pro" />);
     expect(screen.getByRole("heading", { name: "¡Sellaste tu primera entrega!" })).toBeInTheDocument();

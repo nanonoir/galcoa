@@ -20,21 +20,24 @@ afterEach(() => {
 const sentEvents = () => fetchMock.mock.calls.map(([, init]) => JSON.parse(String((init as RequestInit).body)).event as string);
 
 describe("DemoContainer (demo pública, conversion-funnel.md D1)", () => {
-  it("camino verde: controla, confirma como comercio, calcula la huella y ofrece crear la cuenta", async () => {
+  it("camino verde: controla, confirma como comprador, calcula la huella y ofrece crear la cuenta", async () => {
     const user = userEvent.setup();
     const { container } = render(<DemoContainer />);
-    expect(screen.getByText(/nada se guarda ni se registra en Hedera/)).toBeInTheDocument();
+    expect(screen.getByText(/la entrega de ejemplo no se guarda ni se registra en Hedera/)).toBeInTheDocument();
+    expect(screen.queryByText(/nada se guarda/)).not.toBeInTheDocument();
+    expect(screen.getByText(/identificador de navegador seudónimo.*No rastrear/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Armar y controlar el documento" }));
     expect(await screen.findByText("Verificado: los datos coinciden con el comprobante")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Crear mi cuenta" })).toHaveAttribute("href", DEMO_SIGNUP_HREF);
 
-    await user.click(screen.getByRole("button", { name: "Pedir confirmación al comercio" }));
-    await user.click(screen.getByRole("button", { name: "Confirmar la entrega como el comercio" }));
-    await user.click(screen.getByRole("button", { name: "Sellar el documento" }));
+    await user.click(screen.getByRole("button", { name: "Pedir confirmación al comprador" }));
+    await user.click(screen.getByRole("button", { name: "Confirmar la entrega como comprador" }));
+    await user.click(screen.getByRole("button", { name: "Calcular la huella del documento" }));
 
     const hash = await screen.findByText(/^[0-9a-f]{64}$/);
     expect(hash).toBeInTheDocument();
+    expect(screen.getByText(/no se registra nada en Hedera/)).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Crear mi cuenta" }).at(-1)).toHaveAttribute("href", DEMO_SIGNUP_HREF);
     expect(container.textContent ?? "").not.toMatch(FORBIDDEN);
 
@@ -51,7 +54,7 @@ describe("DemoContainer (demo pública, conversion-funnel.md D1)", () => {
     await user.click(screen.getByRole("button", { name: "Armar y controlar el documento" }));
 
     expect(await screen.findByText("Requiere revisión: no se puede sellar")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Pedir confirmación al comercio" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pedir confirmación al comprador" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Corregir la entrega" }));
     expect(screen.getByRole("button", { name: "Armar y controlar el documento" })).toBeInTheDocument();
   });
@@ -72,7 +75,7 @@ describe("DemoContainer (demo pública, conversion-funnel.md D1)", () => {
     await user.click(screen.getByRole("radio", { name: /Sin remito/ }));
     await user.click(screen.getByRole("button", { name: "Armar y controlar el documento" }));
     expect(await screen.findByText("Declarado: sin comprobante que lo respalde")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pedir confirmación al comercio" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pedir confirmación al comprador" })).toBeInTheDocument();
   });
 
   it("con «Do Not Track» no envía eventos", async () => {

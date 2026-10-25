@@ -9,7 +9,7 @@ import { DemoContainer } from "@/features/demo/containers/demo-container";
  */
 export const metadata: Metadata = {
   title: "Probá GALCOA+ sin registrarte",
-  description: "Contá una entrega, mirá cómo se controla, confirmala como el comercio y sellá su huella. Demo con datos de ejemplo.",
+  description: "Contá una entrega, mirá cómo se controla, confirmala como comprador y mirá cómo se calcula su huella. Demo sin registro en Hedera.",
 };
 
 export default function DemoPage() {

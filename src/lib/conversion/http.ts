@@ -21,22 +21,46 @@ export interface ConversionHttpDeps {
   session: () => Promise<SessionCheck>;
 }
 
+/** JSON explícito y nunca de otro sitio: un formulario ajeno no puede enviar `application/json` sin preflight. */
+function isSameOriginJson(request: Request): boolean {
+  if (request.headers.get("sec-fetch-site") === "cross-site") return false;
+  return (request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json");
+}
+
+/** Lee el cuerpo por trozos y corta al superar el tope, aunque no declare `content-length`. */
 async function readJson(request: Request): Promise<unknown> {
   const declared = Number(request.headers.get("content-length") ?? "0");
-  if (declared > MAX_BODY_BYTES) return undefined;
-  const text = await request.text();
-  if (text.length > MAX_BODY_BYTES) return undefined;
+  if (!Number.isFinite(declared) || declared > MAX_BODY_BYTES || !request.body) return undefined;
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  let bytes = 0;
   try {
-    return JSON.parse(text);
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > MAX_BODY_BYTES) {
+        await reader.cancel();
+        return undefined;
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    return JSON.parse(text + decoder.decode());
   } catch {
     return undefined;
   }
 }
 
+/** «Do Not Track» y Global Privacy Control también se respetan en el servidor. */
+const optedOut = (request: Request) => request.headers.get("dnt") === "1" || request.headers.get("sec-gpc") === "1";
+
 const json = (status: number, body: unknown) => Response.json(body, { status, headers: PRIVATE_RESPONSE_HEADERS });
 const error = (status: number, code: string, retryable: boolean) => json(status, { error: { code, retryable } });
 
 export async function handleFunnelEvent(request: Request, deps: ConversionHttpDeps): Promise<Response> {
+  if (!isSameOriginJson(request)) return error(400, "INVALID_EVENT", false);
+  if (optedOut(request)) return new Response(null, { status: 204, headers: PRIVATE_RESPONSE_HEADERS });
   const parsed = FunnelEventSchema.safeParse(await readJson(request));
   if (!parsed.success) return error(400, "INVALID_EVENT", false);
   try {
@@ -64,6 +88,7 @@ export async function handleSubscriptionRequest(request: Request, deps: Conversi
   if (session.status === "anonymous") return error(401, "NO_SESSION", false);
   if (session.status === "unavailable") return error(503, "AUTH_UNAVAILABLE", true);
 
+  if (!isSameOriginJson(request)) return error(400, "INVALID_REQUEST", false);
   const parsed = SubscriptionRequestSchema.safeParse(await readJson(request));
   if (!parsed.success) return error(400, "INVALID_REQUEST", false);
   try {
