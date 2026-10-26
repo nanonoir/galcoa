@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { LoginForm } from "@/features/auth/components/login-form";
 import { NewPasswordForm } from "@/features/auth/components/new-password-form";
 import { RecoveryRequestForm } from "@/features/auth/components/recovery-request-form";
 import { RegisterForm } from "@/features/auth/components/register-form";
+import { track } from "@/features/conversion/containers/track";
+import type { SignupOrigin } from "@/lib/contracts/conversion";
 import type { LoginValues, NewPasswordValues, RecoveryRequestValues, RegisterValues } from "@/lib/contracts/auth-forms";
 
 import { useAuthForm } from "./use-auth-form";
@@ -19,8 +21,10 @@ export function LoginContainer() {
   return <LoginForm state={state} onSubmit={submit} />;
 }
 
-export function RegisterContainer() {
-  const { state, submit } = useAuthForm<RegisterValues>("/api/auth/register");
+/** `origin` solo etiqueta la medición del embudo (conversion-funnel.md, D6); no cambia el registro. */
+export function RegisterContainer({ origin = null }: { origin?: SignupOrigin | null } = {}) {
+  const onSuccess = useCallback(() => track("signup_completed", { source: origin }), [origin]);
+  const { state, submit } = useAuthForm<RegisterValues>("/api/auth/register", onSuccess);
   return <RegisterForm state={state} onSubmit={submit} />;
 }
 

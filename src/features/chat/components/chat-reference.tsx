@@ -57,8 +57,8 @@ const attachmentLabels: Record<ChatAttachmentStatus, string> = {
 const contrastLabels: Record<ChatContrastStatus, string | null> = {
   idle: null,
   running: "Contrastando fuentes…",
-  done: "Contraste disponible",
-  unavailable: "Contraste no disponible",
+  done: "Control de consistencia disponible",
+  unavailable: "Control de consistencia no disponible",
 };
 
 const dateFormat = new Intl.DateTimeFormat("es-AR", {
@@ -189,9 +189,16 @@ export function ChatReference({
     <section aria-label="Chat del documento" className="mx-auto flex w-full max-w-[720px] min-w-0 flex-col gap-4">
       {state.messages.length === 0 && state.streaming === null ? (
         historyStatus === "ready" ? (
-          <p className="border border-dashed p-4 text-sm text-muted-foreground">
-            Todavía no hay mensajes. Contá la operación con tus palabras o adjuntá un archivo.
-          </p>
+          <div className="border border-dashed p-4 text-sm text-muted-foreground">
+            <p>Todavía no hay mensajes. Contá la entrega como se la contarías a un compañero.</p>
+            <p className="mt-2">
+              Ejemplo: <em>«Entregué 200 cajas de galletitas en el almacén del cliente el martes a las 9:42.»</em>
+            </p>
+            <p className="mt-2">
+              Decí <strong>qué, cuánto (con unidad), a quién y cuándo</strong>.
+            </p>
+            <p className="mt-2">Adjuntá el remito en PDF o una foto (también podés subir texto).</p>
+          </div>
         ) : null
       ) : (
         <ol role="log" aria-label="Mensajes" aria-live="polite" className="flex flex-col gap-3">
@@ -262,7 +269,7 @@ export function ChatReference({
       {!DEMO_HIDE_WARNINGS && state.contrastFindings && state.contrastFindings.length > 0 ? (
         <Alert role="status">
           <Info aria-hidden="true" />
-          <AlertTitle>Avisos del contraste (no bloquean)</AlertTitle>
+          <AlertTitle>Avisos del control de consistencia (no bloquean el sello)</AlertTitle>
           <AlertDescription>
             <ul className="list-disc pl-4">
               {state.contrastFindings.map((finding, index) => (

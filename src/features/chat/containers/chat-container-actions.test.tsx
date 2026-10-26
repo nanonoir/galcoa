@@ -96,7 +96,7 @@ describe("Barra de acciones del chat (red simulada, no es integración real)", (
     finalizationBody = { operation: { phase: "published", versionNumber: 4 } };
     render(<ChatContainer documentId={DOC} />);
     await screen.findByRole("link", { name: "Revisar y confirmar" });
-    expect(screen.queryByRole("button", { name: /Subir Contrato/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Finalizar y registrar huella/ })).not.toBeInTheDocument();
     expect(calls.some((c) => c.url.endsWith("/finalization"))).toBe(false);
   });
 
@@ -113,7 +113,7 @@ describe("Barra de acciones del chat (red simulada, no es integración real)", (
     render(<ChatContainer documentId={DOC} />);
     await screen.findByRole("link", { name: "Revisar y confirmar" });
     expect(calls.some((c) => c.url.endsWith("/revisions"))).toBe(false);
-    expect(screen.queryByRole("button", { name: /Subir Contrato/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Finalizar y registrar huella/ })).not.toBeInTheDocument();
   });
 });
 

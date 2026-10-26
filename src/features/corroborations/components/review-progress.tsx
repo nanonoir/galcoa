@@ -89,7 +89,7 @@ export function ReviewProgress({ revisionLabel, confirmationStatus, participants
                 : `Versión ${finalizedVersionNumber} finalizada`}</dd>
         </div>
         <div className="panel flex min-w-0 flex-col gap-2 p-4">
-          <dt className="tech-label">Sello HCS (independiente de la finalización)</dt>
+          <dt className="tech-label">Registro en Hedera (independiente de la finalización)</dt>
           <dd className="text-sm">
             <Badge variant={hcsStatus === "registrado" ? "secondary" : "outline"} className="h-auto max-w-full text-left break-words whitespace-normal">
               {sealLabels[hcsStatus]}
@@ -97,6 +97,18 @@ export function ReviewProgress({ revisionLabel, confirmationStatus, participants
           </dd>
         </div>
       </dl>
+      <details className="text-xs text-muted-foreground">
+        <summary className="tech-label cursor-pointer">¿Qué significa?</summary>
+        <div className="mt-2 flex flex-col gap-1">
+          <p>Revisión: la versión congelada que todos confirman.</p>
+          <p>Huella: un código que permite comprobar que el PDF no cambió.</p>
+          <p>Sello pendiente: la versión está finalizada y la huella todavía no quedó registrada.</p>
+          <p>Verde: coincide con lo que adjuntaste.</p>
+          <p>Amarillo: está declarado y sin comprobante, pero se entiende.</p>
+          <p>Rojo: hay una diferencia o algo ilegible, y así no se finaliza.</p>
+          <p>Testnet: la red de prueba de Hedera.</p>
+        </div>
+      </details>
       <p role="status" aria-live="polite" className="sr-only">
         {refreshing ? "Actualizando el avance" : ""}
       </p>

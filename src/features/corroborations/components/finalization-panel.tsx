@@ -75,7 +75,7 @@ export function FinalizationPanel({ state, onFinalize, onRefresh }: Finalization
         Finalización
       </h2>
 
-      {state.status === "idle" && <p className="text-sm text-muted-foreground">Todos los participantes confirmaron esta revisión. Al subir el contrato se genera la versión con su PDF y se registra su huella en Hedera Testnet.</p>}
+      {state.status === "idle" && <p className="text-sm text-muted-foreground">Todos los participantes confirmaron esta revisión. Al finalizar se genera la versión con su PDF y se registra en Hedera Testnet una huella que permite comprobar que el PDF no cambió.</p>}
 
       {state.status === "published" && (
         <div className="motion-enter">
@@ -94,7 +94,7 @@ export function FinalizationPanel({ state, onFinalize, onRefresh }: Finalization
         <Alert className="motion-enter">
           <AlertTitle>La finalización sigue en curso</AlertTitle>
           <AlertDescription>
-            {state.phase ? `Última fase informada: ${phaseLabels[state.phase]}. ` : ""}Dejamos de consultar automáticamente; podés actualizar el estado o reintentar la subida.
+            {state.phase ? `Última fase informada: ${phaseLabels[state.phase]}. ` : ""}Dejamos de consultar automáticamente; podés actualizar el estado o reintentar.
           </AlertDescription>
         </Alert>
       )}
@@ -115,11 +115,11 @@ export function FinalizationPanel({ state, onFinalize, onRefresh }: Finalization
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={onFinalize} disabled={working}>
             {state.status === "failed" || state.status === "stalled" ? (
-              "Reintentar subida"
+              "Reintentar"
             ) : (
               <>
                 <ArrowUp aria-hidden="true" data-icon="inline-start" />
-                Subir Contrato
+                Finalizar y registrar huella
               </>
             )}
           </Button>
