@@ -1,7 +1,7 @@
 # ErrorScreen (F-8): capturas a 360 y 1280 px (2026-10-23)
 
 Componente de presentación `src/features/errors/components/error-screen.tsx`, ticket F-8 del
-[plan de onboarding](https://github.com/nanonoir/galcoa/blob/feat/onboarding-flujo-usuario/docs/exec-plans/active/onboarding-flujo-usuario.md)
+[plan de onboarding](../../exec-plans/active/onboarding-flujo-usuario.md)
 (sección P6). Lo montan las rutas de Next que son de Nahuel (N-2): `not-found.tsx`, `error.tsx` y `global-error.tsx`.
 
 | Caso | Qué muestra | 360 px | 1280 px |
