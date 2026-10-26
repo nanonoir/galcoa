@@ -13,7 +13,7 @@ import { verifiedRequestSession } from "./session";
 
 /**
  * Última versión publicada del documento del usuario de la petición, con su sello, para Server
- * Components. Es la fuente persistente del recuadro «Contrato subido»: sobrevive a recargas y a
+ * Components. Es la fuente persistente del recuadro «Versión finalizada»: sobrevive a recargas y a
  * volver al documento. Documento ajeno o sin versión: `null`.
  */
 export async function sealedVersionForRequest(documentId: string): Promise<SealedVersionView | null> {

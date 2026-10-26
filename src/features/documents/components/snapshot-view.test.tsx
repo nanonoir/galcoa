@@ -64,7 +64,7 @@ describe("SnapshotView", () => {
 
   it("carga: anuncia el estado con texto visible y no muestra contenido, vacío ni error", () => {
     renderScenario("loading");
-    expect(screen.getByRole("status")).toHaveTextContent("Cargando snapshot");
+    expect(screen.getByRole("status")).toHaveTextContent("Cargando la versión congelada");
     expect(screen.queryByRole("region", { name: "Contenido" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Todavía no hay una revisión congelada/)).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -73,7 +73,7 @@ describe("SnapshotView", () => {
   it("error técnico: muestra el mensaje y «Reintentar» invoca solo onRetry", async () => {
     const { user, onRetry } = renderScenario("error");
     const alert = screen.getByRole("alert");
-    expect(alert).toHaveTextContent("No se pudo cargar el snapshot");
+    expect(alert).toHaveTextContent("No se pudo cargar la versión congelada");
     expect(alert).toHaveTextContent("No se pudo cargar la revisión. Intenta nuevamente.");
     await user.click(within(alert).getByRole("button", { name: "Reintentar" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
@@ -111,7 +111,7 @@ describe("SnapshotView", () => {
     expect(dimension("Documento")).toBe("Esperando confirmaciones");
     expect(dimension("Control")).toBe("Contradicción crítica");
     expect(dimension("Confirmaciones")).toBe("Parcial");
-    expect(dimension("Sello HCS")).toBe("No iniciado");
+    expect(dimension("Registro en Hedera")).toBe("No iniciado");
   });
 
   it("unidad ausente: advertencia no crítica, sin inventar la unidad, y correcciones listadas", () => {
@@ -228,7 +228,7 @@ describe("SnapshotView", () => {
 
   it("nombres accesibles: región titulada, encabezados y lista de estados etiquetada", () => {
     renderScenario("critical-two-sources");
-    expect(screen.getByRole("region", { name: "Snapshot congelado" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Versión congelada" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: /Entrega de maíz/ })).toBeInTheDocument();
     expect(screen.getByLabelText("Estado del snapshot").tagName).toBe("DL");
   });

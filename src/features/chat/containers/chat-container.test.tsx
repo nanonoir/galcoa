@@ -120,7 +120,7 @@ describe("ChatContainer (MVP-054; red simulada, no es integración real)", () =>
     await send();
     expect(await screen.findByText(/Advertencias para revisar: 0/)).toBeInTheDocument();
     expect(screen.getByText(/«no informados»: 2/)).toBeInTheDocument();
-    expect(await screen.findByText("Contraste no disponible")).toBeInTheDocument();
+    expect(await screen.findByText("Control de consistencia no disponible")).toBeInTheDocument();
   });
 
   it("error de proveedor: aviso técnico y reintento con el mismo clientMessageId", async () => {

@@ -29,7 +29,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("SealedVersionContainer", () => {
-  it("registrado: título, versión, hash truncado con Copiar, Topic/Secuencia y enlaces correctos", async () => {
+  it("registrado: título, versión, huella truncada con Copiar, Topic/Secuencia y enlaces correctos", async () => {
     const writeText = vi.fn(async () => undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     render(
@@ -38,7 +38,7 @@ describe("SealedVersionContainer", () => {
       />,
     );
 
-    expect(screen.getByText("Contrato subido. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
+    expect(screen.getByText("Versión finalizada. Huella registrada en Hedera Testnet.")).toBeInTheDocument();
     expect(screen.getByText(/versión 2 quedó finalizada/i)).toBeInTheDocument();
     expect(screen.getByText(/Topic 0\.0\.1234 · Secuencia 7/)).toBeInTheDocument();
     expect(screen.getByText(`${HASH.slice(0, 10)}…${HASH.slice(-8)}`)).toHaveClass("tech-id");
@@ -49,7 +49,7 @@ describe("SealedVersionContainer", () => {
     expect(hashscan).toHaveAttribute("rel", "noopener noreferrer");
     expect(screen.queryByRole("button", { name: /reintentar/i })).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /copiar hash/i }));
+    await userEvent.click(screen.getByRole("button", { name: /copiar huella/i }));
     expect(writeText).toHaveBeenCalledWith(HASH);
     expect(await screen.findByText("Copiado")).toBeInTheDocument();
   });
@@ -58,7 +58,7 @@ describe("SealedVersionContainer", () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }));
     render(<SealedVersionContainer version={base} />);
 
-    expect(screen.getByText("Contrato subido. Huella pendiente.")).toBeInTheDocument();
+    expect(screen.getByText("Versión finalizada. Huella pendiente.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /hashscan/i })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /reintentar registro/i }));
 
@@ -72,6 +72,6 @@ describe("SealedVersionContainer", () => {
     expect(screen.getByText(/último intento de registro no se completó/i)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /reintentar registro/i }));
     expect(await screen.findByText(/no se pudo reintentar el registro/i)).toBeInTheDocument();
-    expect(screen.queryByText("Contrato subido. Huella registrada en Hedera Testnet.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Versión finalizada. Huella registrada en Hedera Testnet.")).not.toBeInTheDocument();
   });
 });

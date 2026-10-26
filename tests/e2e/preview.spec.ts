@@ -10,7 +10,7 @@ const scenarios: Array<{ label: string; visible: RegExp | string; hidden?: RegEx
   { label: "Entrega comercial contradictoria (10 vs 12)", visible: "Entrega de maíz", hidden: /10 toneladas.*12 toneladas/ },
   { label: "Medición sin unidad", visible: "Medición de humedad", hidden: /unidad/i },
   { label: "Confirmaciones pendientes", visible: "Confirmaciones" },
-  { label: "Finalizada con sello HCS pendiente", visible: "Sello HCS" },
+  { label: "Finalizada con sello HCS pendiente", visible: "Registro en Hedera" },
   { label: "Finalizada con sello HCS registrado", visible: "Registrado" },
 ];
 
@@ -82,7 +82,8 @@ test.describe("preview local (datos ficticios)", () => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto("/");
     await scenarioButton(page, "Entrega comercial contradictoria (10 vs 12)").click();
-    await expect(stage(page).getByRole("heading", { level: 3 })).toBeVisible();
+    // El panel tiene además «Te falta» (F-7): se espera la tarjeta del documento.
+    await expect(stage(page).getByRole("heading", { level: 3, name: /Entrega de maíz/ })).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
   });
@@ -104,9 +105,9 @@ test.describe("dashboard MVP-111 (datos ficticios)", () => {
     { id: "empty", label: "Lista vacía", visible: "Todavía no hay documentos" },
     { id: "commercial", label: "Entrega comercial contradictoria (10 vs 12)", visible: "Entrega de maíz", hidden: "Fuentes: msg-0003, msg-0007" },
     { id: "measurement", label: "Medición sin unidad", visible: "Medición de humedad", hidden: "Fuentes: msg-0002" },
-    { id: "confirmations", label: "Confirmaciones pendientes", visible: "rev-confirmaciones-001-2" },
-    { id: "finalized-pending", label: "Finalizada con sello HCS pendiente", visible: "rev-finalizado-pendiente-001-1" },
-    { id: "finalized-registered", label: "Finalizada con sello HCS registrado", visible: "rev-finalizado-registrado-001-1" },
+    { id: "confirmations", label: "Confirmaciones pendientes", visible: "Venta de trigo" },
+    { id: "finalized-pending", label: "Finalizada con sello HCS pendiente", visible: "Entrega de soja" },
+    { id: "finalized-registered", label: "Finalizada con sello HCS registrado", visible: "Acuerdo de flete" },
   ];
 
   for (const width of [360, 1280]) {
@@ -123,7 +124,7 @@ test.describe("dashboard MVP-111 (datos ficticios)", () => {
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         expect(overflow, "desbordamiento horizontal").toBeLessThanOrEqual(0);
 
-        // Captura identificada por escenario y ancho (la revisión aparece en la tarjeta cuando existe).
+        // Captura identificada por escenario y ancho (los identificadores de revisión quedan en «Detalles técnicos»).
         const path = testInfo.outputPath(`dashboard-${scenario.id}-${width}.png`);
         await stage(page).screenshot({ path });
         await testInfo.attach(`dashboard-${scenario.id}-${width}`, { path, contentType: "image/png" });
@@ -135,7 +136,7 @@ test.describe("dashboard MVP-111 (datos ficticios)", () => {
     await page.goto("/");
     await scenarioButton(page, "Finalizada con sello HCS pendiente").click();
     const create = stage(page).getByRole("button", { name: "Crear documento" });
-    const open = stage(page).getByRole("button", { name: /^Abrir Entrega de soja/ });
+    const open = stage(page).getByRole("button", { name: /^Abrir pendiente: Entrega de soja/ });
 
     await create.focus();
     await page.keyboard.press("Tab");
@@ -263,7 +264,7 @@ test.describe("snapshot MVP-112 (datos ficticios)", () => {
     { id: "unit-missing", label: "Medición sin unidad", visible: /La unidad no fue informada/, hidden: "Se registró una medición de 7 sin unidad indicada." },
     { id: "long-content", label: "Contenido extenso", visible: "Cláusula 8:" },
     { id: "empty", label: "Sin revisión congelada", visible: "Todavía no hay una revisión congelada." },
-    { id: "loading", label: "Cargando", visible: "Cargando snapshot" },
+    { id: "loading", label: "Cargando", visible: "Cargando la versión congelada" },
     { id: "error", label: "Error técnico recuperable", visible: "No se pudo cargar la revisión. Intenta nuevamente." },
   ];
 
@@ -272,7 +273,7 @@ test.describe("snapshot MVP-112 (datos ficticios)", () => {
       test(`${width}px · «${capture.label}» real y sin desbordamiento`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width, height: 900 });
         await openSnapshot(page, capture.label);
-        await expect(stage(page).getByRole("region", { name: "Snapshot congelado" })).toBeVisible();
+        await expect(stage(page).getByRole("region", { name: "Versión congelada" })).toBeVisible();
         await expect(stage(page).getByText(capture.visible).first()).toBeVisible();
         if (capture.hidden) await expect(stage(page).getByText(capture.hidden)).toHaveCount(0);
         await expect(stage(page).getByTestId("scenario-json")).toHaveCount(0);

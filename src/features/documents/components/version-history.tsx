@@ -88,7 +88,7 @@ function VersionItem({
         </span>
         {/* Descripción accesible en una sola frase; el bloque visible la repite con formato. */}
         <span id={`${id}-details`} className="sr-only">
-          {`${previous}. Finalización: versión finalizada el ${finalizedAt}. Sello HCS: ${seal.summary.toLowerCase()}.${seal.detail ? ` ${seal.detail}` : ""}`}
+          {`${previous}. Finalización: versión finalizada el ${finalizedAt}. Registro en Hedera: ${seal.summary.toLowerCase()}.${seal.detail ? ` ${seal.detail}` : ""}`}
         </span>
         <span aria-hidden="true" className="flex min-w-0 flex-col gap-2">
           <span className="text-xs break-words text-muted-foreground">{previous}</span>
@@ -101,7 +101,7 @@ function VersionItem({
               </span>
             </span>
             <span className="flex min-w-0 flex-col gap-1 bg-muted/40 p-2">
-              <span className="tech-label">Sello HCS</span>
+              <span className="tech-label">Registro en Hedera</span>
               <span>
                 <Badge variant={seal.registered ? "secondary" : "outline"} className="h-auto max-w-full text-left break-words whitespace-normal">
                   {seal.summary}

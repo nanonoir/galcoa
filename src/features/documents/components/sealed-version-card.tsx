@@ -39,7 +39,7 @@ function CopyHash({ hash, onCopy }: { hash: string; onCopy: (value: string) => P
   }
   return (
     <span className="flex flex-wrap items-center gap-2">
-      <Button type="button" variant="outline" size="sm" onClick={() => void copy()} aria-label="Copiar hash del documento">
+      <Button type="button" variant="outline" size="sm" onClick={() => void copy()} aria-label="Copiar huella digital">
         {state === "copied" ? (
           <Check key="copied" aria-hidden="true" data-icon="inline-start" className="motion-fade" />
         ) : (
@@ -48,7 +48,7 @@ function CopyHash({ hash, onCopy }: { hash: string; onCopy: (value: string) => P
         {state === "copied" ? "Copiado" : "Copiar"}
       </Button>
       <span role="status" className="sr-only">
-        {state === "copied" ? "Hash copiado al portapapeles" : ""}
+        {state === "copied" ? "Huella copiada al portapapeles" : ""}
       </span>
       {state === "failed" && <span className="text-xs text-destructive">No se pudo copiar.</span>}
     </span>
@@ -70,7 +70,7 @@ export function SealRegisteredAlert({
 }) {
   return (
     <Alert>
-      <AlertTitle>Contrato subido. Huella registrada en Hedera Testnet.</AlertTitle>
+      <AlertTitle>Versión finalizada. Huella registrada en Hedera Testnet.</AlertTitle>
       <AlertDescription>
         <p>
           La versión {versionNumber} quedó finalizada y ya no se puede modificar.
@@ -81,29 +81,36 @@ export function SealRegisteredAlert({
             </>
           )}
         </p>
-        {documentHash && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="tech-label">Hash del documento</span>
-            <code className="tech-id" title={documentHash}>
-              {shortHash(documentHash)}
-            </code>
-            {onCopy && <CopyHash hash={documentHash} onCopy={onCopy} />}
+        <details className="text-xs text-muted-foreground">
+          <summary className="tech-label cursor-pointer">Detalles técnicos</summary>
+          <div className="mt-1 flex flex-col gap-1">
+            {documentHash && (
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="tech-label">Huella digital</span>
+                <code className="tech-id" title={documentHash}>
+                  {shortHash(documentHash)}
+                </code>
+                {onCopy && <CopyHash hash={documentHash} onCopy={onCopy} />}
+              </span>
+            )}
+            <p className="tech-id text-muted-foreground">
+              Topic {seal.topicId} · Secuencia {seal.sequenceNumber}
+            </p>
+            <p>
+              <a
+                className="inline-flex min-h-11 items-center font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
+                href={`https://hashscan.io/testnet/transaction/${encodeURIComponent(seal.consensusTimestamp)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Ver en HashScan
+              </a>
+            </p>
           </div>
-        )}
-        <p className="tech-id text-muted-foreground">
-          Topic {seal.topicId} · Secuencia {seal.sequenceNumber}
-        </p>
+        </details>
         <p className="flex flex-wrap gap-x-4 gap-y-2">
           <a className="inline-flex min-h-11 items-center font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring" href={`/verify/${encodeURIComponent(seal.reference)}`}>
             Ver verificación
-          </a>
-          <a
-            className="inline-flex min-h-11 items-center font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
-            href={`https://hashscan.io/testnet/transaction/${encodeURIComponent(seal.consensusTimestamp)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Ver en HashScan
           </a>
         </p>
       </AlertDescription>
@@ -128,7 +135,7 @@ export function SealedVersionCard({ version, onCopy, onRetry, retrying = false, 
       <h2 id="sealed-version-title" className="text-lg font-semibold">
         Versión {version.versionNumber}
       </h2>
-      <p className="tech-label">Versión finalizada · el PDF existe desde la publicación · el sello en Hedera es un paso aparte</p>
+      <p className="tech-label">Versión finalizada · el PDF existe desde la publicación · Registro en Hedera: paso aparte</p>
 
       {seal.status === "registrado" ? (
         <SealRegisteredAlert
@@ -140,19 +147,22 @@ export function SealedVersionCard({ version, onCopy, onRetry, retrying = false, 
         />
       ) : (
         <Alert>
-          <AlertTitle>{retrying ? "Contrato subido. Registrando la huella en Hedera…" : "Contrato subido. Huella pendiente."}</AlertTitle>
+          <AlertTitle>{retrying ? "Versión finalizada. Registrando la huella en Hedera…" : "Versión finalizada. Huella pendiente."}</AlertTitle>
           <AlertDescription>
             <p>
               La versión {version.versionNumber} quedó finalizada y ya no se puede modificar.{" "}
               {seal.status === "fallido" ? "El último intento de registro no se completó." : "La huella todavía no quedó registrada en Hedera Testnet."}
             </p>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="tech-label">Hash del documento</span>
-              <code className="tech-id" title={version.documentHash}>
-                {shortHash(version.documentHash)}
-              </code>
-              <CopyHash hash={version.documentHash} onCopy={onCopy} />
-            </div>
+            <details className="text-xs text-muted-foreground">
+              <summary className="tech-label cursor-pointer">Detalles técnicos</summary>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="tech-label">Huella digital</span>
+                <code className="tech-id" title={version.documentHash}>
+                  {shortHash(version.documentHash)}
+                </code>
+                <CopyHash hash={version.documentHash} onCopy={onCopy} />
+              </div>
+            </details>
             {retrying && (
               <p role="status" aria-live="polite" className="flex items-center gap-2 text-sm">
                 <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />

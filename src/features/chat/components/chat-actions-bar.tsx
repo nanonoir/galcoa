@@ -33,7 +33,7 @@ export interface ChatActionsBarProps {
   confirmed: boolean;
   /** Error visible del último intento de confirmar (código ya traducido a texto). */
   error: string | null;
-  /** Área de «Subir Contrato», una vez que la confirmación está completa. */
+  /** Área de «Finalizar y registrar huella», una vez que la confirmación está completa. */
   children?: ReactNode;
 }
 

@@ -30,6 +30,11 @@ export function ParticipantSelector({ value, locked, suggestion = null, onChange
           ? "La selección quedó fija para esta revisión. Si la cambiás, se abre otra revisión y las confirmaciones anteriores no se heredan."
           : "Vos (proveedor) y el comprador siempre confirman. Podés sumar al transportista. Responden en orden: proveedor, transportista y comprador."}
       </p>
+      {!locked && (
+        <p className="text-sm text-muted-foreground">
+          Vas a congelar esta versión. El comprador va a ver exactamente esto. Si después cambiás algo, se crea otra revisión y hay que volver a confirmar.
+        </p>
+      )}
 
       <label className="flex min-h-11 items-center gap-3 border bg-muted/40 p-3 text-sm">
         <input type="checkbox" checked disabled aria-label="Proveedor (vos): siempre incluido" className="size-5 accent-success" />
