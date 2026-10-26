@@ -31,7 +31,7 @@ const STEPS = [
   },
   {
     title: "Respaldá tu trabajo",
-    description: "Con las confirmaciones se genera el PDF y su huella queda registrada en Hedera Testnet, sin publicar el contenido.",
+    description: "Con las confirmaciones se genera el PDF y se registra en Hedera Testnet una huella que permite comprobar que no cambió, sin publicar el contenido.",
     sample: [
       { label: "PDF", text: "Se genera con la revisión confirmada" },
       { label: "Huella", text: "9f2c…e41a (ejemplo)" },
