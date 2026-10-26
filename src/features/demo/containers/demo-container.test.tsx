@@ -28,7 +28,7 @@ describe("DemoContainer (demo pública, conversion-funnel.md D1)", () => {
     expect(screen.getByText(/identificador de navegador seudónimo.*No rastrear/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Armar y controlar el documento" }));
-    expect(await screen.findByText("Verificado: los datos coinciden con el comprobante")).toBeInTheDocument();
+    expect(await screen.findByText("Coincide: los datos son iguales al comprobante")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Crear mi cuenta" })).toHaveAttribute("href", DEMO_SIGNUP_HREF);
 
     await user.click(screen.getByRole("button", { name: "Pedir confirmación al comprador" }));

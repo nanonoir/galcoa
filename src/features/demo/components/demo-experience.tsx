@@ -24,7 +24,7 @@ const REMITO_OPTIONS: { id: DemoRemito; title: string; hint: string }[] = [
 ];
 
 const COLOR_COPY: Record<DemoColor, { label: string; title: string; className: string }> = {
-  verde: { label: "Verde", title: "Verificado: los datos coinciden con el comprobante", className: "border-success text-success" },
+  verde: { label: "Verde", title: "Coincide: los datos son iguales al comprobante", className: "border-success text-success" },
   amarillo: { label: "Amarillo", title: "Declarado: sin comprobante que lo respalde", className: "border-warning text-warning" },
   rojo: { label: "Rojo", title: "Requiere revisión: no se puede sellar", className: "border-destructive text-destructive" },
 };
