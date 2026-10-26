@@ -9,7 +9,7 @@ test.describe("arranque de Next (landing y guardas)", () => {
   test("la raíz muestra la landing con enlaces de visitante", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1, name: "Cada entrega cuenta. Hacé que también te respalde." })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Crear cuenta" })).toHaveAttribute("href", "/registro");
+    await expect(page.getByRole("link", { name: "Crear cuenta" })).toHaveAttribute("href", "/registro?origen=landing");
     await expect(page.getByRole("link", { name: "Ingresar" }).first()).toHaveAttribute("href", "/acceso");
   });
 
