@@ -2,6 +2,7 @@ import "server-only";
 
 import type { AlcFactsResult } from "@/lib/ai/alc/facts";
 import {
+  ALC_COLOR,
   ALC_OUTCOME,
   ALC_RULE,
   ALC_RULES_VERSION,
@@ -87,6 +88,34 @@ const RETRYABLE_TECHNICAL: ReadonlySet<AlcTechnical> = new Set([
 
 type EvaluatedOk = Extract<AlcResult, { status: typeof ALC_OUTCOME.EVALUATED }>;
 
+const DEMOTED_RULES: ReadonlySet<string> = new Set([ALC_RULE.CONTRADICTION, ALC_RULE.AMBIGUITY, ALC_RULE.UNREADABLE]);
+
+/**
+ * Deuda técnica 15 (demo con inversores, decisión del usuario): el rojo no se emite. Contradicciones, ambigüedades e
+ * ilegibles se persisten como «dato declarado» (amarillo) para que la revisión pueda sellarse. La base recalcula el
+ * color desde los hallazgos, por eso se reescriben los hallazgos y no solo el color.
+ */
+function withoutRed(result: EvaluatedOk): EvaluatedOk {
+  const seen = new Set<string>();
+  const findings = result.findings
+    .map((f) => (DEMOTED_RULES.has(f.ruleId) ? { ...f, ruleId: ALC_RULE.DECLARED } : f))
+    .filter((f) => {
+      const key = JSON.stringify([f.ruleId, f.claimId, f.sourceIds]);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => {
+      const left = JSON.stringify([a.ruleId, a.claimId, a.sourceIds]);
+      const right = JSON.stringify([b.ruleId, b.claimId, b.sourceIds]);
+      return left < right ? -1 : left > right ? 1 : 0;
+    });
+  const red = findings.some((f) => f.ruleId === ALC_RULE.PARTICIPANTS);
+  const declared = findings.some((f) => f.ruleId === ALC_RULE.DECLARED);
+  const color = red ? ALC_COLOR.RED : declared ? ALC_COLOR.YELLOW : result.color;
+  return { ...result, color, findings };
+}
+
 /** Resumen compartible: alias locales `ALC-n`, sin ids ni rutas privadas. */
 export function buildShared(
   result: EvaluatedOk,
@@ -152,10 +181,11 @@ export function createAlcEvaluator(deps: { reader: AlcSourceReader; facts: AlcFa
           sources: inventory.sources,
           claims: rectified.claims,
         };
-        const result = evaluateAlc(input);
-        if (result.status !== ALC_OUTCOME.EVALUATED) {
-          return failure(result.code, stage, RETRYABLE_TECHNICAL.has(result.code), correlationId);
+        const evaluated = evaluateAlc(input);
+        if (evaluated.status !== ALC_OUTCOME.EVALUATED) {
+          return failure(evaluated.code, stage, RETRYABLE_TECHNICAL.has(evaluated.code), correlationId);
         }
+        const result = withoutRed(evaluated);
 
         const inputHash = canonicalHash(input).hash;
         const touched = rectified.applied.flatMap((r) => [...r.originalSourceIds, ...r.correctedSourceIds]);

@@ -127,33 +127,54 @@ describe("evaluación de servidor (F-1)", () => {
     if (r.ok) expect(r.value.shared.claims[0].status).toBe("declarado");
   });
 
-  it("una fuente contradice al borrador: rojo, y se conserva la contradicción", async () => {
-    const { evaluator } = setup([claimOutput({ remito: "Remito: 10 cajas" })], reading("Se entregan 12 cajas", "Remito: 10 cajas"));
+  it("una fuente contradice al borrador: sin rojo (deuda 15), queda declarado y sellable", async () => {
+    const { evaluator, saved } = setup([claimOutput({ remito: "Remito: 10 cajas" })], reading("Se entregan 12 cajas", "Remito: 10 cajas"));
     const r = await run(evaluator);
-    expect(r).toMatchObject({ ok: true, value: { color: "rojo" } });
-    if (r.ok) expect(r.value.shared.claims[0].status).toBe("contradicho");
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
+    if (r.ok) expect(r.value.shared.claims[0].status).toBe("declarado");
+    // La base recalcula el color desde los hallazgos: no puede quedar ninguno rojo.
+    expect(JSON.stringify(saved[0].result)).not.toContain(ALC_RULE.CONTRADICTION);
   });
 
-  it("200/198 conserva el rojo y la contradicción al persistir, sin reclasificar como declarado", async () => {
-    const facts = claimOutput({ chat: "Se entregan 200 cajas", remito: "Remito: 198 cajas" });
-    facts.claims[0].value = "200";
-    const { evaluator, saved } = setup([facts], reading("Se entregan 200 cajas", "Remito: 198 cajas"));
-    const result = await run(evaluator, { draft: { ...draft, body: "Se entregan 200 cajas de ejemplo." } });
-    expect(result).toMatchObject({ ok: true, value: { color: "rojo" } });
-    expect(saved[0]).toMatchObject({ color: "rojo", result: { color: "rojo" } });
-    expect(saved[0].shared.claims[0].status).toBe("contradicho");
-    expect(saved[0].shared.findings).toEqual(expect.arrayContaining([expect.objectContaining({ ruleId: ALC_RULE.CONTRADICTION })]));
-  });
-
-  it("una cita inventada o un dato fuera del borrador es un fallo técnico, nunca un rojo", async () => {
+  it("una cita inventada se descarta: el dato queda declarado, sin fallo técnico", async () => {
     const forged = setup([claimOutput({ remito: "Remito: 12 cajas falsas" })]);
-    expect(await run(forged.evaluator)).toMatchObject({ ok: false, error: { code: ALC_TECHNICAL.CITATION } });
-    expect(forged.saved).toHaveLength(0);
+    const r = await run(forged.evaluator);
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
+    if (r.ok) expect(r.value.shared.claims[0].status).toBe("declarado");
+  });
+
+  it("un dato fuera del borrador se descarta y la cobertura incompleta queda amarilla, sin 503", async () => {
     const out = claimOutput();
     out.claims[0].value = "99";
     const invented = setup([out]);
-    expect(await run(invented.evaluator)).toMatchObject({ ok: false, error: { code: ALC_TECHNICAL.CLAIM } });
-    expect(invented.saved).toHaveLength(0);
+    const r = await run(invented.evaluator);
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
+    if (r.ok) expect(r.value.shared.claims).toHaveLength(0);
+  });
+
+  it("el mismo dato repetido se fusiona en una afirmación y no aborta la evaluación", async () => {
+    const out = claimOutput();
+    const [chat, remito] = out.claims[0].assertions;
+    out.claims = [{ ...out.claims[0], assertions: [chat] }, { ...out.claims[0], assertions: [remito] }];
+    const r = await run(setup([out]).evaluator);
+    expect(r).toMatchObject({ ok: true, value: { color: "verde" } });
+    if (r.ok) expect(r.value.shared.claims).toHaveLength(1);
+  });
+
+  it("un número en el nombre del producto cubre la cobertura y se ignora la autoevaluación del modelo", async () => {
+    const named = { ...draft, body: "Se entregan 12 cajas de alfajor 55 g." };
+    const out = claimOutput({ coverage: false });
+    out.claims[0].subject = "alfajor 55 g";
+    const r = await setup([out]).evaluator.evaluate({ ownerId: OWNER, documentId: DOC, draft: named, selection: ["autor", "comprador"] });
+    expect(r).toMatchObject({ ok: true, value: { color: "verde" } });
+  });
+
+  it("una fecha del borrador cubre sus números aunque no sea numérica", async () => {
+    const dated = { ...draft, body: "Se entregan 12 cajas el 20/10/2026." };
+    const out = claimOutput();
+    out.claims.push({ subject: "entrega", field: "fecha", value: "20/10/2026", unit: "", numeric: true, ambiguous: false, assertions: [] });
+    const r = await setup([out]).evaluator.evaluate({ ownerId: OWNER, documentId: DOC, draft: dated, selection: ["autor", "comprador"] });
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
   });
 
   it("un original aceptado sin extracción es lectura incompleta (técnico), no un rojo", async () => {
@@ -162,11 +183,11 @@ describe("evaluación de servidor (F-1)", () => {
     expect(saved).toHaveLength(0);
   });
 
-  it("cobertura incompleta del borrador (un número sin afirmación) es rojo por ambigüedad", async () => {
+  it("cobertura incompleta del borrador (un número sin afirmación) queda amarilla, sin rojo (deuda 15)", async () => {
     const { evaluator } = setup([claimOutput()]);
     const r = await evaluator.evaluate({ ownerId: OWNER, documentId: DOC, draft: { ...draft, body: `${body} Precio 500 pesos.` }, selection: ["autor", "comprador"] });
-    expect(r).toMatchObject({ ok: true, value: { color: "rojo" } });
-    if (r.ok) expect(r.value.shared.findings.some((f) => f.ruleId === ALC_RULE.AMBIGUITY)).toBe(true);
+    expect(r).toMatchObject({ ok: true, value: { color: "amarillo" } });
+    if (r.ok) expect(r.value.shared.findings.some((f) => f.ruleId === ALC_RULE.AMBIGUITY)).toBe(false);
   });
 
   it("una selección fuera del contrato nuevo es rojo por participantes", async () => {
