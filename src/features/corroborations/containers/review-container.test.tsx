@@ -252,16 +252,16 @@ describe("ReviewContainer con revisión vigente (recarga)", () => {
       expect(screen.getByText(/tu confirmación/i)).toBeInTheDocument();
     });
 
-    it("«Subir Contrato» solo aparece con todas las confirmaciones y revisión vigente", async () => {
+    it("«Finalizar y registrar huella» solo aparece con todas las confirmaciones y revisión vigente", async () => {
       fetchMock.mockImplementation(async () => json({ confirmationStatus: "pendiente", missingRoles: ["comprador"], confirmed: 1, rejected: 0 }));
       const first = render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
       await screen.findByText(/faltan confirmaciones/i);
-      expect(screen.queryByRole("button", { name: /^subir contrato$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^finalizar y registrar huella$/i })).not.toBeInTheDocument();
       first.unmount();
 
       fetchMock.mockImplementation(async () => json({ confirmationStatus: "completa", missingRoles: [], confirmed: 2, rejected: 0 }));
       render(<ReviewContainer documentId="doc-1" draftRevision={3} hcsStatus="pendiente" active={ACTIVE} />);
-      expect(await screen.findByRole("button", { name: /^subir contrato$/i })).toBeEnabled();
+      expect(await screen.findByRole("button", { name: /^finalizar y registrar huella$/i })).toBeEnabled();
     });
 
     it("con confirmación completa y documento sin finalizar permite editar; cancelar no muta", async () => {

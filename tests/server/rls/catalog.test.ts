@@ -10,9 +10,11 @@ const SERVER_ONLY_TABLES = [
   "chat_turns",
   "corroboration_requests",
   "finalization_operations",
+  "funnel_events",
   "hedera_attempts",
   "idempotency_records",
   "rate_limit_counters",
+  "subscription_requests",
 ];
 
 const column = async (sql: string) => (await psqlOk(sql)).map((row) => row[0]);
@@ -46,6 +48,7 @@ describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
       "20261016002511",
       "20261017000100",
       "20261020000100",
+      "20261022000100",
     ]);
   });
 
@@ -55,9 +58,9 @@ describe("catálogo: esquema aplicado desde cero (MVP-023)", () => {
       [
         "alc_evaluations", "artifact_reservations", "artifact_staging", "audit_events", "chat_turns", "corroboration_requests",
         "corroboration_responses", "document_revisions", "document_versions", "documents", "drafts",
-        "evidence_extractions", "evidences", "finalization_operations", "hedera_attempts",
+        "evidence_extractions", "evidences", "finalization_operations", "funnel_events", "hedera_attempts",
         "hedera_registrations", "idempotency_records", "message_events", "messages", "rate_limit_counters", "report_sources",
-        "revision_participants", "revision_snapshots", "snapshot_sources", "verification_reports",
+        "revision_participants", "revision_snapshots", "snapshot_sources", "subscription_requests", "verification_reports",
         "version_artifacts", "version_receipts",
       ].sort(),
     );
@@ -113,7 +116,7 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
       await column(
         `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' order by p.proname;`,
       ),
-    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "attach_chat_turn_message", "check_seal_eligibility", "claim_chat_turn", "claim_evidence_discard", "claim_finalization", "close_chat_turn", "complete_chat_turn", "confirm_as_author", "create_document", "discard_evidence_reservation", "freeze_revision", "get_active_revision", "get_alc_evaluation", "get_document", "get_evidence", "get_finalization_manifest_input", "get_finalization_render_input", "get_finalization_staged_content", "get_finalization_status", "get_freeze_source", "get_public_verification", "get_revision_state", "get_seal_state", "get_seal_version", "hit_rate_limit", "issue_invitation", "list_documents", "list_evidence_discards", "list_evidence_extractions", "list_evidences", "list_messages", "persist_contrast_report", "prepare_finalization_manifest", "publish_version", "read_invitation", "record_seal_intent", "record_seal_outcome", "record_seal_registration", "rename_document", "reserve_evidence", "reserve_finalization_objects", "respond_invitation", "revoke_invitation", "save_alc_evaluation", "stage_chat_turn_proposal", "stage_finalization_pdf"]);
+    ).toEqual(["accept_evidence", "append_agent_message", "append_document_audit", "append_evidence_extraction", "append_message", "attach_chat_turn_message", "check_seal_eligibility", "claim_chat_turn", "claim_evidence_discard", "claim_finalization", "close_chat_turn", "complete_chat_turn", "confirm_as_author", "create_document", "discard_evidence_reservation", "freeze_revision", "get_active_revision", "get_alc_evaluation", "get_document", "get_evidence", "get_finalization_manifest_input", "get_finalization_render_input", "get_finalization_staged_content", "get_finalization_status", "get_freeze_source", "get_public_verification", "get_revision_state", "get_seal_state", "get_seal_version", "hit_rate_limit", "issue_invitation", "list_documents", "list_evidence_discards", "list_evidence_extractions", "list_evidences", "list_messages", "persist_contrast_report", "prepare_finalization_manifest", "publish_version", "read_invitation", "record_funnel_event", "record_seal_intent", "record_seal_outcome", "record_seal_registration", "rename_document", "request_subscription", "reserve_evidence", "reserve_finalization_objects", "respond_invitation", "revoke_invitation", "save_alc_evaluation", "stage_chat_turn_proposal", "stage_finalization_pdf"]);
   });
 
   it("toda función propia fija `search_path` y ninguna es ejecutable por PUBLIC ni anon", async () => {
@@ -131,9 +134,9 @@ describe("catálogo: RLS y permisos (MVP-024)", () => {
       ),
     ).toEqual([]);
     // Única superficie anónima (capacidad pública de MVP-073/074/075): lectura sin consumo, respuesta y contador de abuso;
-    // y la proyección de solo lectura del verificador (MVP-100).
+    // la proyección de solo lectura del verificador (MVP-100) y el registro anónimo de etapas del embudo (conversion-funnel.md).
     expect(await column(`select p.proname ${own} and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1;`)).toEqual([
-      "get_public_verification", "hit_rate_limit", "read_invitation", "respond_invitation",
+      "get_public_verification", "hit_rate_limit", "read_invitation", "record_funnel_event", "respond_invitation",
     ]);
     expect(await column(`select has_schema_privilege('anon', 'private', 'USAGE');`)).toEqual(["f"]);
   });

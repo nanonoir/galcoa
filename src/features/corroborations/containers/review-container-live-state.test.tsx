@@ -36,7 +36,7 @@ afterEach(() => vi.unstubAllGlobals());
 function dimensions() {
   const list = screen.getByLabelText("Estado del snapshot");
   const value = (name: string) => within(list).getByText(name).parentElement!.querySelector("dd")!.textContent;
-  return { documento: value("Documento"), confirmaciones: value("Confirmaciones"), hcs: value("Sello HCS") };
+  return { documento: value("Documento"), confirmaciones: value("Confirmaciones"), hcs: value("Registro en Hedera") };
 }
 
 describe("ReviewContainer · estados de la vista del snapshot", () => {

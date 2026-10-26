@@ -52,6 +52,7 @@ export const SERVER_DIRS = [
   "src/lib/ai",
   "src/lib/documents",
   "src/lib/hedera",
+  "src/lib/conversion",
 ];
 
 /** Archivos de prueba: pueden usar fixtures y mocks. */

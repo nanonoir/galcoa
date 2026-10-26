@@ -42,6 +42,12 @@ const roleLabels: Record<ParticipantRole, string> = {
   comprador: "Comprador",
 };
 
+/** Cómo se nombra al invitado en el encabezado: el proveedor le pide confirmar una entrega. */
+const invitedRoleLabels: Record<PublicInvitation["role"], string> = {
+  intermediario: "transportista",
+  comprador: "comprador",
+};
+
 const severityLabels: Record<SharedWarning["severity"], string> = { warning: "Advertencia", critical: "Crítica" };
 
 const unavailableCopy: Record<UnavailableReason, { title: string; body: string }> = {
@@ -305,6 +311,11 @@ function DoneCard({ state }: { state: Extract<ConfirmationViewState, { status: "
       <p className="text-sm break-words">
         {confirmed ? "Confirmado mediante enlace" : "Rechazado mediante enlace"} por <strong>{result.actor.declaredName ?? ""}</strong>, el {formatInstant(result.respondedAt)}.
       </p>
+      <p className="text-sm break-words">
+        {confirmed
+          ? "Cuando estén todas, el proveedor genera el PDF final y registra una huella que permite comprobar que no cambió."
+          : "El proveedor tiene que corregir y pedirte una nueva confirmación."}
+      </p>
       <p className="text-xs text-muted-foreground">
         El nombre es el que declaraste; no se verificó contra ningún documento. Ya podés cerrar esta página.
       </p>
@@ -321,7 +332,11 @@ export function ConfirmationScreen({ state, onConfirm, onReject, onRetry }: Conf
         <h1 id="confirmation-title" className="page-title">
           Revisión de una operación
         </h1>
-        <p className="text-sm text-muted-foreground">Leé la operación y confirmá o rechazá. No hace falta iniciar sesión.</p>
+        {invitation && (
+          <p className="text-sm text-muted-foreground">
+            El proveedor te pide que confirmes esta entrega como <strong>{invitedRoleLabels[invitation.role]}</strong>. No hace falta cuenta. Solo podés confirmar o decir que no coincide; no podés editarla.
+          </p>
+        )}
       </header>
 
       {state.status === "unavailable" && (

@@ -119,6 +119,6 @@ describe("ChatContainer adjuntos (MVP-054; red y Storage simulados, no es integr
     await attach(pdf());
     await waitFor(() => expect(hits("/contrast")).toHaveLength(before + 1));
     expect(await screen.findByText("Texto extraído")).toBeInTheDocument();
-    expect(await screen.findByText("Contraste no disponible")).toBeInTheDocument();
+    expect(await screen.findByText("Control de consistencia no disponible")).toBeInTheDocument();
   });
 });

@@ -114,8 +114,8 @@ describe("VersionHistory", () => {
     expect(v1).toHaveTextContent("Sello registrado");
     expect(v1).not.toHaveTextContent("Sello pendiente");
     expect(v2).toHaveAccessibleName("Versión 2");
-    expect(v2).toHaveAccessibleDescription(/^Sustituye a la versión 1\. Finalización: versión finalizada el 15 mar 2026.+UTC\. Sello HCS: sello pendiente\.$/);
-    expect(v1).toHaveAccessibleDescription(/Sello HCS: sello registrado\.$/);
+    expect(v2).toHaveAccessibleDescription(/^Sustituye a la versión 1\. Finalización: versión finalizada el 15 mar 2026.+UTC\. Registro en Hedera: sello pendiente\.$/);
+    expect(v1).toHaveAccessibleDescription(/Registro en Hedera: sello registrado\.$/);
     expect(v2).toHaveAttribute("aria-current", "true");
     expect(v1).not.toHaveAttribute("aria-current");
     expect(v1).not.toHaveTextContent("Seleccionada");

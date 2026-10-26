@@ -33,13 +33,29 @@ export function LandingPage({ content, headerAction }: LandingViewProps) {
               >
                 {content.summary}
               </p>
-              <a
-                href={content.primaryAction.href}
-                className={buttonVariants({ size: "lg", className: "motion-enter px-6" })}
-                style={{ "--enter-delay": "80ms" } as CSSProperties}
-              >
-                {content.primaryAction.label}
-              </a>
+              <div className="motion-enter flex w-full flex-col gap-3 sm:w-auto sm:flex-row" style={{ "--enter-delay": "80ms" } as CSSProperties}>
+                <a href={content.primaryAction.href} className={buttonVariants({ size: "lg", className: "px-6" })}>
+                  {content.primaryAction.label}
+                </a>
+                {content.secondaryAction ? (
+                  <a href={content.secondaryAction.href} className={buttonVariants({ size: "lg", variant: "outline", className: "px-6" })}>
+                    {content.secondaryAction.label}
+                  </a>
+                ) : null}
+              </div>
+
+              {content.problem ? (
+                <section aria-labelledby="problema-title" className="mt-3 flex w-full max-w-xl flex-col gap-2 border-t border-border pt-4">
+                  <h2 id="problema-title" className="text-sm font-semibold tracking-wide text-muted-foreground">
+                    {content.problem.title}
+                  </h2>
+                  <ul className="flex list-disc flex-col gap-1 pl-5 text-sm leading-relaxed text-muted-foreground">
+                    {content.problem.points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
 
               <section id="como-funciona" aria-labelledby="como-funciona-title" className="mt-3 flex w-full max-w-xl flex-col gap-1 border-t border-border pt-4">
                 <h2
@@ -83,6 +99,19 @@ export function LandingPage({ content, headerAction }: LandingViewProps) {
                 <p className="font-mono text-base md:text-lg">{content.upcoming.example}</p>
               </figure>
               <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{content.upcoming.disclaimer}</p>
+            </div>
+          </section>
+        ) : null}
+
+        {content.pricingTeaser ? (
+          <section aria-labelledby="planes-title" className="border-b">
+            <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between">
+              <h2 id="planes-title" className="max-w-2xl text-lg leading-snug font-semibold">
+                {content.pricingTeaser.text}
+              </h2>
+              <a href={content.pricingTeaser.link.href} className={buttonVariants({ variant: "outline", className: "px-5" })}>
+                {content.pricingTeaser.link.label}
+              </a>
             </div>
           </section>
         ) : null}

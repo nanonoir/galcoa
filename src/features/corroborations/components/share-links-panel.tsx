@@ -104,6 +104,7 @@ export function ShareLinksPanel({ links, onCopy, onReissue, renderQr }: ShareLin
           Compartir con los participantes
         </h2>
         <p className="text-sm text-muted-foreground">Cada enlace es personal. Lo enviás vos: la aplicación no manda correos ni mensajes.</p>
+        <p className="text-sm text-muted-foreground">Confirmá vos como proveedor y mandale el enlace al comprador por WhatsApp, correo o QR. Lo vas a ver acá cuando responda.</p>
       </header>
       <Alert className="border-ring">
         <AlertTitle>Guardá los enlaces ahora</AlertTitle>

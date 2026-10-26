@@ -13,6 +13,6 @@ describe("SnapshotView · advertencias ocultas (demo)", () => {
     expect(screen.queryByRole("region", { name: "Advertencias" })).not.toBeInTheDocument();
     expect(screen.queryByText("Control", { selector: "dt" })).not.toBeInTheDocument();
     expect(container.textContent).not.toMatch(/advertencia|contradicción|inconsistencias/i);
-    expect(screen.getByText("Sello HCS", { selector: "dt" })).toBeInTheDocument();
+    expect(screen.getByText("Registro en Hedera", { selector: "dt" })).toBeInTheDocument();
   });
 });
