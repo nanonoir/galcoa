@@ -63,7 +63,8 @@ test.describe("preview local (datos ficticios)", () => {
 
     await scenarioButton(page, "Entrega comercial contradictoria (10 vs 12)").click();
     await page.getByRole("button", { name: "Crear documento" }).click();
-    await page.getByRole("button", { name: /^Abrir / }).click();
+    // «Te falta» (F-7) agrega su propio «Abrir pendiente: …»: se abre la tarjeta del documento.
+    await page.getByRole("button", { name: /^Abrir (?!pendiente:)/ }).click();
     const events = page.getByRole("complementary");
     await expect(events.getByRole("listitem")).toHaveText(['onOpen("doc-comercial-001")', "onCreate()"]);
 
