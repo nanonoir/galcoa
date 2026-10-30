@@ -196,7 +196,8 @@ describe("congelado con ambos agentes", () => {
     expect(warnings.map((x) => x.severity).sort()).toEqual(["critical", "warning"]);
     // El control documental se deriva de la evaluación ALC (verde en este fixture), no de la severidad de las advertencias.
     expect(frozen.value.revision.controlStatus).toBe("sin_inconsistencias_criticas_detectadas");
-    expect(JSON.stringify(frozen.value.snapshot.content)).not.toMatch(/\b[me]\d+\b|b1/);
+    // Palabra completa: un hash hex del snapshot puede contener "b1" por azar.
+    expect(JSON.stringify(frozen.value.snapshot.content)).not.toMatch(/\b(?:[me]\d+|b1)\b/);
     // Tres fuentes reales distintas de las advertencias (mensaje 1, mensaje 2 y evidencia) más las dos que cita la evaluación ALC (`ALC-n`).
     expect(await psqlOk(`select count(*) from public.snapshot_sources where revision_id = '${frozen.value.revision.revisionId}';`)).toEqual([["5"]]);
     expect(await psqlOk(`select alias from public.snapshot_sources where revision_id = '${frozen.value.revision.revisionId}' and alias like 'ALC-%' order by 1;`)).toEqual([["ALC-1"], ["ALC-2"]]);
