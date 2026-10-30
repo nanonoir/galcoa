@@ -79,7 +79,11 @@ async function login(page: Page) {
 
 const card = (page: Page, role: Role) => page.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: role }) });
 const linkOf = async (item: Locator) => ((await item.locator("p.tech-id").first().textContent()) ?? "").trim();
-const checkbox = (page: Page, role: Role) => page.getByRole("checkbox", { name: role === "Comprador" ? "Comprador: siempre incluido" : role, exact: true });
+// Desde F-4 el transportista se rotula «Transportista (opcional)» y puede sumar «Sugerido por el asistente».
+const checkbox = (page: Page, role: Role) =>
+  role === "Comprador"
+    ? page.getByRole("checkbox", { name: "Comprador: siempre incluido", exact: true })
+    : page.getByRole("checkbox", { name: /^Transportista \(opcional\)/ });
 const freezeButton = (page: Page) => page.getByRole("button", { name: "Congelar y generar enlaces" });
 const newRevisionButton = (page: Page) => page.getByRole("button", { name: "Crear nueva revisión y generar enlaces" });
 const authorBox = (page: Page) => page.getByLabel("Revisé la operación y confirmo esta versión.");

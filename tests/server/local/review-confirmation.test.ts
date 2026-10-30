@@ -320,7 +320,7 @@ describe("MVP-072/073 · invitaciones y lectura pública", () => {
       if (!r.ok || r.value.kind !== "available") throw new Error("read");
       expect(r.value.invitation.operation).toEqual(b.snapshot.content.operation);
       expect(r.value.invitation.warnings).toEqual(b.snapshot.content.warnings);
-      expect(Object.keys(r.value.invitation).sort()).toEqual(["availability", "expiresAt", "operation", "revisionId", "role", "schemaVersion", "selection", "snapshotHash", "snapshotId", "warnings"]);
+      expect(Object.keys(r.value.invitation).sort()).toEqual(["alc", "availability", "expiresAt", "operation", "rectifications", "revisionId", "role", "schemaVersion", "selection", "snapshotHash", "snapshotId", "warnings"]);
     }
     expect(await sql(`select consumed_at is null, revoked_at is null from public.corroboration_requests where revision_id = '${b.revision.revisionId}';`)).toEqual(before);
     expect((await sql(`select count(*) from public.corroboration_responses where revision_id = '${b.revision.revisionId}';`))[0][0]).toBe("0");

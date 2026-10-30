@@ -116,9 +116,10 @@ test.describe("Auth local real (MVP-031)", () => {
     await expect(page).toHaveURL(/\/dashboard$/);
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { level: 1, name: "Mis documentos" })).toBeAttached();
-    await expect(page.getByText("Crea el primero con «Crear documento».")).toBeVisible();
+    // Panel vacío con la guía de activación (F-7): su botón reemplaza a «Crear documento».
+    await expect(page.getByText("Todavía no hay documentos.")).toBeVisible();
 
-    await page.getByRole("button", { name: "Crear documento" }).click();
+    await page.getByRole("button", { name: "Crear mi primer documento" }).click();
     await expect(page).toHaveURL(/\/documents\/[0-9a-f-]{36}$/);
     await expect(page.getByRole("heading", { level: 1, name: "Documento sin título" })).toBeVisible();
 
